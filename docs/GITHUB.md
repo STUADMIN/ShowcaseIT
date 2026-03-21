@@ -13,10 +13,12 @@ cd showcaseit
 git add -A
 git status
 git commit -m "chore: initial commit"
-git branch -M main
+git branch -M main   # skip if already on main
 git remote add origin https://github.com/YOUR_USER/showcaseit.git
 git push -u origin main
 ```
+
+If your first commit is already on `main`, use `git push -u origin main` only.
 
 3. Use SSH if you prefer:
 
