@@ -6,18 +6,40 @@ export async function GET(request: NextRequest) {
   const projectId = searchParams.get('projectId');
 
   try {
+    const brandSelect = {
+      name: true,
+      logoUrl: true,
+      guideCoverImageUrl: true,
+      colorPrimary: true,
+      colorSecondary: true,
+      colorAccent: true,
+      colorBackground: true,
+    } as const;
+
     const guides = await prisma.guide.findMany({
       where: projectId ? { projectId } : undefined,
       include: {
-        steps: { orderBy: { order: 'asc' } },
-        brandKit: true,
+        /** First step only — used for list card cover (avoid loading all steps). */
+        steps: {
+          orderBy: { order: 'asc' },
+          take: 1,
+          select: { screenshotUrl: true, styledScreenshotUrl: true },
+        },
+        brandKit: { select: brandSelect },
+        project: { select: { brandKit: { select: brandSelect } } },
         _count: { select: { steps: true } },
       },
       orderBy: { updatedAt: 'desc' },
     });
     return NextResponse.json(guides);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch guides' }, { status: 500 });
+    console.error('[GET /api/guides]', error);
+    const hint =
+      process.env.NODE_ENV === 'development' && error instanceof Error ? `: ${error.message}` : '';
+    return NextResponse.json(
+      { error: `Failed to fetch guides${hint}` },
+      { status: 500 }
+    );
   }
 }
 

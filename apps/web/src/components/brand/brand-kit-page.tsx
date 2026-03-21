@@ -16,12 +16,89 @@ interface BrandKitData {
   fontHeading: string;
   fontBody: string;
   logoUrl: string | null;
+  guideCoverImageUrl: string | null;
 }
 
 const fontOptions = [
   'Inter', 'Roboto', 'Open Sans', 'Montserrat', 'Poppins',
   'Lato', 'Playfair Display', 'Merriweather', 'Source Sans Pro', 'Raleway',
 ];
+
+const MAX_UPLOAD_MB = 2;
+
+function BrandAssetDropZone(props: {
+  inputId: string;
+  title: string;
+  hint: string;
+  previewUrl: string;
+  aspectClass: string;
+  uploading: boolean;
+  onPickFiles: (files: FileList | null) => void;
+  onRemove: () => void;
+  disabled?: boolean;
+}) {
+  const { inputId, title, hint, previewUrl, aspectClass, uploading, onPickFiles, onRemove, disabled } = props;
+  const [dragOver, setDragOver] = useState(false);
+
+  return (
+    <div className="card">
+      <div className="flex items-start justify-between gap-2 mb-4">
+        <h3 className="text-lg font-semibold">{title}</h3>
+        {previewUrl && !disabled && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              onRemove();
+            }}
+            className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+          >
+            Remove
+          </button>
+        )}
+      </div>
+      <label
+        htmlFor={inputId}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (!disabled && !uploading) onPickFiles(e.dataTransfer.files);
+        }}
+        className={`block border-2 border-dashed rounded-xl overflow-hidden text-center transition-colors cursor-pointer ${
+          dragOver ? 'border-brand-500 bg-brand-500/10' : 'border-gray-700 hover:border-gray-600'
+        } ${disabled || uploading ? 'opacity-50 pointer-events-none' : ''}`}
+      >
+        <input
+          id={inputId}
+          type="file"
+          accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+          className="sr-only"
+          disabled={disabled || uploading}
+          onChange={(e) => onPickFiles(e.target.files)}
+        />
+        <div className={`${aspectClass} flex flex-col items-center justify-center p-6`}>
+          {uploading ? (
+            <p className="text-sm text-gray-400">Uploading…</p>
+          ) : previewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={previewUrl} alt="" className="max-h-full max-w-full object-contain" />
+          ) : (
+            <>
+              <div className="text-4xl mb-3">🖼</div>
+              <p className="text-sm text-gray-400">Click or drag to upload</p>
+              <p className="text-xs text-gray-600 mt-1">{hint}</p>
+            </>
+          )}
+        </div>
+      </label>
+    </div>
+  );
+}
 
 export function BrandKitPage() {
   const { data: brandKits, loading, refetch } = useApi<BrandKitData[]>({ url: '/api/brand-kits' });
@@ -36,8 +113,11 @@ export function BrandKitPage() {
     fontHeading: 'Inter',
     fontBody: 'Inter',
     logoUrl: '',
+    guideCoverImageUrl: '',
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   useEffect(() => {
     if (brandKits?.length) {
@@ -53,6 +133,7 @@ export function BrandKitPage() {
         fontHeading: bk.fontHeading,
         fontBody: bk.fontBody,
         logoUrl: bk.logoUrl || '',
+        guideCoverImageUrl: bk.guideCoverImageUrl || '',
       });
     }
   }, [brandKits]);
@@ -70,6 +151,51 @@ export function BrandKitPage() {
     setSaving(false);
   }, [kit, refetch]);
 
+  const uploadAsset = useCallback(
+    async (kind: 'logo' | 'guideCover', file: File) => {
+      if (!kit.id) {
+        alert('Save your brand kit once (name & colors) before uploading images.');
+        return;
+      }
+      const setBusy = kind === 'logo' ? setUploadingLogo : setUploadingCover;
+      setBusy(true);
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('kind', kind);
+        const res = await fetch(`/api/brand-kits/${kit.id}/upload`, { method: 'POST', body: fd });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        const updated = (await res.json()) as BrandKitData;
+        setKit((prev) => ({
+          ...prev,
+          logoUrl: updated.logoUrl || '',
+          guideCoverImageUrl: updated.guideCoverImageUrl || '',
+        }));
+        refetch();
+      } catch (e) {
+        alert(e instanceof Error ? e.message : 'Upload failed');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [kit.id, refetch]
+  );
+
+  const clearAsset = useCallback(
+    async (field: 'logoUrl' | 'guideCoverImageUrl') => {
+      if (!kit.id) return;
+      try {
+        await apiPatch(`/api/brand-kits/${kit.id}`, { [field]: null });
+        setKit((prev) => ({ ...prev, [field]: '' }));
+        refetch();
+      } catch {}
+    },
+    [kit.id, refetch]
+  );
+
   const updateColor = (key: string, value: string) => {
     setKit((prev) => ({ ...prev, [key]: value }));
   };
@@ -81,6 +207,16 @@ export function BrandKitPage() {
     { key: 'colorBackground', label: 'Background' },
     { key: 'colorForeground', label: 'Foreground' },
   ] as const;
+
+  const onLogoFiles = (files: FileList | null) => {
+    const f = files?.[0];
+    if (f) void uploadAsset('logo', f);
+  };
+
+  const onCoverFiles = (files: FileList | null) => {
+    const f = files?.[0];
+    if (f) void uploadAsset('guideCover', f);
+  };
 
   return (
     <AppShell>
@@ -103,7 +239,7 @@ export function BrandKitPage() {
                 <h3 className="text-lg font-semibold mb-6">Brand Colors</h3>
                 <div className="space-y-4">
                   {colorFields.map(({ key, label }) => (
-                    <ColorPicker key={key} label={label} value={(kit as any)[key]} onChange={(val) => updateColor(key, val)} />
+                    <ColorPicker key={key} label={label} value={(kit as Record<string, string>)[key]} onChange={(val) => updateColor(key, val)} />
                   ))}
                 </div>
               </div>
@@ -126,20 +262,16 @@ export function BrandKitPage() {
                   </div>
                 </div>
               </div>
-              <div className="card">
-                <h3 className="text-lg font-semibold mb-6">Logo</h3>
-                <div className="border-2 border-dashed border-gray-700 rounded-xl p-8 text-center hover:border-gray-600 transition-colors cursor-pointer">
-                  {kit.logoUrl ? (
-                    <img src={kit.logoUrl} alt="Logo" className="max-h-24 mx-auto" />
-                  ) : (
-                    <>
-                      <div className="text-4xl mb-3">🖼</div>
-                      <p className="text-sm text-gray-400">Click or drag to upload your logo</p>
-                      <p className="text-xs text-gray-600 mt-1">PNG, SVG, or JPG up to 2MB</p>
-                    </>
-                  )}
-                </div>
-              </div>
+              <BrandAssetDropZone
+                inputId="brand-logo-upload"
+                title="Logo"
+                hint={`PNG, SVG, or JPG up to ${MAX_UPLOAD_MB}MB`}
+                previewUrl={kit.logoUrl}
+                aspectClass="min-h-[140px]"
+                uploading={uploadingLogo}
+                onPickFiles={onLogoFiles}
+                onRemove={() => void clearAsset('logoUrl')}
+              />
               <div className="card">
                 <h3 className="text-lg font-semibold mb-6">Preview</h3>
                 <div className="rounded-xl p-6 border" style={{ backgroundColor: kit.colorBackground, borderColor: kit.colorPrimary + '30' }}>
@@ -154,6 +286,18 @@ export function BrandKitPage() {
                     <span className="px-3 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: kit.colorAccent }}>Accent</span>
                   </div>
                 </div>
+              </div>
+              <div className="lg:col-span-2">
+                <BrandAssetDropZone
+                  inputId="brand-guide-cover-upload"
+                  title="Guide cover image"
+                  hint={`Shown on guide cards when the first step has no screenshot. PNG, JPG, or WebP up to ${MAX_UPLOAD_MB}MB. Recommended 16:9.`}
+                  previewUrl={kit.guideCoverImageUrl}
+                  aspectClass="aspect-video max-h-[280px]"
+                  uploading={uploadingCover}
+                  onPickFiles={onCoverFiles}
+                  onRemove={() => void clearAsset('guideCoverImageUrl')}
+                />
               </div>
             </div>
           )}

@@ -87,6 +87,8 @@ model BrandKit {
   fontHeading     String   @default("Inter") @map("font_heading")
   fontBody        String   @default("Inter") @map("font_body")
   logoUrl         String?  @map("logo_url")
+  /** Default guide list card image when the first step has no screenshot. */
+  guideCoverImageUrl String? @map("guide_cover_image_url")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

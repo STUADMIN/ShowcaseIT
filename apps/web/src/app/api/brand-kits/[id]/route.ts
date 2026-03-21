@@ -36,6 +36,7 @@ export async function PATCH(
         fontHeading: body.fontHeading,
         fontBody: body.fontBody,
         logoUrl: body.logoUrl,
+        guideCoverImageUrl: body.guideCoverImageUrl,
       },
     });
     return NextResponse.json(brandKit);

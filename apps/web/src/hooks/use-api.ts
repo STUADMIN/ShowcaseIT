@@ -25,9 +25,24 @@ export function useApi<T>({ url, initialData, immediate = true }: UseApiOptions<
     setError(null);
     try {
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      setData(json);
+      let json: unknown = null;
+      try {
+        json = await res.json();
+      } catch {
+        json = null;
+      }
+      if (!res.ok) {
+        const serverMsg =
+          json &&
+          typeof json === 'object' &&
+          json !== null &&
+          'error' in json &&
+          typeof (json as { error: unknown }).error === 'string'
+            ? (json as { error: string }).error
+            : null;
+        throw new Error(serverMsg || `Request failed (${res.status})`);
+      }
+      setData(json as T);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch');
     } finally {
