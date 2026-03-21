@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 
 export async function GET(
   _request: NextRequest,
@@ -17,6 +18,9 @@ export async function GET(
     });
     if (!guide) {
       return NextResponse.json({ error: 'Guide not found' }, { status: 404 });
+    }
+    if (guide.brandKit) {
+      await mergeGuideCoverImageUrl([guide.brandKit]);
     }
     return NextResponse.json(guide);
   } catch (error) {

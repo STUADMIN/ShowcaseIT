@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get('projectId');
 
   try {
+    /**
+     * Omit `guideCoverImageUrl` from Prisma `select` so a stale generated client
+     * (e.g. `npx prisma generate` failed with EPERM) still runs. We merge cover
+     * URLs from SQL below — same DB column `guide_cover_image_url`.
+     */
     const brandSelect = {
+      id: true,
       name: true,
       logoUrl: true,
-      guideCoverImageUrl: true,
       colorPrimary: true,
       colorSecondary: true,
       colorAccent: true,
@@ -31,6 +37,14 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { updatedAt: 'desc' },
     });
+
+    const nestedKits: Array<{ id: string; guideCoverImageUrl?: string | null }> = [];
+    for (const g of guides) {
+      if (g.brandKit) nestedKits.push(g.brandKit);
+      if (g.project?.brandKit) nestedKits.push(g.project.brandKit);
+    }
+    await mergeGuideCoverImageUrl(nestedKits);
+
     return NextResponse.json(guides);
   } catch (error) {
     console.error('[GET /api/guides]', error);

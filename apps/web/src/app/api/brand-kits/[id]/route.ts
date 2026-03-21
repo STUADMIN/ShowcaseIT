@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 
 export async function GET(
   _request: NextRequest,
@@ -11,6 +12,7 @@ export async function GET(
     if (!brandKit) {
       return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
     }
+    await mergeGuideCoverImageUrl([brandKit]);
     return NextResponse.json(brandKit);
   } catch {
     return NextResponse.json({ error: 'Failed to fetch brand kit' }, { status: 500 });
@@ -24,22 +26,37 @@ export async function PATCH(
   const { id } = await params;
   try {
     const body = await request.json();
-    const brandKit = await prisma.brandKit.update({
+    const { guideCoverImageUrl: coverUrl, ...rest } = body as Record<string, unknown> & {
+      guideCoverImageUrl?: string | null;
+    };
+
+    await prisma.brandKit.update({
       where: { id },
       data: {
-        name: body.name,
-        colorPrimary: body.colorPrimary,
-        colorSecondary: body.colorSecondary,
-        colorAccent: body.colorAccent,
-        colorBackground: body.colorBackground,
-        colorForeground: body.colorForeground,
-        fontHeading: body.fontHeading,
-        fontBody: body.fontBody,
-        logoUrl: body.logoUrl,
-        guideCoverImageUrl: body.guideCoverImageUrl,
+        name: rest.name as string | undefined,
+        colorPrimary: rest.colorPrimary as string | undefined,
+        colorSecondary: rest.colorSecondary as string | undefined,
+        colorAccent: rest.colorAccent as string | undefined,
+        colorBackground: rest.colorBackground as string | undefined,
+        colorForeground: rest.colorForeground as string | undefined,
+        fontHeading: rest.fontHeading as string | undefined,
+        fontBody: rest.fontBody as string | undefined,
+        logoUrl: rest.logoUrl as string | null | undefined,
       },
     });
-    return NextResponse.json(brandKit);
+
+    if ('guideCoverImageUrl' in body) {
+      await prisma.$executeRaw`
+        UPDATE brand_kits SET guide_cover_image_url = ${coverUrl ?? null} WHERE id = ${id}
+      `;
+    }
+
+    const fresh = await prisma.brandKit.findUnique({ where: { id } });
+    if (!fresh) {
+      return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
+    }
+    await mergeGuideCoverImageUrl([fresh]);
+    return NextResponse.json(fresh);
   } catch {
     return NextResponse.json({ error: 'Failed to update brand kit' }, { status: 500 });
   }

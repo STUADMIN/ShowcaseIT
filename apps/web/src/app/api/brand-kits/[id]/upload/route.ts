@@ -71,12 +71,20 @@ export async function POST(
     const { data: urlData } = supabase.storage.from('screenshots').getPublicUrl(storagePath);
     const publicUrl = urlData.publicUrl;
 
-    const updated = await prisma.brandKit.update({
-      where: { id: brandKitId },
-      data: kind === 'logo' ? { logoUrl: publicUrl } : { guideCoverImageUrl: publicUrl },
-    });
+    if (kind === 'logo') {
+      const updated = await prisma.brandKit.update({
+        where: { id: brandKitId },
+        data: { logoUrl: publicUrl },
+      });
+      return NextResponse.json(updated);
+    }
 
-    return NextResponse.json(updated);
+    /** Raw update so this works even when Prisma Client predates `guideCoverImageUrl`. */
+    await prisma.$executeRaw`
+      UPDATE brand_kits SET guide_cover_image_url = ${publicUrl} WHERE id = ${brandKitId}
+    `;
+    const base = await prisma.brandKit.findUnique({ where: { id: brandKitId } });
+    return NextResponse.json({ ...base, guideCoverImageUrl: publicUrl });
   } catch (e) {
     console.error('Brand kit upload route error:', e);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
