@@ -1,0 +1,8 @@
+[project]
+name = "showcaseit-ai-service"
+version = "0.1.0"
+description = "ShowcaseIt AI microservice for style transfer, frame extraction, and transcription"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100

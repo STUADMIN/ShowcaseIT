@@ -1,0 +1,27 @@
+node_modules/
+dist/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+
+# Python AI service
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Electron
+release/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json

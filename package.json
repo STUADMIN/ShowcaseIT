@@ -1,0 +1,25 @@
+{
+  "name": "showcaseit",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "dev:web": "turbo dev --filter=@showcaseit/web",
+    "dev:desktop": "turbo dev --filter=@showcaseit/desktop",
+    "build:web": "turbo build --filter=@showcaseit/web",
+    "build:desktop": "turbo build --filter=@showcaseit/desktop"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.2",
+    "turbo": "latest",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

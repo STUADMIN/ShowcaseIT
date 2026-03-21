@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShowcaseIt Capture</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="titlebar" id="titlebar">
+      <div class="titlebar-title">ShowcaseIt</div>
+      <div class="titlebar-controls">
+        <button class="btn-minimize" id="btn-minimize">−</button>
+        <button class="btn-close" id="btn-close">×</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="source-selector" id="source-section">
+        <div class="section-header">
+          <h2>Select Source</h2>
+          <button class="btn-icon" id="btn-refresh" title="Refresh sources">↻</button>
+        </div>
+        <div class="sources-grid" id="sources-grid"></div>
+      </section>
+
+      <section class="controls" id="controls-section">
+        <div class="recording-indicator" id="recording-indicator">
+          <span class="dot"></span>
+          <span class="timer" id="timer">00:00</span>
+        </div>
+
+        <div class="button-group">
+          <button class="btn btn-primary" id="btn-record">
+            <span class="icon">●</span> Start Recording
+          </button>
+          <button class="btn btn-danger hidden" id="btn-stop">
+            <span class="icon">■</span> Stop Recording
+          </button>
+          <button class="btn btn-upload hidden" id="btn-upload">
+            <span class="icon">↑</span> Upload to Web
+          </button>
+        </div>
+
+        <div class="options">
+          <label class="toggle">
+            <input type="checkbox" id="toggle-voiceover" />
+            <span class="toggle-slider"></span>
+            Voiceover
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="toggle-mouse" checked />
+            <span class="toggle-slider"></span>
+            Track Mouse
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="toggle-clicks" checked />
+            <span class="toggle-slider"></span>
+            Track Clicks
+          </label>
+        </div>
+      </section>
+
+      <section class="status" id="status-section">
+        <p id="status-message">Ready to record</p>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="./renderer.ts"></script>
+</body>
+</html>

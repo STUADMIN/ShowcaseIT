@@ -1,0 +1,318 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { LiquidGlassMain } from '@/components/ui/liquid-glass-main';
+import { StepPanel } from './step-panel';
+import { StepPreview } from './step-preview';
+import { EditorToolbar, type Tool } from './editor-toolbar';
+import { useApi, apiPatch, apiPost, apiDelete } from '@/hooks/use-api';
+
+interface GuideStep {
+  id: string;
+  order: number;
+  title: string;
+  description: string;
+  screenshotUrl: string;
+  annotations: Annotation[];
+  blurRegions: BlurRegion[];
+  /** When false, omitted from HTML export (editor still shows the step). */
+  includeInExport: boolean;
+}
+
+interface Annotation {
+  id: string;
+  type: 'arrow' | 'callout' | 'badge' | 'text' | 'highlight';
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  text?: string;
+  color?: string;
+}
+
+interface BlurRegion {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  intensity: number;
+}
+
+interface GuideData {
+  id: string;
+  title: string;
+  description: string | null;
+  style: string;
+  steps: GuideStep[];
+}
+
+export function GuideEditor({ guideId }: { guideId: string }) {
+  const { data: guide, loading } = useApi<GuideData>({ url: `/api/guides/${guideId}` });
+  const [steps, setSteps] = useState<GuideStep[]>([]);
+  const [selectedStepId, setSelectedStepId] = useState<string>('');
+  const [guideName, setGuideName] = useState('');
+  const [activeTool, setActiveTool] = useState<Tool>('select');
+
+  useEffect(() => {
+    if (guide) {
+      setGuideName(guide.title);
+      const mapped = guide.steps.map((s: any) => ({
+        ...s,
+        screenshotUrl: s.screenshotUrl || '',
+        annotations: Array.isArray(s.annotations) ? s.annotations : [],
+        blurRegions: Array.isArray(s.blurRegions) ? s.blurRegions : [],
+        includeInExport: s.includeInExport !== false,
+      }));
+      setSteps(mapped);
+      if (mapped.length > 0 && !selectedStepId) setSelectedStepId(mapped[0].id);
+    }
+  }, [guide]);
+
+  const router = useRouter();
+  const selectedStep = steps.find((s) => s.id === selectedStepId);
+  const hasRealContent = steps.some((s) => s.screenshotUrl);
+
+  const saveTitle = useCallback(async (title: string) => {
+    try { await apiPatch(`/api/guides/${guideId}`, { title }); } catch {}
+  }, [guideId]);
+
+  const autoStepTitle = /^step\s+\d+$/i;
+
+  const handleReorder = (fromIndex: number, toIndex: number) => {
+    const prevById = new Map(steps.map((s) => [s.id, s]));
+    const updated = [...steps];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+    const reordered = updated.map((s, i) => ({ ...s, order: i + 1 }));
+    const finalSteps = reordered.map((s) =>
+      autoStepTitle.test(s.title.trim()) ? { ...s, title: `Step ${s.order}` } : s
+    );
+    setSteps(finalSteps);
+    fetch(`/api/guides/${guideId}/steps`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ steps: finalSteps.map((s) => ({ id: s.id, order: s.order })) }),
+    }).catch(() => {});
+    finalSteps.forEach((s) => {
+      const was = prevById.get(s.id);
+      if (was && was.title !== s.title) {
+        apiPatch(`/api/guide-steps/${s.id}`, { title: s.title }).catch(() => {});
+      }
+    });
+  };
+
+  const handleStepUpdate = (stepId: string, updates: Partial<GuideStep>) => {
+    setSteps((prev) => prev.map((s) => (s.id === stepId ? { ...s, ...updates } : s)));
+    apiPatch(`/api/guide-steps/${stepId}`, updates).catch(() => {});
+  };
+
+  const handleAddStep = async () => {
+    try {
+      const step = await apiPost<GuideStep>(`/api/guides/${guideId}/steps`, {
+        title: `Step ${steps.length + 1}`,
+        description: 'Describe this step...',
+      });
+      const newStep = step as GuideStep & { includeInExport?: boolean };
+      setSteps((prev) => [
+        ...prev,
+        {
+          ...newStep,
+          screenshotUrl: newStep.screenshotUrl || '',
+          annotations: [],
+          blurRegions: [],
+          includeInExport: newStep.includeInExport !== false,
+        },
+      ]);
+      setSelectedStepId(step.id);
+    } catch {}
+  };
+
+  const handleDeleteStep = async (stepId: string) => {
+    try {
+      const prevById = new Map(steps.map((s) => [s.id, s]));
+      await apiDelete(`/api/guide-steps/${stepId}`);
+      const filtered = steps.filter((s) => s.id !== stepId);
+      const renumbered = filtered.map((s, i) => {
+        const order = i + 1;
+        const title = autoStepTitle.test(s.title.trim()) ? `Step ${order}` : s.title;
+        return { ...s, order, title };
+      });
+      setSteps(renumbered);
+      if (selectedStepId === stepId) setSelectedStepId(renumbered[0]?.id ?? '');
+      fetch(`/api/guides/${guideId}/steps`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ steps: renumbered.map((s) => ({ id: s.id, order: s.order })) }),
+      }).catch(() => {});
+      renumbered.forEach((s) => {
+        const was = prevById.get(s.id);
+        if (was && was.title !== s.title) {
+          apiPatch(`/api/guide-steps/${s.id}`, { title: s.title }).catch(() => {});
+        }
+      });
+    } catch {}
+  };
+
+  if (loading) {
+    return <div className="flex h-screen bg-gray-950 items-center justify-center"><p className="text-gray-500">Loading guide...</p></div>;
+  }
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-950">
+      <header className="shrink-0 h-12 border-b border-gray-800 flex items-center justify-between px-4 gap-4 bg-gray-950 z-10">
+        <div className="flex items-center gap-1 sm:gap-3 min-w-0">
+          <Link
+            href="/"
+            className="text-sm font-semibold text-brand-400 hover:text-brand-300 shrink-0"
+          >
+            ShowcaseIt
+          </Link>
+          <span className="text-gray-700 hidden sm:inline">|</span>
+          <nav className="flex items-center gap-2 sm:gap-4 text-sm text-gray-400 min-w-0 overflow-x-auto">
+            <Link href="/" className="hover:text-white whitespace-nowrap">Dashboard</Link>
+            <Link href="/guides" className="hover:text-white whitespace-nowrap">Guides</Link>
+            <Link href="/recordings" className="hover:text-white whitespace-nowrap">Recordings</Link>
+            <Link href="/recordings/new" className="hover:text-white whitespace-nowrap hidden sm:inline">New recording</Link>
+            <Link href="/export" className="hover:text-white whitespace-nowrap hidden md:inline">Export</Link>
+          </nav>
+        </div>
+        <Link
+          href="/guides"
+          className="text-sm text-gray-500 hover:text-gray-200 shrink-0"
+        >
+          ← Back to all guides
+        </Link>
+      </header>
+
+      <LiquidGlassMain
+        as="div"
+        className="flex flex-1 min-h-0 overflow-hidden bg-gray-950"
+        contentClassName="relative z-[1] flex min-h-0 min-w-0 w-full flex-1 flex-row"
+      >
+      <div className="flex h-full min-h-0 w-80 min-w-0 flex-col border-r border-gray-800 bg-gray-950/80 backdrop-blur-sm">
+        <div className="p-4 border-b border-gray-800">
+          <input
+            type="text"
+            value={guideName}
+            onChange={(e) => setGuideName(e.target.value)}
+            onBlur={() => saveTitle(guideName)}
+            className="w-full bg-transparent text-lg font-bold text-gray-100 outline-none placeholder:text-gray-600"
+            placeholder="Guide title..."
+          />
+          <p className="text-xs text-gray-500 mt-1">ID: {guideId}</p>
+        </div>
+        <div className="flex-1 overflow-auto">
+          <StepPanel steps={steps} selectedStepId={selectedStepId} onSelect={setSelectedStepId} onReorder={handleReorder} onDelete={handleDeleteStep} />
+        </div>
+        <div className="p-3 border-t border-gray-800">
+          <button onClick={handleAddStep} className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium transition-colors">+ Add Step</button>
+        </div>
+      </div>
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-gray-950/80 backdrop-blur-sm">
+        <EditorToolbar activeTool={activeTool} onToolChange={setActiveTool} guideId={guideId} />
+        <div className="flex-1 overflow-auto p-8 flex items-start justify-center">
+          {!hasRealContent && !selectedStep?.screenshotUrl ? (
+            <div className="text-center mt-16 max-w-lg">
+              <div className="text-6xl mb-6">📋</div>
+              <h3 className="text-2xl font-bold text-gray-100 mb-3">Your guide is empty</h3>
+              <p className="text-gray-400 mb-4">
+                Record your screen to auto-generate steps with screenshots, or add steps manually below.
+              </p>
+              <p className="text-gray-500 text-sm mb-8">
+                Already have a recording? Go to{' '}
+                <Link href="/recordings" className="text-blue-400 hover:underline">Recordings</Link>
+                , find it with status <strong className="text-gray-400">ready</strong>, and click{' '}
+                <strong className="text-gray-400">Generate Guide</strong> again — or delete this guide and start over.
+              </p>
+
+              <div className="grid grid-cols-1 gap-4 mb-8">
+                <Link
+                  href="/recordings/new"
+                  className="flex items-center gap-4 p-5 rounded-xl bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600/20 hover:border-blue-500/50 transition-all text-left"
+                >
+                  <span className="text-3xl">🎬</span>
+                  <div>
+                    <p className="font-semibold text-blue-400">Record Screen</p>
+                    <p className="text-sm text-gray-400">Capture a walkthrough and auto-generate steps with screenshots</p>
+                  </div>
+                </Link>
+
+                <button
+                  onClick={handleAddStep}
+                  className="flex items-center gap-4 p-5 rounded-xl bg-gray-800/50 border border-gray-700 hover:bg-gray-800 hover:border-gray-600 transition-all text-left"
+                >
+                  <span className="text-3xl">✏️</span>
+                  <div>
+                    <p className="font-semibold text-gray-200">Add Steps Manually</p>
+                    <p className="text-sm text-gray-400">Create steps one by one and upload your own screenshots</p>
+                  </div>
+                </button>
+              </div>
+
+              <div className="p-4 rounded-lg bg-gray-900/50 text-sm text-gray-500">
+                <p className="font-medium text-gray-400 mb-2">How it works:</p>
+                <ol className="list-decimal list-inside space-y-1 text-left">
+                  <li>Record your screen; use Mark step (browser) or real clicks (desktop) for each key moment</li>
+                  <li>ShowcaseIt grabs one screenshot per marker/click—not every frame</li>
+                  <li>Edit titles, descriptions, and annotations</li>
+                  <li>Export as HTML, PDF, or publish to Confluence</li>
+                </ol>
+              </div>
+            </div>
+          ) : selectedStep ? (
+            <StepPreview
+              step={selectedStep}
+              onUpdate={(updates) => handleStepUpdate(selectedStep.id, updates as Partial<GuideStep>)}
+              activeTool={activeTool}
+            />
+          ) : (
+            <div className="text-gray-500 text-center mt-32"><p className="text-lg">Select a step to preview</p></div>
+          )}
+        </div>
+      </div>
+      <div className="flex h-full min-h-0 w-72 shrink-0 flex-col overflow-auto border-l border-gray-800 bg-gray-950/80 p-4 backdrop-blur-sm">
+        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Properties</h3>
+        {selectedStep ? (
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Step Title</label>
+              <input type="text" value={selectedStep.title} onChange={(e) => handleStepUpdate(selectedStep.id, { title: e.target.value })} className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none focus:border-brand-600" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Description</label>
+              <textarea value={selectedStep.description} onChange={(e) => handleStepUpdate(selectedStep.id, { description: e.target.value })} rows={4} className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none focus:border-brand-600 resize-none" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Annotations</label>
+              <p className="text-xs text-gray-600">{selectedStep.annotations.length} annotation(s)</p>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Blur Regions</label>
+              <p className="text-xs text-gray-600">{selectedStep.blurRegions.length} region(s)</p>
+            </div>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 rounded border-gray-600"
+                checked={selectedStep.includeInExport}
+                onChange={(e) => handleStepUpdate(selectedStep.id, { includeInExport: e.target.checked })}
+              />
+              <span>
+                <span className="text-sm text-gray-200 block">Include in HTML export</span>
+                <span className="text-xs text-gray-600">Uncheck to hide this step from Preview/Download export (still visible here).</span>
+              </span>
+            </label>
+          </div>
+        ) : !hasRealContent ? (
+          <div className="text-sm text-gray-500">
+            <p>Record your screen or add steps to get started.</p>
+          </div>
+        ) : null}
+      </div>
+      </LiquidGlassMain>
+    </div>
+  );
+}

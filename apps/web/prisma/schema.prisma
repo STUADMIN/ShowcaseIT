@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /** Email / in-app notification toggles (Settings → Notifications) */
+  notifyGuidePublished Boolean   @default(true) @map("notify_guide_published")
+  notifyTeamInvites    Boolean   @default(true) @map("notify_team_invites")
+  notifyWeeklyDigest   Boolean   @default(false) @map("notify_weekly_digest")
+  /** Set by weekly digest cron after a successful send (throttle) */
+  weeklyDigestLastSentAt DateTime? @map("weekly_digest_last_sent_at")
+
+  workspaceMembers WorkspaceMember[]
+  recordings       Recording[]
+  guides           Guide[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  plan      String   @default("free")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members   WorkspaceMember[]
+  projects  Project[]
+  brandKits BrandKit[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  userId      String   @map("user_id")
+  role        String   @default("editor")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  name        String
+  description String?
+  brandKitId  String?  @map("brand_kit_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  brandKit   BrandKit?  @relation(fields: [brandKitId], references: [id])
+  recordings Recording[]
+  guides     Guide[]
+
+  @@map("projects")
+}
+
+model BrandKit {
+  id              String   @id @default(uuid())
+  workspaceId     String   @map("workspace_id")
+  name            String
+  colorPrimary    String   @default("#2563EB") @map("color_primary")
+  colorSecondary  String   @default("#7C3AED") @map("color_secondary")
+  colorAccent     String   @default("#F59E0B") @map("color_accent")
+  colorBackground String   @default("#FFFFFF") @map("color_background")
+  colorForeground String   @default("#0F172A") @map("color_foreground")
+  fontHeading     String   @default("Inter") @map("font_heading")
+  fontBody        String   @default("Inter") @map("font_body")
+  logoUrl         String?  @map("logo_url")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  projects  Project[]
+  guides    Guide[]
+
+  @@map("brand_kits")
+}
+
+model Recording {
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  userId      String   @map("user_id")
+  title       String
+  videoUrl    String?  @map("video_url")
+  duration    Int      @default(0)
+  width       Int      @default(1920)
+  height      Int      @default(1080)
+  mouseEvents Json     @default("[]") @map("mouse_events")
+  clickEvents Json     @default("[]") @map("click_events")
+  status      String   @default("processing")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+  guides  Guide[]
+
+  @@map("recordings")
+}
+
+model Guide {
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  userId      String   @map("user_id")
+  recordingId String?  @map("recording_id")
+  brandKitId  String?  @map("brand_kit_id")
+  title       String
+  description String?
+  style       String   @default("clean")
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id])
+  recording Recording? @relation(fields: [recordingId], references: [id])
+  brandKit  BrandKit?  @relation(fields: [brandKitId], references: [id])
+  steps     GuideStep[]
+
+  @@map("guides")
+}
+
+model GuideStep {
+  id                  String   @id @default(uuid())
+  guideId             String   @map("guide_id")
+  order               Int
+  title               String
+  description         String   @default("")
+  screenshotUrl       String?  @map("screenshot_url")
+  styledScreenshotUrl String?  @map("styled_screenshot_url")
+  annotations         Json     @default("[]")
+  blurRegions         Json     @default("[]") @map("blur_regions")
+  mousePosition       Json?    @map("mouse_position")
+  clickTarget         Json?    @map("click_target")
+  timestamp           Int?
+  /** When false, step is omitted from HTML export (still visible in editor). */
+  includeInExport     Boolean  @default(true) @map("include_in_export")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@map("guide_steps")
+}
+
+model PublishLog {
+  id          String   @id @default(uuid())
+  guideId     String   @map("guide_id")
+  platform    String
+  externalId  String?  @map("external_id")
+  externalUrl String?  @map("external_url")
+  status      String   @default("pending")
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("publish_logs")
+}
