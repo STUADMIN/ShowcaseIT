@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 import { generateHtmlExport } from '@/lib/export/html-generator';
 import { buildExportGuide, mapPrismaBrandKit } from '@/lib/export/map-guide-for-html';
 import { buildGuideDocxBuffer } from '@/lib/export/build-guide-docx';
@@ -22,12 +23,19 @@ export async function GET(
       include: {
         steps: { orderBy: { order: 'asc' } },
         brandKit: true,
+        project: { include: { brandKit: true } },
       },
     });
 
     if (!guide) {
       return NextResponse.json({ error: 'Guide not found' }, { status: 404 });
     }
+
+    const rawBrandKit = guide.brandKit ?? guide.project?.brandKit ?? null;
+    if (rawBrandKit) {
+      await mergeGuideCoverImageUrl([rawBrandKit]);
+    }
+    const mappedBrandKit = rawBrandKit ? mapPrismaBrandKit(rawBrandKit) : null;
 
     const stepsForExport =
       scope === 'all'
@@ -43,7 +51,7 @@ export async function GET(
 
     if (format === 'html') {
       const exportGuide = buildExportGuide(guide, stepsForExport);
-      const brandKit = guide.brandKit ? mapPrismaBrandKit(guide.brandKit) : undefined;
+      const brandKit = mappedBrandKit ?? undefined;
       const isSnippet = mode === 'snippet';
 
       const html = generateHtmlExport({
@@ -80,6 +88,7 @@ export async function GET(
         title: guide.title,
         description: guide.description,
         steps: exportSteps,
+        brand: mappedBrandKit,
       });
       return new NextResponse(Buffer.from(buffer), {
         headers: {
@@ -94,6 +103,7 @@ export async function GET(
         title: guide.title,
         description: guide.description,
         steps: exportSteps,
+        brand: mappedBrandKit,
       });
       return new NextResponse(Buffer.from(bytes), {
         headers: {

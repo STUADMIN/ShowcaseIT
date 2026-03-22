@@ -4,6 +4,10 @@ import { prisma } from '@/lib/db/prisma';
 import { createClient } from '@supabase/supabase-js';
 import { extractFrames } from '@/lib/video/extract-frames';
 import { FRAME_EXTRACTION_PLACEHOLDER_DESCRIPTION } from '@/lib/frame-extraction-placeholder';
+import {
+  type StepFrameMeta,
+  suggestedStepTitleAndDescription,
+} from '@/lib/guide/step-suggested-copy';
 
 /** Long recordings need more time for ffmpeg + many Supabase uploads */
 export const maxDuration = 300;
@@ -105,8 +109,8 @@ export async function POST(request: NextRequest) {
       frames = [];
     }
 
-    function clickMetaForFrame(frameTs: number): { clickTarget?: Record<string, unknown> } {
-      if (clickEvents.length === 0) return {};
+    function frameMetaForTimestamp(frameTs: number): StepFrameMeta {
+      if (clickEvents.length === 0) return { kind: 'none' };
       let best: StoredClick | null = null;
       let bestDelta = Infinity;
       for (const e of clickEvents) {
@@ -116,13 +120,14 @@ export async function POST(request: NextRequest) {
           best = e;
         }
       }
-      if (!best) return {};
-      if (best.button === 'step-marker') return {};
+      if (!best) return { kind: 'none' };
+      if (best.button === 'step-marker') return { kind: 'marker' };
       const x = best.x;
       const y = best.y;
-      if (typeof x !== 'number' || typeof y !== 'number') return {};
-      if (x === 0 && y === 0) return {};
+      if (typeof x !== 'number' || typeof y !== 'number') return { kind: 'none' };
+      if (x === 0 && y === 0) return { kind: 'marker' };
       return {
+        kind: 'click',
         clickTarget: {
           x,
           y,
@@ -130,6 +135,11 @@ export async function POST(request: NextRequest) {
           elementText: best.elementText,
         },
       };
+    }
+
+    function clickTargetForDb(meta: StepFrameMeta): Record<string, unknown> | undefined {
+      if (meta.kind !== 'click') return undefined;
+      return meta.clickTarget as Record<string, unknown>;
     }
 
     // Step 3: Create the guide
@@ -165,19 +175,22 @@ export async function POST(request: NextRequest) {
         screenshotUrl = urlData.publicUrl;
       }
 
-      const meta = clickMetaForFrame(frame.timestamp);
+      const meta = frameMetaForTimestamp(frame.timestamp);
+      const copy = suggestedStepTitleAndDescription({
+        stepIndex: i,
+        meta,
+        recordingTitle: recording.title,
+      });
+      const ct = clickTargetForDb(meta);
       const step = await prisma.guideStep.create({
         data: {
           guideId: guide.id,
           order: i + 1,
-          title: `Step ${i + 1}`,
-          description: '',
+          title: copy.title,
+          description: copy.description,
           screenshotUrl: screenshotUrl || null,
           timestamp: Math.round(frame.timestamp),
-          clickTarget:
-            meta.clickTarget != null
-              ? (meta.clickTarget as Prisma.InputJsonValue)
-              : undefined,
+          clickTarget: ct != null ? (ct as Prisma.InputJsonValue) : undefined,
           includeInExport: true,
         },
       });

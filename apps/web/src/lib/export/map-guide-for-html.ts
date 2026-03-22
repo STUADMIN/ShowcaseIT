@@ -46,6 +46,7 @@ export function mapPrismaBrandKit(bk: PrismaBrandKit): BrandKit {
       body: bk.fontBody,
     },
     logoUrl: bk.logoUrl ?? undefined,
+    guideCoverImageUrl: bk.guideCoverImageUrl ?? undefined,
   };
 }
 

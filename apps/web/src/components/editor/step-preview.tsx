@@ -289,6 +289,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
     height: number;
   } | null>(null);
   const [cropBusy, setCropBusy] = useState(false);
+  const [restoreOriginalOpen, setRestoreOriginalOpen] = useState(false);
   /** After finishing a callout drag: show this box briefly, then open the text modal. */
   const [pendingCalloutRect, setPendingCalloutRect] = useState<{
     x: number;
@@ -318,6 +319,15 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [cropConfirm]);
+
+  useEffect(() => {
+    if (!restoreOriginalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setRestoreOriginalOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [restoreOriginalOpen]);
 
   /** After defining a callout area: hold, fade frame out, then open the text dialog. */
   useEffect(() => {
@@ -689,18 +699,20 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
   }, [cropConfirm, step.id, step.screenshotUrl, step.screenshotOriginalUrl, onUpdate]);
 
   const handleRestoreOriginalScreenshot = useCallback(() => {
+    if (!step.screenshotOriginalUrl) return;
+    setRestoreOriginalOpen(true);
+  }, [step.screenshotOriginalUrl]);
+
+  const handleConfirmRestoreOriginalScreenshot = useCallback(() => {
     const orig = step.screenshotOriginalUrl;
     if (!orig) return;
-    const ok = window.confirm(
-      'Restore the full screenshot from before cropping? Annotations and blur on this step will be removed because they were drawn on the cropped image.'
-    );
-    if (!ok) return;
     onUpdate({
       screenshotUrl: orig,
       screenshotOriginalUrl: null,
       annotations: [],
       blurRegions: [],
     });
+    setRestoreOriginalOpen(false);
   }, [step.screenshotOriginalUrl, onUpdate]);
 
   const handleMouseUp = useCallback(() => {
@@ -1545,6 +1557,52 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
         confirmLabel={textDialog?.kind === 'callout' ? 'Add callout' : 'Add label'}
         multiline={textDialog?.kind === 'callout'}
       />
+
+      {restoreOriginalOpen && (
+        <div
+          className="fixed inset-0 z-[210] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="restore-original-modal-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-gray-950/80 backdrop-blur-md"
+            aria-label="Dismiss"
+            onClick={() => setRestoreOriginalOpen(false)}
+          />
+          <div
+            className="relative w-full max-w-md rounded-2xl border border-gray-700/90 bg-gray-900 shadow-2xl shadow-black/60 ring-1 ring-amber-500/15"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="border-b border-gray-800 px-6 py-4">
+              <h2 id="restore-original-modal-title" className="text-lg font-semibold text-gray-100">
+                Restore original screenshot?
+              </h2>
+              <p className="text-sm text-gray-400 mt-1 leading-relaxed">
+                This brings back the full image from before cropping. Annotations and blur on this step will be removed
+                because they were drawn on the cropped image.
+              </p>
+            </div>
+            <div className="px-6 py-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRestoreOriginalOpen(false)}
+                className="px-4 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRestoreOriginalScreenshot}
+                className="px-4 py-2 rounded-lg text-sm bg-amber-600 hover:bg-amber-500 text-white"
+              >
+                Restore full image
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {cropConfirm && (
         <div

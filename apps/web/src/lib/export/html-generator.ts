@@ -1,4 +1,5 @@
 import type { Guide, BrandKit } from './types';
+import { brandPaintCss, solidBrandHex } from '@/lib/brand/brand-color-value';
 import { computeArrowParts } from '@/lib/editor/arrow-geometry';
 import { circleFillRgba, resolveCircleStroke, resolveHighlightColor } from '@/lib/editor/circle-colors';
 import { exportCalloutTailMarkup, parseCalloutTail } from '@/lib/editor/callout-tail';
@@ -25,6 +26,20 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
     accent: '#F59E0B',
     background: '#FFFFFF',
     foreground: '#0F172A',
+  };
+
+  const solid = {
+    primary: solidBrandHex(colors.primary, '#2563EB'),
+    secondary: solidBrandHex(colors.secondary, '#7C3AED'),
+    accent: solidBrandHex(colors.accent, '#F59E0B'),
+    background: solidBrandHex(colors.background, '#FFFFFF'),
+    foreground: solidBrandHex(colors.foreground, '#0F172A'),
+  };
+  const paint = {
+    primary: brandPaintCss(colors.primary, solid.primary),
+    secondary: brandPaintCss(colors.secondary, solid.secondary),
+    accent: brandPaintCss(colors.accent, solid.accent),
+    background: brandPaintCss(colors.background, solid.background),
   };
 
   const fonts = brandKit?.fonts ?? { heading: 'Inter', body: 'Inter' };
@@ -92,6 +107,12 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
     }`
     : '';
 
+  const coverUrl = brandKit?.guideCoverImageUrl?.trim();
+  const coverHtml =
+    coverUrl && coverUrl.length > 0
+      ? `<section class="si-export-cover" aria-label="Guide cover"><img src="${escapeHtml(coverUrl)}" alt="" /></section>`
+      : '';
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -101,18 +122,23 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
   <link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(fonts.heading)}:wght@400;600;700&family=${encodeURIComponent(fonts.body)}:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --color-primary: ${colors.primary};
-      --color-secondary: ${colors.secondary};
-      --color-accent: ${colors.accent};
-      --color-bg: ${colors.background};
-      --color-fg: ${colors.foreground};
+      --color-primary: ${solid.primary};
+      --color-secondary: ${solid.secondary};
+      --color-accent: ${solid.accent};
+      --color-bg: ${solid.background};
+      --color-bg-solid: ${solid.background};
+      --color-fg: ${solid.foreground};
+      --paint-primary: ${paint.primary};
+      --paint-secondary: ${paint.secondary};
+      --paint-accent: ${paint.accent};
+      --paint-bg: ${paint.background};
       --font-heading: '${fonts.heading}', system-ui, sans-serif;
       --font-body: '${fonts.body}', system-ui, sans-serif;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body, .si-export-root {
       font-family: var(--font-body);
-      background: var(--color-bg);
+      background: var(--paint-bg);
       color: var(--color-fg);
       line-height: 1.6;
       ${embedMode === 'iframe' ? 'padding: 24px;' : 'padding: 48px 24px; max-width: 900px; margin: 0 auto;'}
@@ -137,7 +163,7 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
       padding: 32px;
       border-radius: 16px;
       border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
-      background: color-mix(in srgb, var(--color-primary) 3%, var(--color-bg));
+      background: color-mix(in srgb, var(--color-primary) 3%, var(--color-bg-solid));
     }
     .step-header {
       display: flex;
@@ -150,7 +176,7 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: var(--color-primary);
+      background: var(--paint-primary);
       color: white;
       display: flex;
       align-items: center;
@@ -187,7 +213,7 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
       width: 28px;
       height: 28px;
       border-radius: 50%;
-      background: var(--color-accent);
+      background: var(--paint-accent);
       color: white;
       display: flex;
       align-items: center;
@@ -199,7 +225,7 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
     .annotation-callout {
       position: absolute;
       background: var(--color-fg);
-      color: var(--color-bg);
+      color: var(--color-bg-solid);
       padding: 6px 12px;
       border-radius: 8px;
       font-size: 0.8rem;
@@ -235,7 +261,7 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
     }
     .annotation-text {
       position: absolute;
-      color: var(--color-bg);
+      color: var(--color-bg-solid);
       background: color-mix(in srgb, var(--color-fg) 85%, transparent);
       padding: 4px 10px;
       border-radius: 6px;
@@ -272,9 +298,48 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
       color: color-mix(in srgb, var(--color-fg) 30%, transparent);
       font-size: 0.8rem;
     }
+    .si-export-cover {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--paint-bg);
+      margin-bottom: 40px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+    }
+    .si-export-cover img {
+      width: 100%;
+      max-height: min(85vh, 520px);
+      object-fit: contain;
+      display: block;
+    }
+    ${embedMode === 'standalone' ? `
+    .si-export-cover {
+      margin-left: -24px;
+      margin-right: -24px;
+      width: calc(100% + 48px);
+      margin-top: -24px;
+      border-radius: 0 0 12px 12px;
+    }` : ''}
+    @media print {
+      .si-export-cover {
+        page-break-after: always;
+        break-after: page;
+        max-height: none;
+        border: none;
+        margin: 0;
+        width: 100%;
+      }
+      .si-export-cover img {
+        max-height: 100vh;
+        object-fit: contain;
+      }
+    }
   </style>
 </head>
 <body>
+  ${coverHtml}
   <div class="guide-header">
     <h1 class="guide-title">${escapeHtml(guide.title)}</h1>
     ${guide.description ? `<p class="guide-description">${escapeHtml(guide.description)}</p>` : ''}

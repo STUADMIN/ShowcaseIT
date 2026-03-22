@@ -6,6 +6,12 @@ import { IconTile } from '@/components/ui/icon-tile';
 import { AppShell } from '@/components/layout/app-shell';
 import { ColorPicker } from './color-picker';
 import { useApi, apiPost, apiPatch } from '@/hooks/use-api';
+import {
+  BRAND_KIT_FONT_OPTIONS,
+  brandKitFontStackCss,
+  brandKitGoogleFontsStylesheetHref,
+} from '@/lib/brand-kit-fonts';
+import { brandPaintCss, solidBrandHex } from '@/lib/brand/brand-color-value';
 
 interface BrandKitData {
   id: string;
@@ -20,11 +26,6 @@ interface BrandKitData {
   logoUrl: string | null;
   guideCoverImageUrl: string | null;
 }
-
-const fontOptions = [
-  'Inter', 'Roboto', 'Open Sans', 'Montserrat', 'Poppins',
-  'Lato', 'Playfair Display', 'Merriweather', 'Source Sans Pro', 'Raleway',
-];
 
 const MAX_UPLOAD_MB = 2;
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
@@ -149,6 +150,39 @@ export function BrandKitPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [brandBanner, setBrandBanner] = useState<{ tone: 'error' | 'warning'; message: string } | null>(null);
+
+  /** Load Google Fonts for dropdown previews (otherwise the browser falls back and “Inter” may not match). */
+  useEffect(() => {
+    const idCss = 'si-brand-kit-fonts-css';
+    const idPcG = 'si-brand-kit-fonts-pc-google';
+    const idPcGs = 'si-brand-kit-fonts-pc-gstatic';
+    if (document.getElementById(idCss)) return () => {};
+
+    const pc1 = document.createElement('link');
+    pc1.id = idPcG;
+    pc1.rel = 'preconnect';
+    pc1.href = 'https://fonts.googleapis.com';
+    document.head.appendChild(pc1);
+
+    const pc2 = document.createElement('link');
+    pc2.id = idPcGs;
+    pc2.rel = 'preconnect';
+    pc2.href = 'https://fonts.gstatic.com';
+    pc2.crossOrigin = 'anonymous';
+    document.head.appendChild(pc2);
+
+    const link = document.createElement('link');
+    link.id = idCss;
+    link.rel = 'stylesheet';
+    link.href = brandKitGoogleFontsStylesheetHref();
+    document.head.appendChild(link);
+
+    return () => {
+      document.getElementById(idCss)?.remove();
+      document.getElementById(idPcG)?.remove();
+      document.getElementById(idPcGs)?.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (brandKits?.length) {
@@ -316,7 +350,13 @@ export function BrandKitPage() {
                 <h3 className="text-lg font-semibold mb-6">Brand Colors</h3>
                 <div className="space-y-4">
                   {colorFields.map(({ key, label }) => (
-                    <ColorPicker key={key} label={label} value={(kit as Record<string, string>)[key]} onChange={(val) => updateColor(key, val)} />
+                    <ColorPicker
+                      key={key}
+                      label={label}
+                      value={(kit as Record<string, string>)[key]}
+                      onChange={(val) => updateColor(key, val)}
+                      allowGradient={key !== 'colorForeground'}
+                    />
                   ))}
                 </div>
               </div>
@@ -326,16 +366,34 @@ export function BrandKitPage() {
                   <div>
                     <label className="text-sm text-gray-400 block mb-2">Heading Font</label>
                     <select value={kit.fontHeading} onChange={(e) => setKit((p) => ({ ...p, fontHeading: e.target.value }))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-200 outline-none focus:border-brand-600">
-                      {fontOptions.map((f) => (<option key={f} value={f}>{f}</option>))}
+                      {BRAND_KIT_FONT_OPTIONS.map((f) => (
+                        <option key={f} value={f}>
+                          {f}
+                        </option>
+                      ))}
                     </select>
-                    <p className="mt-3 text-2xl text-gray-200" style={{ fontFamily: kit.fontHeading }}>The quick brown fox</p>
+                    <p
+                      className="mt-3 text-2xl text-gray-200"
+                      style={{ fontFamily: brandKitFontStackCss(kit.fontHeading) }}
+                    >
+                      The quick brown fox
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm text-gray-400 block mb-2">Body Font</label>
                     <select value={kit.fontBody} onChange={(e) => setKit((p) => ({ ...p, fontBody: e.target.value }))} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-200 outline-none focus:border-brand-600">
-                      {fontOptions.map((f) => (<option key={f} value={f}>{f}</option>))}
+                      {BRAND_KIT_FONT_OPTIONS.map((f) => (
+                        <option key={f} value={f}>
+                          {f}
+                        </option>
+                      ))}
                     </select>
-                    <p className="mt-3 text-sm text-gray-300" style={{ fontFamily: kit.fontBody }}>The quick brown fox jumps over the lazy dog.</p>
+                    <p
+                      className="mt-3 text-sm text-gray-300"
+                      style={{ fontFamily: brandKitFontStackCss(kit.fontBody) }}
+                    >
+                      The quick brown fox jumps over the lazy dog.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -351,16 +409,56 @@ export function BrandKitPage() {
               />
               <div className="card">
                 <h3 className="text-lg font-semibold mb-6">Preview</h3>
-                <div className="rounded-xl p-6 border" style={{ backgroundColor: kit.colorBackground, borderColor: kit.colorPrimary + '30' }}>
+                <div
+                  className="rounded-xl p-6 border"
+                  style={{
+                    background: brandPaintCss(kit.colorBackground, '#FFFFFF'),
+                    borderColor: `${solidBrandHex(kit.colorPrimary, '#2563EB')}30`,
+                  }}
+                >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg" style={{ backgroundColor: kit.colorPrimary }} />
-                    <h4 className="text-lg font-bold" style={{ color: kit.colorForeground, fontFamily: kit.fontHeading }}>{kit.name || 'Brand Name'}</h4>
+                    <div
+                      className="w-10 h-10 rounded-lg"
+                      style={{ background: brandPaintCss(kit.colorPrimary, '#2563EB') }}
+                    />
+                    <h4
+                      className="text-lg font-bold"
+                      style={{
+                        color: kit.colorForeground,
+                        fontFamily: brandKitFontStackCss(kit.fontHeading),
+                      }}
+                    >
+                      {kit.name || 'Brand Name'}
+                    </h4>
                   </div>
-                  <p className="text-sm mb-4" style={{ color: kit.colorForeground + 'CC', fontFamily: kit.fontBody }}>This is how your branded guide will look with your chosen colors and typography.</p>
+                  <p
+                    className="text-sm mb-4"
+                    style={{
+                      color: `${solidBrandHex(kit.colorForeground, '#0F172A')}CC`,
+                      fontFamily: brandKitFontStackCss(kit.fontBody),
+                    }}
+                  >
+                    This is how your branded guide will look with your chosen colors and typography.
+                  </p>
                   <div className="flex gap-2">
-                    <span className="px-3 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: kit.colorPrimary }}>Primary</span>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: kit.colorSecondary }}>Secondary</span>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: kit.colorAccent }}>Accent</span>
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                      style={{ background: brandPaintCss(kit.colorPrimary, '#2563EB') }}
+                    >
+                      Primary
+                    </span>
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                      style={{ background: brandPaintCss(kit.colorSecondary, '#7C3AED') }}
+                    >
+                      Secondary
+                    </span>
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                      style={{ background: brandPaintCss(kit.colorAccent, '#F59E0B') }}
+                    >
+                      Accent
+                    </span>
                   </div>
                 </div>
               </div>
@@ -368,7 +466,7 @@ export function BrandKitPage() {
                 <BrandAssetDropZone
                   inputId="brand-guide-cover-upload"
                   title="Guide cover image"
-                  hint={`Shown on guide cards when the first step has no screenshot. PNG, JPG, or WebP up to ${MAX_UPLOAD_MB}MB. Recommended 16:9.`}
+                  hint={`Default thumbnail on the Guides list when set (preferred over the first step image). PNG, JPG, or WebP up to ${MAX_UPLOAD_MB}MB. Recommended 16:9.`}
                   previewUrl={kit.guideCoverImageUrl}
                   aspectClass="aspect-video max-h-[280px]"
                   uploading={uploadingCover}

@@ -47,6 +47,7 @@ export interface BlurRegion {
 export interface BrandKit {
   id: string;
   name: string;
+  /** Each value may be `#RRGGBB` or a CSS `linear-gradient` / `radial-gradient` (HTML export). PDF/DOCX use the first hex stop as a flat color. */
   colors: {
     primary: string;
     secondary: string;
@@ -59,4 +60,6 @@ export interface BrandKit {
     body: string;
   };
   logoUrl?: string;
+  /** Brand kit “Guide cover” image — used as export cover sheet when set. */
+  guideCoverImageUrl?: string;
 }

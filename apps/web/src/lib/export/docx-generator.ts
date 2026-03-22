@@ -1,4 +1,5 @@
 import type { Guide, BrandKit } from './types';
+import { solidBrandHex } from '@/lib/brand/brand-color-value';
 
 export interface DocxExportOptions {
   guide: Guide;
@@ -13,10 +14,15 @@ export interface DocxExportOptions {
 export function generateDocxExport(options: DocxExportOptions): string {
   const { guide, brandKit } = options;
 
-  const colors = brandKit?.colors ?? {
+  const raw = brandKit?.colors ?? {
     primary: '#2563EB',
     foreground: '#0F172A',
     background: '#FFFFFF',
+  };
+  const colors = {
+    primary: solidBrandHex(raw.primary, '#2563EB'),
+    foreground: solidBrandHex(raw.foreground, '#0F172A'),
+    background: solidBrandHex(raw.background, '#FFFFFF'),
   };
 
   const fonts = brandKit?.fonts ?? { heading: 'Calibri', body: 'Calibri' };

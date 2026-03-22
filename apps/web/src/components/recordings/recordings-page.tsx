@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Mic, Trash2, Video } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Mic, Trash2, Video } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { IconTile } from '@/components/ui/icon-tile';
 import { useApi, apiPost, apiDelete } from '@/hooks/use-api';
@@ -9,6 +9,8 @@ import { dispatchWorkspaceCelebrate } from '@/lib/ui/workspace-celebrate';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { RecordingVideoShareActions } from '@/components/recordings/recording-video-share-actions';
+import { ListSearchInput } from '@/components/ui/list-search-input';
+import { matchesListSearch } from '@/lib/ui/matches-list-search';
 
 interface Recording {
   id: string;
@@ -22,17 +24,56 @@ interface Recording {
   hasVoiceover?: boolean;
 }
 
+const RECORDINGS_PAGE_SIZE = 20;
+
+function formatRecordingDuration(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
+}
+
 export function RecordingsPage() {
   const { data: recordings, loading, refetch } = useApi<Recording[]>({ url: '/api/recordings' });
   const [generating, setGenerating] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
-  const formatDuration = (ms: number) => {
-    const s = Math.floor(ms / 1000);
-    const m = Math.floor(s / 60);
-    return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
-  };
+  const filteredRecordings = useMemo(() => {
+    if (!recordings?.length) return [];
+    return recordings.filter((rec) => {
+      const blob = [
+        rec.title,
+        rec.status,
+        rec.hasVoiceover ? 'voiceover' : '',
+        formatRecordingDuration(rec.duration),
+        new Date(rec.createdAt).toLocaleDateString(),
+        new Date(rec.createdAt).toISOString().slice(0, 10),
+      ].join(' ');
+      return matchesListSearch(searchQuery, blob);
+    });
+  }, [recordings, searchQuery]);
+
+  const totalCount = filteredRecordings.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / RECORDINGS_PAGE_SIZE));
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setPage((p) => Math.min(Math.max(1, p), totalPages));
+  }, [totalPages, totalCount]);
+
+  const paginatedRecordings = useMemo(() => {
+    if (!filteredRecordings.length) return [];
+    const start = (page - 1) * RECORDINGS_PAGE_SIZE;
+    return filteredRecordings.slice(start, start + RECORDINGS_PAGE_SIZE);
+  }, [filteredRecordings, page]);
+
+  const rangeStart = totalCount === 0 ? 0 : (page - 1) * RECORDINGS_PAGE_SIZE + 1;
+  const rangeEnd = Math.min(page * RECORDINGS_PAGE_SIZE, totalCount);
 
   const handleGenerate = async (rec: Recording) => {
     if (rec.hasVoiceover) return;
@@ -87,6 +128,16 @@ export function RecordingsPage() {
             </div>
           </div>
 
+          {!loading && recordings && recordings.length > 0 ? (
+            <ListSearchInput
+              id="recordings-search"
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search by title, date, status, duration…"
+              className="max-w-xl mb-6"
+            />
+          ) : null}
+
           {loading ? (
             <div className="card p-16 text-center">
               <p className="text-gray-500">Loading recordings...</p>
@@ -105,6 +156,20 @@ export function RecordingsPage() {
                 Start Recording
               </Link>
             </div>
+          ) : filteredRecordings.length === 0 ? (
+            <div className="card p-12 text-center">
+              <p className="text-gray-400 mb-2">
+                No recordings match{' '}
+                <span className="text-gray-200 font-medium">&ldquo;{searchQuery.trim()}&rdquo;</span>.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-sm text-brand-400 hover:text-brand-300"
+              >
+                Clear search
+              </button>
+            </div>
           ) : (
             <div className="si-stagger-in space-y-3">
               {generateError ? (
@@ -115,7 +180,7 @@ export function RecordingsPage() {
                   {generateError}
                 </div>
               ) : null}
-              {recordings.map((rec) => (
+              {paginatedRecordings.map((rec) => (
                 <div
                   key={rec.id}
                   className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
@@ -125,7 +190,7 @@ export function RecordingsPage() {
                     <div>
                       <h4 className="font-medium text-gray-200">{rec.title}</h4>
                       <p className="text-xs text-gray-500">
-                        {formatDuration(rec.duration)} &middot; {new Date(rec.createdAt).toLocaleDateString()}
+                        {formatRecordingDuration(rec.duration)} &middot; {new Date(rec.createdAt).toLocaleDateString()}
                         {rec.hasVoiceover ? (
                           <span className="text-brand-400/90 inline-flex items-center gap-1">
                             {' '}
@@ -178,6 +243,41 @@ export function RecordingsPage() {
                   </div>
                 </div>
               ))}
+              {totalCount > 0 ? (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-gray-800/80">
+                  <p className="text-sm text-gray-500">
+                    Showing <span className="text-gray-400 tabular-nums">{rangeStart}</span>–
+                    <span className="text-gray-400 tabular-nums">{rangeEnd}</span> of{' '}
+                    <span className="text-gray-400 tabular-nums">{totalCount}</span>
+                    {totalPages > 1 ? (
+                      <span className="text-gray-600"> · {RECORDINGS_PAGE_SIZE} per page</span>
+                    ) : null}
+                  </p>
+                  <nav className="flex items-center gap-2" aria-label="Recordings pagination">
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                      className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" strokeWidth={2} aria-hidden />
+                      Previous
+                    </button>
+                    <span className="text-sm text-gray-500 px-2 tabular-nums min-w-[7rem] text-center">
+                      Page {page} of {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" strokeWidth={2} aria-hidden />
+                    </button>
+                  </nav>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
