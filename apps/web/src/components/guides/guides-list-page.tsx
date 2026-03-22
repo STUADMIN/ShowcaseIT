@@ -1,6 +1,8 @@
 'use client';
 
+import { BookOpen } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
+import { IconTile } from '@/components/ui/icon-tile';
 import { useApi, apiPost } from '@/hooks/use-api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -42,7 +44,8 @@ function effectiveBrandKit(guide: Guide): BrandKitPreview | null {
 function GuideCardCover({ guide }: { guide: Guide }) {
   const stepUrl = guideCoverUrl(guide);
   const bk = effectiveBrandKit(guide);
-  const url = stepUrl || bk?.guideCoverImageUrl || null;
+  /** Brand kit “Guide cover” image is the standard list thumbnail when set — don’t let a raw step screenshot override it. */
+  const url = bk?.guideCoverImageUrl || stepUrl || null;
 
   if (url) {
     return (
@@ -141,7 +144,9 @@ export function GuidesListPage() {
             </div>
           ) : guideList.length === 0 ? (
             <div className="card p-16 text-center">
-              <div className="text-6xl mb-4">📖</div>
+              <div className="flex justify-center mb-4">
+                <IconTile icon={BookOpen} size="xl" variant="brand" />
+              </div>
               <h3 className="text-xl font-semibold text-gray-200 mb-2">No guides yet</h3>
               <p className="text-gray-500 mb-6 max-w-md mx-auto">
                 Record your screen first and generate a guide, or create a blank guide and add steps manually.

@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { AppShell } from '@/components/layout/app-shell';
+import { useAuth } from '@/lib/auth/auth-context';
 import { useApi, apiPost, apiPatch, apiDelete } from '@/hooks/use-api';
+import { usePreferredWorkspaceId } from '@/hooks/use-preferred-workspace-id';
 
 interface TeamMember {
   id: string;
@@ -10,6 +12,13 @@ interface TeamMember {
   role: string;
   joinedAt: string;
   user: { id: string; name: string | null; email: string; avatarUrl: string | null };
+}
+
+interface WorkspaceSummary {
+  id: string;
+  name: string;
+  plan: string;
+  _count?: { projects: number; members: number };
 }
 
 interface WorkspaceData {
@@ -37,20 +46,33 @@ const roleBadgeColors: Record<string, string> = {
 };
 
 export function TeamPage() {
-  const { data: workspaces, loading: wsLoading } = useApi<WorkspaceData[]>({ url: '/api/workspaces' });
+  const { user } = useAuth();
+  const wsUrl = user?.id ? `/api/workspaces?userId=${encodeURIComponent(user.id)}` : '';
+  const { data: workspaces, loading: wsLoading } = useApi<WorkspaceSummary[]>({ url: wsUrl });
+  const [preferredWorkspaceId, setPreferredWorkspaceId] = usePreferredWorkspaceId(workspaces);
   const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'editor' | 'viewer'>('editor');
 
   useEffect(() => {
-    if (workspaces?.length) {
-      fetch(`/api/workspaces/${workspaces[0].id}`)
-        .then((r) => r.json())
-        .then(setWorkspace)
-        .catch(() => {});
+    if (!preferredWorkspaceId) {
+      setWorkspace(null);
+      return;
     }
-  }, [workspaces]);
+    let cancelled = false;
+    fetch(`/api/workspaces/${preferredWorkspaceId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setWorkspace(data);
+      })
+      .catch(() => {
+        if (!cancelled) setWorkspace(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [preferredWorkspaceId]);
 
   const handleInvite = async () => {
     if (!inviteEmail || !workspace) return;
@@ -90,12 +112,28 @@ export function TeamPage() {
   return (
     <AppShell>
         <div className="p-8 max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+            <div className="min-w-0">
               <h2 className="text-3xl font-bold">Team</h2>
               <p className="text-gray-400 mt-1">Manage your workspace and team members</p>
+              {workspaces && workspaces.length > 1 && (
+                <div className="mt-3 max-w-xs">
+                  <label className="text-xs text-gray-500 block mb-1">Workspace</label>
+                  <select
+                    value={preferredWorkspaceId}
+                    onChange={(e) => setPreferredWorkspaceId(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none focus:border-brand-600"
+                  >
+                    {workspaces.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
-            <button onClick={() => setShowInvite(true)} className="btn-primary">
+            <button onClick={() => setShowInvite(true)} className="btn-primary shrink-0">
               + Invite Member
             </button>
           </div>

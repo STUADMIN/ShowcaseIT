@@ -43,12 +43,32 @@
           </button>
         </div>
 
-        <div class="options">
-          <label class="toggle">
-            <input type="checkbox" id="toggle-voiceover" />
-            <span class="toggle-slider"></span>
-            Voiceover
+        <div class="recording-purpose" id="recording-purpose">
+          <p class="recording-purpose-title">Recording for</p>
+          <label class="purpose-option">
+            <input type="radio" name="recording-purpose" value="guide" checked />
+            <span>
+              <strong>Step-by-step guide</strong>
+              <small>Screen + click tracking. No microphone (matches web “New Recording”).</small>
+            </span>
           </label>
+          <label class="purpose-option">
+            <input type="radio" name="recording-purpose" value="library" />
+            <span>
+              <strong>Video library</strong>
+              <small>Save for playback on the web; optional voiceover below.</small>
+            </span>
+          </label>
+        </div>
+
+        <div class="options">
+          <div id="voiceover-row" class="hidden">
+            <label class="toggle">
+              <input type="checkbox" id="toggle-voiceover" />
+              <span class="toggle-slider"></span>
+              Voiceover (microphone)
+            </label>
+          </div>
           <label class="toggle">
             <input type="checkbox" id="toggle-mouse" checked />
             <span class="toggle-slider"></span>

@@ -1,0 +1,195 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { CircleAlert, CircleCheck } from 'lucide-react';
+import { AppShell } from '@/components/layout/app-shell';
+import { IconTile } from '@/components/ui/icon-tile';
+import { MobileCastReceiver } from '@/components/recordings/mobile-cast-receiver';
+import { dispatchWorkspaceCelebrate } from '@/lib/ui/workspace-celebrate';
+
+type Status = 'cast' | 'uploading' | 'generating' | 'upload-error' | 'generate-error' | 'done';
+
+export default function RecordFromPhonePage() {
+  const router = useRouter();
+  const [status, setStatus] = useState<Status>('cast');
+  const [progress, setProgress] = useState('');
+  const [savedRecordingId, setSavedRecordingId] = useState<string | null>(null);
+
+  const handleRecordingComplete = async (result: {
+    blob: Blob;
+    duration: number;
+    clickEvents: Array<{ x: number; y: number; timestamp: number; button: string }>;
+    hasVoiceover?: boolean;
+    videoWidth: number;
+    videoHeight: number;
+  }) => {
+    setStatus('uploading');
+    setProgress('Uploading recording...');
+
+    try {
+      const formData = new FormData();
+      formData.append('video', result.blob, 'recording.webm');
+      formData.append(
+        'metadata',
+        JSON.stringify({
+          title: `Phone recording ${new Date().toLocaleString()}`,
+          duration: result.duration,
+          width: result.videoWidth,
+          height: result.videoHeight,
+          clickEvents: result.clickEvents,
+          mouseEvents: [],
+          hasVoiceover: result.hasVoiceover === true,
+        })
+      );
+
+      const uploadRes = await fetch('/api/recordings/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json();
+        setProgress(err.error || 'Upload failed');
+        setStatus('upload-error');
+        return;
+      }
+
+      const recording = await uploadRes.json();
+      setSavedRecordingId(recording.id);
+
+      setStatus('generating');
+      setProgress('Generating guide from recording...');
+
+      const generateRes = await fetch('/api/guides/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recordingId: recording.id,
+          title: `Guide: ${recording.title}`,
+          projectId: recording.projectId,
+          userId: recording.userId,
+        }),
+      });
+
+      if (!generateRes.ok) {
+        const err = await generateRes.json();
+        setProgress(err.error || 'Guide generation failed');
+        setStatus('generate-error');
+        return;
+      }
+
+      const guide = await generateRes.json();
+      setStatus('done');
+      dispatchWorkspaceCelebrate();
+      router.push(`/guides/${guide.id}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong';
+      setProgress(message);
+      setStatus(savedRecordingId ? 'generate-error' : 'upload-error');
+    }
+  };
+
+  const handleRetryGenerate = async () => {
+    if (!savedRecordingId) return;
+    setStatus('generating');
+    setProgress('Retrying guide generation...');
+
+    try {
+      const generateRes = await fetch('/api/guides/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recordingId: savedRecordingId }),
+      });
+
+      if (!generateRes.ok) {
+        const err = await generateRes.json();
+        setProgress(err.error || 'Guide generation failed');
+        setStatus('generate-error');
+        return;
+      }
+
+      const guide = await generateRes.json();
+      setStatus('done');
+      dispatchWorkspaceCelebrate();
+      router.push(`/guides/${guide.id}`);
+    } catch (err) {
+      setProgress(err instanceof Error ? err.message : 'Something went wrong');
+      setStatus('generate-error');
+    }
+  };
+
+  return (
+    <AppShell>
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold">Record from phone</h2>
+          <p className="text-gray-400 mt-1">QR code pairs your phone&apos;s browser with this tab for screen capture</p>
+        </div>
+
+        {status === 'cast' && (
+          <MobileCastReceiver
+            onRecordingComplete={handleRecordingComplete}
+            onCancel={() => router.push('/recordings')}
+          />
+        )}
+
+        {(status === 'uploading' || status === 'generating') && (
+          <div className="max-w-3xl mx-auto card p-16 text-center">
+            <div className="mb-6">
+              <div className="w-16 h-16 mx-auto rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-100 mb-2">
+              {status === 'uploading' ? 'Uploading Recording...' : 'Generating Guide...'}
+            </h3>
+            <p className="text-gray-400">{progress}</p>
+          </div>
+        )}
+
+        {status === 'upload-error' && (
+          <div className="max-w-3xl mx-auto card p-12 text-center">
+            <div className="flex justify-center mb-4">
+              <IconTile icon={CircleAlert} size="xl" variant="danger" />
+            </div>
+            <h3 className="text-xl font-semibold text-red-400 mb-2">Upload Failed</h3>
+            <p className="text-gray-400 mb-6">{progress}</p>
+            <div className="flex gap-4 justify-center">
+              <button type="button" onClick={() => setStatus('cast')} className="btn-primary">
+                Try Again
+              </button>
+              <Link
+                href="/recordings"
+                className="px-6 py-2 rounded-lg border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 transition-colors"
+              >
+                Go to Recordings
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {status === 'generate-error' && (
+          <div className="max-w-3xl mx-auto card p-12 text-center">
+            <div className="flex justify-center mb-4">
+              <IconTile icon={CircleCheck} size="xl" variant="success" />
+            </div>
+            <h3 className="text-xl font-semibold text-green-400 mb-2">Recording Saved!</h3>
+            <p className="text-gray-400 mb-2">Your recording was uploaded successfully.</p>
+            <p className="text-yellow-400/80 text-sm mb-6">Guide generation had an issue: {progress}</p>
+            <div className="flex gap-4 justify-center">
+              <button type="button" onClick={handleRetryGenerate} className="btn-primary">
+                Retry Generate Guide
+              </button>
+              <Link
+                href="/recordings"
+                className="px-6 py-2 rounded-lg border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 transition-colors"
+              >
+                Go to Recordings
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
+    </AppShell>
+  );
+}

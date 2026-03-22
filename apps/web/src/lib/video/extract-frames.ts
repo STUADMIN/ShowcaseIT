@@ -197,9 +197,9 @@ async function extractFramesAlongTimeline(
 ): Promise<ExtractedFrame[]> {
   const ffmpeg = findFfmpeg();
   const durationSec = Math.max(0.2, durationMs / 1000);
-  // ~1 frame every 0.28s — more samples so fast scrolls / short modals aren’t skipped
-  const fromDuration = Math.ceil(durationSec / 0.28);
-  const frameCount = Math.min(120, Math.max(22, Math.min(fromDuration, maxFramesOut)));
+  // ~1 frame every 0.26s — more samples so fast scrolls / short modals aren’t skipped
+  const fromDuration = Math.ceil(durationSec / 0.26);
+  const frameCount = Math.max(22, Math.min(fromDuration, maxFramesOut, 320));
   const fps = frameCount / durationSec;
 
   const normalizedVideo = videoPath.replace(/\\/g, '/');
@@ -373,9 +373,20 @@ export function dedupeAutoTimelineFrames(frames: ExtractedFrame[]): ExtractedFra
   let lastGrid: number[] | null = null;
   let lastHash: bigint | null = null;
 
+  /** Keep at least one frame every ~14s so a long static screen (e.g. login) doesn’t eat the whole guide. */
+  const maxQuietMs = 14_000;
+
   for (const frame of sorted) {
     const grid = luminanceGridFromPngBuffer(frame.imageBuffer);
     const hash = averageHashFromPngBuffer(frame.imageBuffer);
+
+    const lastKept = out[out.length - 1];
+    if (lastKept != null && frame.timestamp - lastKept.timestamp >= maxQuietMs) {
+      out.push(frame);
+      lastGrid = grid;
+      lastHash = hash;
+      continue;
+    }
 
     if (grid === null || hash === null) {
       out.push(frame);
@@ -462,6 +473,27 @@ function mergeTimesByMinGap(times: number[], minGapMs: number): number[] {
 }
 
 /**
+ * Long recording + only a few "Mark step" taps → few guide screens. Add evenly spaced times (~1 / 8–9s)
+ * so login → nav → logout still yields multiple steps. User can delete extras in the editor.
+ */
+function supplementSparseStepTimes(
+  markerTimesMs: number[],
+  durationMs: number,
+  minGapMs: number
+): number[] {
+  if (durationMs < 20_000) return markerTimesMs;
+  const minSteps = Math.max(4, Math.min(48, Math.ceil(durationMs / 8_500)));
+  if (markerTimesMs.length >= minSteps) return markerTimesMs;
+  const slots = minSteps + 2;
+  const grid: number[] = [];
+  for (let i = 0; i < slots; i++) {
+    const t = Math.round(((i + 0.5) / slots) * Math.max(1, durationMs - 1));
+    grid.push(Math.max(0, Math.min(durationMs - 1, t)));
+  }
+  return mergeTimesByMinGap([...markerTimesMs, ...grid], minGapMs);
+}
+
+/**
  * When there are no click/marker times, spread samples across the timeline and bias toward the end
  * so late UI (e.g. post-login) is not missed after a long static segment.
  */
@@ -485,6 +517,18 @@ function pickEvenlySpaced<T>(items: T[], max: number): T[] {
   for (let i = n - 1; idx.size < max && i >= 0; i--) idx.add(i);
   for (let i = 0; idx.size < max && i < n; i++) idx.add(i);
   return [...idx].sort((a, b) => a - b).map((j) => items[j]!);
+}
+
+/** Like pickEvenlySpaced but always keeps first & last items (critical for full workflow capture). */
+function pickEvenlySpacedKeepEnds<T>(items: T[], max: number): T[] {
+  if (items.length <= max) return [...items];
+  if (max < 3) return pickEvenlySpaced(items, max);
+  const first = items[0]!;
+  const last = items[items.length - 1]!;
+  const middle = items.slice(1, -1);
+  const innerMax = max - 2;
+  const inner = middle.length <= innerMax ? middle : pickEvenlySpaced(middle, innerMax);
+  return [first, ...inner, last];
 }
 
 function limitExtractedFrames(frames: ExtractedFrame[], max: number): ExtractedFrame[] {
@@ -514,9 +558,42 @@ async function extractSeekFramesAtTimestamps(
   return seekFrames;
 }
 
+/** When the last extracted step is far before the end of the clip, grab one more frame near the close. */
+async function appendClosingFrameIfNeeded(
+  videoPath: string,
+  tmpDir: string,
+  frames: ExtractedFrame[],
+  durationMs: number,
+  useClicks: boolean,
+  /** When false, keep the end frame even if it looks like the previous (explicit steps / WebM keyframe repeats). */
+  applyVisualMerge: boolean
+): Promise<ExtractedFrame[]> {
+  if (frames.length === 0 || durationMs <= 500) return frames;
+  const sorted = [...frames].sort((a, b) => a.timestamp - b.timestamp);
+  const last = sorted[sorted.length - 1]!;
+  if (last.timestamp >= durationMs * 0.9) return sorted;
+  const targetTs = Math.max(last.timestamp + 80, Math.min(durationMs - 150, durationMs * 0.97));
+  const framePath = path.join(tmpDir, 'endcap.png');
+  try {
+    await extractFrameAt(videoPath, targetTs, framePath);
+    const imageBuffer = await fs.promises.readFile(framePath);
+    if (imageBuffer.length <= 200) return sorted;
+    const endFrame: ExtractedFrame = { timestamp: Math.round(targetTs), imageBuffer };
+    if (!applyVisualMerge) {
+      return [...sorted, endFrame].sort((a, b) => a.timestamp - b.timestamp);
+    }
+    const merged = useClicks
+      ? dedupeVisuallySimilarFrames([...sorted, endFrame], 11)
+      : dedupeAutoTimelineFrames([...sorted, endFrame]);
+    return merged.sort((a, b) => a.timestamp - b.timestamp);
+  } catch {
+    return sorted;
+  }
+}
+
 function buildIntervalCandidateTimestamps(durationMs: number, candidateCount: number): number[] {
   const safeEnd = Math.max(0, durationMs - 250);
-  const anchors = [0.08, 0.22, 0.4, 0.58, 0.72, 0.84, 0.9, 0.94, 0.97, 0.99].map((p) =>
+  const anchors = [0.08, 0.22, 0.4, 0.58, 0.72, 0.84, 0.9, 0.94, 0.97, 0.995].map((p) =>
     Math.round(durationMs * p)
   );
   const intervalMs = Math.max(2000, durationMs / (candidateCount + 2));
@@ -534,11 +611,18 @@ function buildIntervalCandidateTimestamps(durationMs: number, candidateCount: nu
  * When `clickTimestamps.length > 0`, only those times are used (up to `maxFrames`) — no extra interval sampling.
  * If none provided, decodes along the timeline with an `fps` filter (avoids WebM seek/keyframe repeats),
  * optionally supplemented by seek samples if the timeline pass is thin.
+ *
+ * @param recordingDurationHintMs — wall-clock length from the recorder when WebM metadata duration is short
+ * @param options.keepEveryMarker — when click/marker timestamps exist: extract at every timestamp (no subsampling),
+ *   skip visual dedupe so WebM keyframe repeats don’t collapse steps to 1–2 images. Long clips with few marks also get
+ *   extra evenly spaced times (~1 / 8–9s). User can remove extras in the editor.
  */
 export async function extractFrames(
   videoBuffer: Buffer,
   clickTimestamps: number[] = [],
-  maxFrames = 20
+  maxFrames = 20,
+  recordingDurationHintMs?: number | null,
+  options?: { keepEveryMarker?: boolean }
 ): Promise<ExtractedFrame[]> {
   const ffmpegPath = findFfmpeg();
   if (isWin && !fs.existsSync(ffmpegPath)) {
@@ -565,29 +649,51 @@ export async function extractFrames(
     const videoPath = path.join(tmpDir, 'input.webm');
     await fs.promises.writeFile(videoPath, videoBuffer);
 
-    const durationMs = await getVideoDurationMs(videoPath);
+    let durationMs = await getVideoDurationMs(videoPath);
+    const hint =
+      recordingDurationHintMs != null && recordingDurationHintMs > 0 ? recordingDurationHintMs : null;
+    if (hint != null) {
+      if (durationMs == null || durationMs <= 0) {
+        durationMs = hint;
+      } else if (hint > durationMs * 1.06) {
+        durationMs = hint;
+      }
+    }
 
     const useClicks = clickTimestamps.length > 0;
+    const keepEveryMarker = Boolean(options?.keepEveryMarker && useClicks);
     let frames: ExtractedFrame[] = [];
 
     if (durationMs != null && durationMs > 0 && !useClicks) {
       // No markers: decode along timeline (reliable for WebM); seek-based often repeats one keyframe.
-      const internalCap = Math.min(120, Math.max(maxFrames * 2, 44));
+      const internalCap = Math.min(320, Math.max(maxFrames * 2, 72));
       frames = await extractFramesAlongTimeline(videoPath, tmpDir, durationMs, internalCap);
     }
 
     if (useClicks && durationMs != null && durationMs > 0) {
+      const maxClickTs = Math.max(0, ...clickTimestamps);
+      const upperBound = Math.max(durationMs + 8000, maxClickTs + 5000);
+
       let timestamps = [...new Set(clickTimestamps)]
-        .filter((t) => t >= 0 && t <= durationMs + 2000)
+        .filter((t) => t >= 0 && t <= upperBound)
         .sort((a, b) => a - b);
 
       const deduped: number[] = [];
+      /** Only merge timestamps from duplicate events (double-fire), not distinct user marks. */
+      const minMarkerGapMs = keepEveryMarker ? 45 : 500;
       for (const t of timestamps) {
-        if (deduped.length === 0 || t - deduped[deduped.length - 1] > 500) {
+        if (deduped.length === 0 || t - deduped[deduped.length - 1] > minMarkerGapMs) {
           deduped.push(t);
         }
       }
-      timestamps = pickEvenlySpaced(deduped, maxFrames);
+      if (keepEveryMarker) {
+        timestamps = supplementSparseStepTimes(deduped, durationMs, 1400);
+        if (timestamps.length > maxFrames) {
+          timestamps = pickEvenlySpacedKeepEnds(timestamps, maxFrames);
+        }
+      } else {
+        timestamps = pickEvenlySpacedKeepEnds(deduped, maxFrames);
+      }
       if (timestamps.length === 0) {
         timestamps = [Math.min(500, Math.max(100, durationMs / 3))];
       }
@@ -614,9 +720,28 @@ export async function extractFrames(
       return limitExtractedFrames(d, maxFrames);
     }
 
-    const distinct = useClicks
-      ? dedupeVisuallySimilarFrames(frames, 11)
-      : dedupeAutoTimelineFrames(frames);
+    let distinct: ExtractedFrame[];
+    if (useClicks && keepEveryMarker) {
+      distinct = [...frames].sort((a, b) => a.timestamp - b.timestamp);
+    } else {
+      distinct = useClicks
+        ? dedupeVisuallySimilarFrames(frames, 11)
+        : dedupeAutoTimelineFrames(frames);
+    }
+    if (durationMs != null && durationMs > 0) {
+      distinct = await appendClosingFrameIfNeeded(
+        videoPath,
+        tmpDir,
+        distinct,
+        durationMs,
+        useClicks,
+        !(useClicks && keepEveryMarker)
+      );
+    }
+    if (keepEveryMarker) {
+      const sorted = [...distinct].sort((a, b) => a.timestamp - b.timestamp);
+      return sorted.length <= maxFrames ? sorted : pickEvenlySpacedKeepEnds(sorted, maxFrames);
+    }
     return limitExtractedFrames(distinct, maxFrames);
   } catch (e) {
     console.error('[extractFrames] failed:', e);

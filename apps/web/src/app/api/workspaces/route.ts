@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const userId = request.nextUrl.searchParams.get('userId');
     const workspaces = await prisma.workspace.findMany({
+      where: userId ? { members: { some: { userId } } } : undefined,
       include: {
         _count: { select: { members: true, projects: true } },
       },

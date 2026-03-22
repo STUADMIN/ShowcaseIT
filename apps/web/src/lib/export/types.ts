@@ -19,13 +19,20 @@ export interface GuideStep {
 
 export interface Annotation {
   id: string;
-  type: 'arrow' | 'callout' | 'badge' | 'text' | 'highlight';
+  type: 'arrow' | 'callout' | 'badge' | 'text' | 'highlight' | 'circle' | 'box';
   x: number;
   y: number;
+  /** Arrow end point (percent of image), same coords as x/y */
+  x2?: number;
+  y2?: number;
   width?: number;
   height?: number;
   text?: string;
   color?: string;
+  /** Callout pointer: which side of the bubble the triangle sits on */
+  calloutTailEdge?: 'bottom' | 'top' | 'left' | 'right';
+  /** 0–100: position along that edge (left→right for top/bottom, top→bottom for left/right) */
+  calloutTailOffset?: number;
 }
 
 export interface BlurRegion {

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "postinstall": "prisma generate",
-    "dev": "next dev --port 3000",
+    "dev": "next dev --port 3000 --hostname 0.0.0.0",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
@@ -25,6 +25,7 @@
     "next": "^16.2.1",
     "pdf-lib": "^1.17.1",
     "pngjs": "^7.0.0",
+    "qrcode": "^1.5.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
@@ -32,6 +33,7 @@
     "@tailwindcss/postcss": "^4.2.2",
     "@types/node": "^25.5.0",
     "@types/pngjs": "^6.0.5",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.27",

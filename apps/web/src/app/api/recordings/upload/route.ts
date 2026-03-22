@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         height: metadata.height || 1080,
         mouseEvents: metadata.mouseEvents || [],
         clickEvents: metadata.clickEvents || [],
+        hasVoiceover: Boolean(metadata.hasVoiceover),
         status: 'uploading',
       },
     });

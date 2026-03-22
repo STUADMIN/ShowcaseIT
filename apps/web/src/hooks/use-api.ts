@@ -17,10 +17,14 @@ interface UseApiResult<T> {
 
 export function useApi<T>({ url, initialData, immediate = true }: UseApiOptions<T>): UseApiResult<T> {
   const [data, setData] = useState<T | null>(initialData ?? null);
-  const [loading, setLoading] = useState(immediate);
+  const [loading, setLoading] = useState(Boolean(immediate && url));
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!url) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -51,8 +55,12 @@ export function useApi<T>({ url, initialData, immediate = true }: UseApiOptions<
   }, [url]);
 
   useEffect(() => {
+    if (!url) {
+      setLoading(false);
+      return;
+    }
     if (immediate) fetchData();
-  }, [immediate, fetchData]);
+  }, [immediate, url, fetchData]);
 
   return { data, loading, error, refetch: fetchData };
 }
@@ -89,4 +97,17 @@ export async function apiDelete(url: string): Promise<void> {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
     throw new Error(err.error || `HTTP ${res.status}`);
   }
+}
+
+export async function apiDeleteWithBody<T = unknown>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json() as Promise<T>;
 }

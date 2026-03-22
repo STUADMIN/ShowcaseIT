@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { generateHtmlExport } from '@/lib/export/html-template';
+import { generateHtmlExport } from '@/lib/export/html-generator';
+import { buildExportGuide, mapPrismaBrandKit } from '@/lib/export/map-guide-for-html';
 import { buildGuideDocxBuffer } from '@/lib/export/build-guide-docx';
 import { buildGuidePdfBuffer } from '@/lib/export/build-guide-pdf';
 
@@ -13,8 +14,8 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format') || 'html';
     const mode = searchParams.get('mode') || 'standalone';
-    /** all = every step; exportable = only steps with includeInExport true (default) */
-    const scope = searchParams.get('scope') || 'exportable';
+    /** all = every step (default); exportable = only steps with Include in HTML export checked */
+    const scope = searchParams.get('scope') || 'all';
 
     const guide = await prisma.guide.findUnique({
       where: { id },
@@ -41,34 +42,17 @@ export async function GET(
     }));
 
     if (format === 'html') {
-      const html = generateHtmlExport(
-        {
-          title: guide.title,
-          description: guide.description,
-          steps: exportSteps.map((s) => ({
-            order: s.order,
-            title: s.title,
-            description: s.description,
-            screenshotUrl: s.screenshotUrl,
-            tipType: null,
-          })),
-          brandKit: guide.brandKit
-            ? {
-                colorPrimary: guide.brandKit.colorPrimary || undefined,
-                colorSecondary: guide.brandKit.colorSecondary || undefined,
-                colorAccent: guide.brandKit.colorAccent || undefined,
-                fontFamily:
-                  [guide.brandKit.fontHeading, guide.brandKit.fontBody].filter(Boolean).join(', ') ||
-                  undefined,
-                logoUrl: guide.brandKit.logoUrl,
-              }
-            : null,
-        },
-        {
-          standalone: mode === 'standalone',
-          includeWrapper: mode !== 'snippet',
-        }
-      );
+      const exportGuide = buildExportGuide(guide, stepsForExport);
+      const brandKit = guide.brandKit ? mapPrismaBrandKit(guide.brandKit) : undefined;
+      const isSnippet = mode === 'snippet';
+
+      const html = generateHtmlExport({
+        guide: exportGuide,
+        brandKit,
+        embedMode: isSnippet ? 'iframe' : 'standalone',
+        includeAnimations: false,
+        includeDocumentShell: !isSnippet,
+      });
 
       if (mode === 'download') {
         const filename = `${guide.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.html`;

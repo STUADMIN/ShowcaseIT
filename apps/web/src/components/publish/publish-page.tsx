@@ -1,24 +1,34 @@
 'use client';
 
 import { useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import {
+  Facebook,
+  FileStack,
+  Instagram,
+  Linkedin,
+  Twitter,
+  Youtube,
+} from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
+import { IconTile } from '@/components/ui/icon-tile';
 import { useApi } from '@/hooks/use-api';
 
 interface Platform {
   id: string;
   name: string;
-  icon: string;
+  icon: LucideIcon;
   description: string;
   category: 'social' | 'documentation';
 }
 
 const platforms: Platform[] = [
-  { id: 'youtube', name: 'YouTube', icon: '▶️', description: 'Upload video guides and tutorials', category: 'social' },
-  { id: 'linkedin', name: 'LinkedIn', icon: '💼', description: 'Share professional guides and posts', category: 'social' },
-  { id: 'x', name: 'X (Twitter)', icon: '𝕏', description: 'Post guide threads and videos', category: 'social' },
-  { id: 'facebook', name: 'Facebook', icon: '📘', description: 'Share to pages and groups', category: 'social' },
-  { id: 'instagram', name: 'Instagram', icon: '📷', description: 'Share visual guide carousels', category: 'social' },
-  { id: 'confluence', name: 'Confluence', icon: '📄', description: 'Publish guides as Confluence pages with full formatting', category: 'documentation' },
+  { id: 'youtube', name: 'YouTube', icon: Youtube, description: 'Upload video guides and tutorials', category: 'social' },
+  { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, description: 'Share professional guides and posts', category: 'social' },
+  { id: 'x', name: 'X (Twitter)', icon: Twitter, description: 'Post guide threads and videos', category: 'social' },
+  { id: 'facebook', name: 'Facebook', icon: Facebook, description: 'Share to pages and groups', category: 'social' },
+  { id: 'instagram', name: 'Instagram', icon: Instagram, description: 'Share visual guide carousels', category: 'social' },
+  { id: 'confluence', name: 'Confluence', icon: FileStack, description: 'Publish guides as Confluence pages with full formatting', category: 'documentation' },
 ];
 
 const socialPlatforms = platforms.filter((p) => p.category === 'social');
@@ -107,7 +117,7 @@ export function PublishPage() {
               return (
                 <div key={platform.id} className="card flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <span className="text-2xl">{platform.icon}</span>
+                    <IconTile icon={platform.icon} size="md" variant="brand" />
                     <div>
                       <h4 className="font-semibold text-gray-200">{platform.name}</h4>
                       <p className="text-xs text-gray-500">{platform.description}</p>
@@ -138,7 +148,7 @@ export function PublishPage() {
               return (
                 <div key={platform.id} className="card flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <span className="text-2xl">{platform.icon}</span>
+                    <IconTile icon={platform.icon} size="md" variant="brand" />
                     <div>
                       <h4 className="font-semibold text-gray-200">{platform.name}</h4>
                       <p className="text-xs text-gray-500">{platform.description}</p>
@@ -165,7 +175,7 @@ export function PublishPage() {
               <div className="card w-full max-w-lg mx-4">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">📄</span>
+                    <IconTile icon={FileStack} size="md" variant="brand" />
                     <h3 className="text-lg font-semibold">Connect Confluence</h3>
                   </div>
                   <button
@@ -339,8 +349,9 @@ export function PublishPage() {
                             defaultChecked
                             className="w-3.5 h-3.5 accent-blue-600"
                           />
-                          <span className="text-sm text-gray-300">
-                            {p.icon} {p.name}
+                          <span className="text-sm text-gray-300 flex items-center gap-2">
+                            <IconTile icon={p.icon} size="xs" variant="brand" />
+                            {p.name}
                           </span>
                         </label>
                       ))}
@@ -350,7 +361,8 @@ export function PublishPage() {
                 {connectedPlatforms.has('confluence') && (
                   <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
                     <h4 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
-                      📄 Confluence Options
+                      <IconTile icon={FileStack} size="xs" variant="brand" />
+                      Confluence options
                     </h4>
                     <div className="space-y-3">
                       <label className="flex items-center gap-3 cursor-pointer">

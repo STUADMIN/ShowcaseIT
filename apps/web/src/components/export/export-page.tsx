@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import { Code2, FileText, FileType, Globe } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
+import { IconTile } from '@/components/ui/icon-tile';
 import { useApi } from '@/hooks/use-api';
 
 type ExportFormat = 'html' | 'embed' | 'pdf' | 'docx';
@@ -10,7 +13,7 @@ interface ExportOption {
   id: ExportFormat;
   name: string;
   description: string;
-  icon: string;
+  icon: LucideIcon;
 }
 
 const exportOptions: ExportOption[] = [
@@ -18,25 +21,25 @@ const exportOptions: ExportOption[] = [
     id: 'html',
     name: 'HTML (Standalone)',
     description: 'Self-contained HTML page with all styles included -- ready to host or share',
-    icon: '🌐',
+    icon: Globe,
   },
   {
     id: 'embed',
     name: 'HTML (Embeddable)',
     description: 'HTML + CSS snippet you can paste into any website, CMS, or knowledge base',
-    icon: '📋',
+    icon: Code2,
   },
   {
     id: 'pdf',
     name: 'PDF Document',
     description: 'Printable PDF with steps and screenshots (PNG or JPEG)',
-    icon: '📄',
+    icon: FileText,
   },
   {
     id: 'docx',
     name: 'Word Document',
     description: 'Editable .docx with steps and embedded screenshots',
-    icon: '📝',
+    icon: FileType,
   },
 ];
 
@@ -66,7 +69,7 @@ export function ExportPage() {
       const safeName = (selectedGuide?.title || 'guide').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
 
       if (selectedFormat === 'html') {
-        const res = await fetch(`/api/guides/${selectedGuideId}/export?format=html&mode=download&scope=exportable`);
+        const res = await fetch(`/api/guides/${selectedGuideId}/export?format=html&mode=download&scope=all`);
         if (!res.ok) throw new Error('Export failed');
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
@@ -76,7 +79,7 @@ export function ExportPage() {
         a.click();
         URL.revokeObjectURL(url);
       } else if (selectedFormat === 'pdf') {
-        const res = await fetch(`/api/guides/${selectedGuideId}/export?format=pdf&scope=exportable`);
+        const res = await fetch(`/api/guides/${selectedGuideId}/export?format=pdf&scope=all`);
         if (!res.ok) throw new Error('Export failed');
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
@@ -86,7 +89,7 @@ export function ExportPage() {
         a.click();
         URL.revokeObjectURL(url);
       } else if (selectedFormat === 'docx') {
-        const res = await fetch(`/api/guides/${selectedGuideId}/export?format=docx&scope=exportable`);
+        const res = await fetch(`/api/guides/${selectedGuideId}/export?format=docx&scope=all`);
         if (!res.ok) throw new Error('Export failed');
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
@@ -96,7 +99,7 @@ export function ExportPage() {
         a.click();
         URL.revokeObjectURL(url);
       } else if (selectedFormat === 'embed') {
-        const res = await fetch(`/api/guides/${selectedGuideId}/export?format=html&mode=snippet&scope=exportable`);
+        const res = await fetch(`/api/guides/${selectedGuideId}/export?format=html&mode=snippet&scope=all`);
         if (!res.ok) throw new Error('Export failed');
         const data = await res.json();
         setEmbedCode(data.html);
@@ -110,7 +113,7 @@ export function ExportPage() {
 
   const handlePreview = () => {
     if (!selectedGuideId) return;
-    window.open(`/api/guides/${selectedGuideId}/export?format=html&mode=standalone&scope=exportable`, '_blank');
+    window.open(`/api/guides/${selectedGuideId}/export?format=html&mode=standalone&scope=all`, '_blank');
   };
 
   const handleCopyEmbed = () => {
@@ -159,7 +162,7 @@ export function ExportPage() {
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  <span className="text-3xl">{option.icon}</span>
+                  <IconTile icon={option.icon} size="lg" variant="brand" />
                   <div>
                     <h4 className="font-semibold text-gray-200">{option.name}</h4>
                     <p className="text-sm text-gray-500 mt-1">{option.description}</p>

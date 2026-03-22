@@ -491,6 +491,20 @@ html[data-si-card-glow='1'] .card-hover:hover {
   }
 }
 
+/* Guide editor: pending callout frame eases in after drag */
+@keyframes si-callout-pending-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.si-callout-pending-frame {
+  animation: si-callout-pending-enter 0.55s ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .si-ws-mesh-a,
   .si-ws-mesh-b {
@@ -499,5 +513,9 @@ html[data-si-card-glow='1'] .card-hover:hover {
 
   .si-celebrate-root {
     display: none;
+  }
+
+  .si-callout-pending-frame {
+    animation: none;
   }
 }

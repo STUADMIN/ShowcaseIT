@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/prisma';
 import { createClient } from '@supabase/supabase-js';
 import { extractFrames } from '@/lib/video/extract-frames';
+import { FRAME_EXTRACTION_PLACEHOLDER_DESCRIPTION } from '@/lib/frame-extraction-placeholder';
 
-export const maxDuration = 120;
+/** Long recordings need more time for ffmpeg + many Supabase uploads */
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,6 +24,16 @@ export async function POST(request: NextRequest) {
 
     if (!recording.videoUrl) {
       return NextResponse.json({ error: 'Recording has no video URL' }, { status: 400 });
+    }
+
+    if (recording.hasVoiceover) {
+      return NextResponse.json(
+        {
+          error:
+            'Guide generation is not available for voiceover (library) recordings. Open the recording on the Recordings page to copy the video link or embed HTML.',
+        },
+        { status: 403 }
+      );
     }
 
     const supabase = createClient(
@@ -59,12 +72,34 @@ export async function POST(request: NextRequest) {
     };
     const clickEvents = (recording.clickEvents as StoredClick[]) || [];
     const clickTimestamps = clickEvents.map((e) => e.timestamp);
-    // Without markers: dense timeline + grid-aware dedupe — allow more distinct steps before capping
-    const maxFrames = clickTimestamps.length > 0 ? 50 : 56;
+    const maxClickTs = clickTimestamps.length > 0 ? Math.max(...clickTimestamps) : 0;
+    /**
+     * Wall-clock length from the recorder — already **milliseconds** (`Date.now() - start` on the client).
+     * Do not multiply by 1000 (that blew the hint to ~hours, broke sparse step sampling, and left only 2–3 marker frames).
+     */
+    let recordingDurationMs = Math.max(0, Number(recording.duration) || 0);
+    // Legacy rows: duration stored as seconds (e.g. 65) while marker timestamps are ms (58000).
+    if (recordingDurationMs > 0 && recordingDurationMs < 100_000 && maxClickTs > recordingDurationMs * 20) {
+      recordingDurationMs *= 1000;
+    }
+    // Corrupt / inflated values (e.g. old bug): clamp so timeline sampling stays near the real clip + markers.
+    if (maxClickTs > 0 && recordingDurationMs > maxClickTs + 180_000) {
+      recordingDurationMs = maxClickTs + 90_000;
+    }
+    const envCap = parseInt(process.env.GUIDE_GENERATE_MAX_FRAMES || '', 10);
+    const hasMarkers = clickTimestamps.length > 0;
+    /** Room for every mark + auto end-cap; user trims in the guide editor */
+    const defaultMax = hasMarkers
+      ? Math.min(800, Math.max(clickTimestamps.length + 30, 240))
+      : 180;
+    const maxFrames =
+      Number.isFinite(envCap) && envCap > 0 ? Math.min(800, envCap) : defaultMax;
 
     let frames: Array<{ timestamp: number; imageBuffer: Buffer }>;
     try {
-      frames = await extractFrames(videoBuffer, clickTimestamps, maxFrames);
+      frames = await extractFrames(videoBuffer, clickTimestamps, maxFrames, recordingDurationMs, {
+        keepEveryMarker: hasMarkers,
+      });
     } catch (err) {
       console.error('Frame extraction failed:', err);
       frames = [];
@@ -139,7 +174,10 @@ export async function POST(request: NextRequest) {
           description: '',
           screenshotUrl: screenshotUrl || null,
           timestamp: Math.round(frame.timestamp),
-          clickTarget: meta.clickTarget ?? undefined,
+          clickTarget:
+            meta.clickTarget != null
+              ? (meta.clickTarget as Prisma.InputJsonValue)
+              : undefined,
           includeInExport: true,
         },
       });
@@ -153,8 +191,7 @@ export async function POST(request: NextRequest) {
           guideId: guide.id,
           order: 1,
           title: 'Step 1',
-          description:
-            'No frames could be extracted from this video. Delete this guide, then go to Recordings → Generate Guide again. If it keeps failing, open /api/health/ffmpeg and confirm ok is true.',
+          description: FRAME_EXTRACTION_PLACEHOLDER_DESCRIPTION,
         },
       });
       steps.push(placeholderStep);

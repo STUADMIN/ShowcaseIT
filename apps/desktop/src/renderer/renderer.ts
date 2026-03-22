@@ -43,6 +43,10 @@ let mediaRecorder: MediaRecorder | null = null;
 let recordedChunks: Blob[] = [];
 let lastRecordingBuffer: ArrayBuffer | null = null;
 let lastRecordingMetadata: Record<string, unknown> | null = null;
+/** Mic audio was muxed into the last completed recording (library mode + voiceover on). */
+let lastRecordingHadVoiceover = false;
+/** Purpose selected when recording started (metadata / upload). */
+let lastRecordingPurpose: 'guide' | 'library' = 'guide';
 
 const sourcesGrid = document.getElementById('sources-grid')!;
 const btnRecord = document.getElementById('btn-record')!;
@@ -54,6 +58,29 @@ const statusMessage = document.getElementById('status-message')!;
 const toggleMouse = document.getElementById('toggle-mouse') as HTMLInputElement;
 const toggleClicks = document.getElementById('toggle-clicks') as HTMLInputElement;
 const toggleVoiceover = document.getElementById('toggle-voiceover') as HTMLInputElement;
+const voiceoverRow = document.getElementById('voiceover-row')!;
+const purposeRadios = document.querySelectorAll<HTMLInputElement>('input[name="recording-purpose"]');
+
+function getRecordingPurpose(): 'guide' | 'library' {
+  const checked = document.querySelector<HTMLInputElement>('input[name="recording-purpose"]:checked');
+  return checked?.value === 'library' ? 'library' : 'guide';
+}
+
+function updatePurposeUI(): void {
+  const library = getRecordingPurpose() === 'library';
+  voiceoverRow.classList.toggle('hidden', !library);
+  if (!library) {
+    toggleVoiceover.checked = false;
+  }
+}
+
+function setPurposeInputsDisabled(disabled: boolean): void {
+  purposeRadios.forEach((r) => {
+    r.disabled = disabled;
+  });
+  const block = document.getElementById('recording-purpose');
+  if (block) block.classList.toggle('is-disabled', disabled);
+}
 
 async function loadSources() {
   statusMessage.textContent = 'Loading sources...';
@@ -121,12 +148,18 @@ async function startRecording() {
       } as any,
     });
 
-    if (toggleVoiceover.checked) {
+    lastRecordingHadVoiceover = false;
+    lastRecordingPurpose = getRecordingPurpose();
+    const library = lastRecordingPurpose === 'library';
+    const wantVoice = library && toggleVoiceover.checked;
+    if (wantVoice) {
       try {
         const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioStream.getAudioTracks().forEach((track) => stream.addTrack(track));
+        lastRecordingHadVoiceover = stream.getAudioTracks().length > 0;
       } catch {
         statusMessage.textContent = 'No microphone found — recording without audio';
+        lastRecordingHadVoiceover = false;
       }
     }
 
@@ -153,6 +186,7 @@ async function startRecording() {
     });
 
     isRecording = true;
+    setPurposeInputsDisabled(true);
     recordingStartTime = Date.now();
     btnRecord.classList.add('hidden');
     btnStop.classList.remove('hidden');
@@ -189,6 +223,7 @@ async function stopRecording() {
   const result = await window.showcaseit.stopRecording();
 
   isRecording = false;
+  setPurposeInputsDisabled(false);
   if (timerInterval) clearInterval(timerInterval);
 
   btnStop.classList.add('hidden');
@@ -209,6 +244,8 @@ async function stopRecording() {
     mouseEvents: result.mouseEvents,
     clickEvents: result.clickEvents,
     recordedAt: new Date().toISOString(),
+    hasVoiceover: lastRecordingHadVoiceover,
+    recordingPurpose: lastRecordingPurpose,
   };
 
   lastRecordingBuffer = arrayBuffer;
@@ -266,5 +303,8 @@ if (btnMinimize) {
 if (btnClose) {
   btnClose.addEventListener('click', () => window.showcaseit.closeWindow());
 }
+
+purposeRadios.forEach((r) => r.addEventListener('change', updatePurposeUI));
+updatePurposeUI();
 
 loadSources();

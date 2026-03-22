@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { ImagePlus } from 'lucide-react';
+import { IconTile } from '@/components/ui/icon-tile';
 import { AppShell } from '@/components/layout/app-shell';
 import { ColorPicker } from './color-picker';
 import { useApi, apiPost, apiPatch } from '@/hooks/use-api';
@@ -25,6 +27,32 @@ const fontOptions = [
 ];
 
 const MAX_UPLOAD_MB = 2;
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} bytes`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb < 10 ? kb.toFixed(1) : Math.round(kb)} KB`;
+  const mb = bytes / (1024 * 1024);
+  return `${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB`;
+}
+
+function fileTooLargeCopy(file: File): string {
+  const label = file.name?.trim() ? `“${file.name}”` : 'This file';
+  return `${label} is ${formatFileSize(file.size)}. The limit is ${MAX_UPLOAD_MB} MB per image.\n\nTry exporting a smaller version, lowering JPEG/WebP quality in your editor, or compressing it with a tool like Squoosh (squoosh.app), then upload again.`;
+}
+
+/** Turn API / generic errors into clearer copy when we recognize them */
+function friendlyUploadError(file: File | null, raw: string): string {
+  const lower = raw.toLowerCase();
+  if (lower.includes('2mb') && lower.includes('smaller')) {
+    return file ? fileTooLargeCopy(file) : `That file is over the ${MAX_UPLOAD_MB} MB limit.\n\nUse a smaller or more compressed image and try again.`;
+  }
+  if (lower.includes('must be an image')) {
+    return 'That file doesn’t look like a supported image. Use PNG, JPG, WebP, or SVG.';
+  }
+  return raw;
+}
 
 function BrandAssetDropZone(props: {
   inputId: string;
@@ -89,7 +117,9 @@ function BrandAssetDropZone(props: {
             <img src={previewUrl} alt="" className="max-h-full max-w-full object-contain" />
           ) : (
             <>
-              <div className="text-4xl mb-3">🖼</div>
+              <div className="mb-3">
+                <IconTile icon={ImagePlus} size="lg" variant="muted" />
+              </div>
               <p className="text-sm text-gray-400">Click or drag to upload</p>
               <p className="text-xs text-gray-600 mt-1">{hint}</p>
             </>
@@ -118,6 +148,7 @@ export function BrandKitPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [brandBanner, setBrandBanner] = useState<{ tone: 'error' | 'warning'; message: string } | null>(null);
 
   useEffect(() => {
     if (brandKits?.length) {
@@ -153,8 +184,17 @@ export function BrandKitPage() {
 
   const uploadAsset = useCallback(
     async (kind: 'logo' | 'guideCover', file: File) => {
+      setBrandBanner(null);
       if (!kit.id) {
-        alert('Save your brand kit once (name & colors) before uploading images.');
+        setBrandBanner({
+          tone: 'warning',
+          message:
+            'Save your brand kit first (click **Save Brand Kit** at the top) so we know which workspace to attach images to. Then you can upload a logo or cover.',
+        });
+        return;
+      }
+      if (file.size > MAX_UPLOAD_BYTES) {
+        setBrandBanner({ tone: 'error', message: fileTooLargeCopy(file) });
         return;
       }
       const setBusy = kind === 'logo' ? setUploadingLogo : setUploadingCover;
@@ -166,7 +206,7 @@ export function BrandKitPage() {
         const res = await fetch(`/api/brand-kits/${kit.id}/upload`, { method: 'POST', body: fd });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || `HTTP ${res.status}`);
+          throw new Error(typeof err.error === 'string' ? err.error : `HTTP ${res.status}`);
         }
         const updated = (await res.json()) as BrandKitData;
         setKit((prev) => ({
@@ -174,9 +214,13 @@ export function BrandKitPage() {
           logoUrl: updated.logoUrl || '',
           guideCoverImageUrl: updated.guideCoverImageUrl || '',
         }));
-        refetch();
+        /** Clear before refetch: refetch() sets useApi `loading` and unmounts the grid; leaving uploading=true stuck the UI. */
+        setBusy(false);
+        setBrandBanner(null);
+        void refetch();
       } catch (e) {
-        alert(e instanceof Error ? e.message : 'Upload failed');
+        const raw = e instanceof Error ? e.message : 'Something went wrong while uploading. Check your connection and try again.';
+        setBrandBanner({ tone: 'error', message: friendlyUploadError(file, raw) });
       } finally {
         setBusy(false);
       }
@@ -235,6 +279,39 @@ export function BrandKitPage() {
             <div className="card p-16 text-center"><p className="text-gray-500">Loading brand kit...</p></div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {brandBanner && (
+                <div
+                  className="lg:col-span-2 rounded-xl border px-4 py-3 text-sm flex gap-3 justify-between items-start"
+                  role="alert"
+                  style={
+                    brandBanner.tone === 'error'
+                      ? { borderColor: 'rgba(248,113,113,0.35)', background: 'rgba(69,10,10,0.35)' }
+                      : { borderColor: 'rgba(251,191,36,0.35)', background: 'rgba(66,52,10,0.35)' }
+                  }
+                >
+                  <p
+                    className={brandBanner.tone === 'error' ? 'text-red-100/95' : 'text-amber-100/95'}
+                    style={{ whiteSpace: 'pre-line' }}
+                  >
+                    {brandBanner.message.split('**').map((part, i) =>
+                      i % 2 === 1 ? (
+                        <strong key={i} className="font-semibold text-white">
+                          {part}
+                        </strong>
+                      ) : (
+                        <span key={i}>{part}</span>
+                      )
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setBrandBanner(null)}
+                    className="shrink-0 text-xs text-gray-400 hover:text-white underline-offset-2 hover:underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
               <div className="card">
                 <h3 className="text-lg font-semibold mb-6">Brand Colors</h3>
                 <div className="space-y-4">

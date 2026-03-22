@@ -87,7 +87,7 @@ model BrandKit {
   fontHeading     String   @default("Inter") @map("font_heading")
   fontBody        String   @default("Inter") @map("font_body")
   logoUrl         String?  @map("logo_url")
-  /** Default guide list card image when the first step has no screenshot. */
+  /** Standard guide list / marketing cover; UI prefers this over the first step screenshot when set. */
   guideCoverImageUrl String? @map("guide_cover_image_url")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -110,6 +110,8 @@ model Recording {
   height      Int      @default(1080)
   mouseEvents Json     @default("[]") @map("mouse_events")
   clickEvents Json     @default("[]") @map("click_events")
+  /// Screen recording includes a microphone / voiceover track
+  hasVoiceover Boolean @default(false) @map("has_voiceover")
   status      String   @default("processing")
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -149,6 +151,8 @@ model GuideStep {
   title               String
   description         String   @default("")
   screenshotUrl       String?  @map("screenshot_url")
+  /** Pre-crop / pre-replace URL so the editor can restore the full screenshot after crop. */
+  screenshotOriginalUrl String? @map("screenshot_original_url")
   styledScreenshotUrl String?  @map("styled_screenshot_url")
   annotations         Json     @default("[]")
   blurRegions         Json     @default("[]") @map("blur_regions")

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { CircleAlert, ClipboardList, MonitorPlay, Pencil } from 'lucide-react';
+import { IconTile } from '@/components/ui/icon-tile';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LiquidGlassMain } from '@/components/ui/liquid-glass-main';
@@ -8,6 +10,7 @@ import { StepPanel } from './step-panel';
 import { StepPreview } from './step-preview';
 import { EditorToolbar, type Tool } from './editor-toolbar';
 import { useApi, apiPatch, apiPost, apiDelete } from '@/hooks/use-api';
+import { FRAME_EXTRACTION_ERROR_HINT, isFrameExtractionPlaceholder } from '@/lib/frame-extraction-placeholder';
 
 interface GuideStep {
   id: string;
@@ -15,6 +18,8 @@ interface GuideStep {
   title: string;
   description: string;
   screenshotUrl: string;
+  /** URL before last crop; used to restore full screenshot in the editor. */
+  screenshotOriginalUrl?: string | null;
   annotations: Annotation[];
   blurRegions: BlurRegion[];
   /** When false, omitted from HTML export (editor still shows the step). */
@@ -23,13 +28,17 @@ interface GuideStep {
 
 interface Annotation {
   id: string;
-  type: 'arrow' | 'callout' | 'badge' | 'text' | 'highlight';
+  type: 'arrow' | 'callout' | 'badge' | 'text' | 'highlight' | 'circle' | 'box';
   x: number;
   y: number;
+  x2?: number;
+  y2?: number;
   width?: number;
   height?: number;
   text?: string;
   color?: string;
+  calloutTailEdge?: 'bottom' | 'top' | 'left' | 'right';
+  calloutTailOffset?: number;
 }
 
 interface BlurRegion {
@@ -55,6 +64,22 @@ export function GuideEditor({ guideId }: { guideId: string }) {
   const [selectedStepId, setSelectedStepId] = useState<string>('');
   const [guideName, setGuideName] = useState('');
   const [activeTool, setActiveTool] = useState<Tool>('select');
+  const [focusMode, setFocusMode] = useState(false);
+  const editorShellRef = useRef<HTMLDivElement>(null);
+
+  const toggleBrowserFullscreen = useCallback(async () => {
+    const el = editorShellRef.current;
+    if (!el) return;
+    try {
+      if (document.fullscreenElement === el) {
+        await document.exitFullscreen();
+      } else {
+        await el.requestFullscreen();
+      }
+    } catch {
+      /* user gesture / unsupported */
+    }
+  }, []);
 
   useEffect(() => {
     if (guide) {
@@ -62,6 +87,7 @@ export function GuideEditor({ guideId }: { guideId: string }) {
       const mapped = guide.steps.map((s: any) => ({
         ...s,
         screenshotUrl: s.screenshotUrl || '',
+        screenshotOriginalUrl: s.screenshotOriginalUrl ?? null,
         annotations: Array.isArray(s.annotations) ? s.annotations : [],
         blurRegions: Array.isArray(s.blurRegions) ? s.blurRegions : [],
         includeInExport: s.includeInExport !== false,
@@ -74,6 +100,7 @@ export function GuideEditor({ guideId }: { guideId: string }) {
   const router = useRouter();
   const selectedStep = steps.find((s) => s.id === selectedStepId);
   const hasRealContent = steps.some((s) => s.screenshotUrl);
+  const selectedStepIndex = Math.max(0, steps.findIndex((s) => s.id === selectedStepId));
 
   const saveTitle = useCallback(async (title: string) => {
     try { await apiPatch(`/api/guides/${guideId}`, { title }); } catch {}
@@ -121,6 +148,7 @@ export function GuideEditor({ guideId }: { guideId: string }) {
         {
           ...newStep,
           screenshotUrl: newStep.screenshotUrl || '',
+          screenshotOriginalUrl: (newStep as GuideStep).screenshotOriginalUrl ?? null,
           annotations: [],
           blurRegions: [],
           includeInExport: newStep.includeInExport !== false,
@@ -161,8 +189,14 @@ export function GuideEditor({ guideId }: { guideId: string }) {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950">
-      <header className="shrink-0 h-12 border-b border-gray-800 flex items-center justify-between px-4 gap-4 bg-gray-950 z-10">
+    <div
+      className={`flex flex-col h-screen bg-gray-950 ${focusMode ? 'fixed inset-0 z-[300]' : ''}`}
+    >
+      <header
+        className={`shrink-0 h-12 border-b border-gray-800 flex items-center justify-between px-4 gap-4 bg-gray-950 z-10 ${
+          focusMode ? 'hidden' : ''
+        }`}
+      >
         <div className="flex items-center gap-1 sm:gap-3 min-w-0">
           <Link
             href="/"
@@ -192,7 +226,11 @@ export function GuideEditor({ guideId }: { guideId: string }) {
         className="flex flex-1 min-h-0 overflow-hidden bg-gray-950"
         contentClassName="relative z-[1] flex min-h-0 min-w-0 w-full flex-1 flex-row"
       >
-      <div className="flex h-full min-h-0 w-80 min-w-0 flex-col border-r border-gray-800 bg-gray-950/80 backdrop-blur-sm">
+      <div
+        className={`flex h-full min-h-0 w-80 min-w-0 flex-col border-r border-gray-800 bg-gray-950/80 backdrop-blur-sm ${
+          focusMode ? 'hidden' : ''
+        }`}
+      >
         <div className="p-4 border-b border-gray-800">
           <input
             type="text"
@@ -211,12 +249,36 @@ export function GuideEditor({ guideId }: { guideId: string }) {
           <button onClick={handleAddStep} className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium transition-colors">+ Add Step</button>
         </div>
       </div>
-      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-gray-950/80 backdrop-blur-sm">
-        <EditorToolbar activeTool={activeTool} onToolChange={setActiveTool} guideId={guideId} />
-        <div className="flex-1 overflow-auto p-8 flex items-start justify-center">
+      <div
+        ref={editorShellRef}
+        className="flex h-full min-h-0 min-w-0 flex-1 flex-col bg-gray-950/80 backdrop-blur-sm min-h-0"
+      >
+        <EditorToolbar
+          activeTool={activeTool}
+          onToolChange={setActiveTool}
+          guideId={guideId}
+          focusMode={focusMode}
+          onToggleFocusMode={() => setFocusMode((v) => !v)}
+          stepIndex={selectedStepIndex}
+          stepCount={steps.length}
+          onStepPrev={() => {
+            if (selectedStepIndex > 0) setSelectedStepId(steps[selectedStepIndex - 1].id);
+          }}
+          onStepNext={() => {
+            if (selectedStepIndex < steps.length - 1) setSelectedStepId(steps[selectedStepIndex + 1].id);
+          }}
+          onToggleBrowserFullscreen={toggleBrowserFullscreen}
+        />
+        <div
+          className={`flex-1 overflow-auto min-h-0 flex items-start justify-center ${
+            focusMode ? 'p-4 items-stretch' : 'p-8'
+          }`}
+        >
           {!hasRealContent && !selectedStep?.screenshotUrl ? (
             <div className="text-center mt-16 max-w-lg">
-              <div className="text-6xl mb-6">📋</div>
+              <div className="flex justify-center mb-6">
+                <IconTile icon={ClipboardList} size="xl" variant="brand" />
+              </div>
               <h3 className="text-2xl font-bold text-gray-100 mb-3">Your guide is empty</h3>
               <p className="text-gray-400 mb-4">
                 Record your screen to auto-generate steps with screenshots, or add steps manually below.
@@ -231,9 +293,9 @@ export function GuideEditor({ guideId }: { guideId: string }) {
               <div className="grid grid-cols-1 gap-4 mb-8">
                 <Link
                   href="/recordings/new"
-                  className="flex items-center gap-4 p-5 rounded-xl bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600/20 hover:border-blue-500/50 transition-all text-left"
+                  className="flex items-center gap-4 p-5 rounded-xl bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600/20 hover:border-blue-500/50 transition-all text-left group"
                 >
-                  <span className="text-3xl">🎬</span>
+                  <IconTile icon={MonitorPlay} size="lg" variant="brandInteractive" />
                   <div>
                     <p className="font-semibold text-blue-400">Record Screen</p>
                     <p className="text-sm text-gray-400">Capture a walkthrough and auto-generate steps with screenshots</p>
@@ -241,10 +303,11 @@ export function GuideEditor({ guideId }: { guideId: string }) {
                 </Link>
 
                 <button
+                  type="button"
                   onClick={handleAddStep}
-                  className="flex items-center gap-4 p-5 rounded-xl bg-gray-800/50 border border-gray-700 hover:bg-gray-800 hover:border-gray-600 transition-all text-left"
+                  className="flex items-center gap-4 p-5 rounded-xl bg-gray-800/50 border border-gray-700 hover:bg-gray-800 hover:border-gray-600 transition-all text-left group"
                 >
-                  <span className="text-3xl">✏️</span>
+                  <IconTile icon={Pencil} size="lg" variant="muted" className="group-hover:ring-brand-500/20 group-hover:bg-brand-500/10 group-hover:text-brand-400/90" />
                   <div>
                     <p className="font-semibold text-gray-200">Add Steps Manually</p>
                     <p className="text-sm text-gray-400">Create steps one by one and upload your own screenshots</p>
@@ -267,31 +330,119 @@ export function GuideEditor({ guideId }: { guideId: string }) {
               step={selectedStep}
               onUpdate={(updates) => handleStepUpdate(selectedStep.id, updates as Partial<GuideStep>)}
               activeTool={activeTool}
+              expandedCanvas={focusMode}
             />
           ) : (
             <div className="text-gray-500 text-center mt-32"><p className="text-lg">Select a step to preview</p></div>
           )}
         </div>
       </div>
-      <div className="flex h-full min-h-0 w-72 shrink-0 flex-col overflow-auto border-l border-gray-800 bg-gray-950/80 p-4 backdrop-blur-sm">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Properties</h3>
+      <div
+        className={`flex h-full min-h-0 w-80 lg:w-96 shrink-0 flex-col overflow-hidden border-l border-gray-800 bg-gray-950/80 backdrop-blur-sm ${
+          focusMode ? 'hidden' : ''
+        }`}
+      >
+        <div className="shrink-0 border-b border-gray-800/80 px-4 py-3">
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Properties</h3>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto p-4">
         {selectedStep ? (
           <div className="space-y-4">
+            {selectedStep.description.includes(FRAME_EXTRACTION_ERROR_HINT) ? (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-950/45 p-3 space-y-2">
+                <div className="flex gap-2.5">
+                  <CircleAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" strokeWidth={1.75} aria-hidden />
+                  <div className="min-w-0 space-y-2">
+                    <p className="text-sm font-medium text-amber-100">No screenshots from recording</p>
+                    <p className="text-xs text-amber-100/85 leading-relaxed">
+                      This text was added automatically because the server couldn&apos;t pull frames from the video. It
+                      isn&apos;t a mistake in the sidebar — try{' '}
+                      <Link href="/recordings" className="text-brand-400 hover:underline">
+                        Recordings
+                      </Link>{' '}
+                      → Generate guide again, or check{' '}
+                      <code className="text-amber-200/90 bg-black/25 px-1 rounded">/api/health/ffmpeg</code>.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleStepUpdate(selectedStep.id, { description: '' })}
+                      className="text-xs font-medium text-brand-400 hover:text-brand-300"
+                    >
+                      Clear message
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <div>
               <label className="text-xs text-gray-500 block mb-1">Step Title</label>
               <input type="text" value={selectedStep.title} onChange={(e) => handleStepUpdate(selectedStep.id, { title: e.target.value })} className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none focus:border-brand-600" />
             </div>
-            <div>
+            <div className="flex flex-col gap-1 min-h-0">
               <label className="text-xs text-gray-500 block mb-1">Description</label>
-              <textarea value={selectedStep.description} onChange={(e) => handleStepUpdate(selectedStep.id, { description: e.target.value })} rows={4} className="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none focus:border-brand-600 resize-none" />
+              <textarea
+                value={
+                  isFrameExtractionPlaceholder(selectedStep.description)
+                    ? ''
+                    : selectedStep.description
+                }
+                placeholder={
+                  isFrameExtractionPlaceholder(selectedStep.description)
+                    ? 'Describe this step after you fix the recording — details are in the notice above.'
+                    : undefined
+                }
+                onChange={(e) => handleStepUpdate(selectedStep.id, { description: e.target.value })}
+                rows={10}
+                spellCheck
+                className="w-full min-h-[11rem] max-h-[min(55vh,28rem)] resize-y bg-gray-900 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-gray-200 outline-none focus:border-brand-600 leading-relaxed break-words placeholder:text-gray-600"
+              />
             </div>
             <div>
               <label className="text-xs text-gray-500 block mb-1">Annotations</label>
               <p className="text-xs text-gray-600">{selectedStep.annotations.length} annotation(s)</p>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Blur Regions</label>
-              <p className="text-xs text-gray-600">{selectedStep.blurRegions.length} region(s)</p>
+              <label className="text-xs text-gray-500 block mb-1">Blur regions</label>
+              {selectedStep.blurRegions.length === 0 ? (
+                <p className="text-xs text-gray-600">None — use the Blur tool on the preview to add one.</p>
+              ) : (
+                <ul className="space-y-3 mt-2">
+                  {selectedStep.blurRegions.map((br, i) => (
+                    <li
+                      key={br.id}
+                      className="rounded-lg border border-gray-800 bg-gray-900/40 px-3 py-2 space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-gray-400">Region {i + 1}</span>
+                        <span className="text-xs tabular-nums text-brand-400">{Math.round(br.intensity ?? 50)}%</span>
+                      </div>
+                      <label className="sr-only" htmlFor={`blur-${br.id}`}>
+                        Blur strength for region {i + 1}
+                      </label>
+                      <input
+                        id={`blur-${br.id}`}
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={Math.min(100, Math.max(0, br.intensity ?? 50))}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          handleStepUpdate(selectedStep.id, {
+                            blurRegions: selectedStep.blurRegions.map((r) =>
+                              r.id === br.id ? { ...r, intensity: v } : r
+                            ),
+                          });
+                        }}
+                        className="w-full h-2 accent-brand-500 bg-gray-800 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <p className="text-[10px] text-gray-600 leading-snug">
+                        Lower = lighter frost; higher = stronger privacy blur. Adjust each region separately.
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <label className="flex items-start gap-2 cursor-pointer">
               <input
@@ -302,7 +453,12 @@ export function GuideEditor({ guideId }: { guideId: string }) {
               />
               <span>
                 <span className="text-sm text-gray-200 block">Include in HTML export</span>
-                <span className="text-xs text-gray-600">Uncheck to hide this step from Preview/Download export (still visible here).</span>
+                <span className="text-xs text-gray-600">
+                  Main <strong className="text-gray-500">Preview</strong> / <strong className="text-gray-500">Export</strong>{' '}
+                  include <strong className="text-gray-500">all</strong> steps. Uncheck to exclude this step only when you
+                  use <strong className="text-gray-500">Export (filtered)</strong> in the toolbar. The center canvas always
+                  shows every step while you edit.
+                </span>
               </span>
             </label>
           </div>
@@ -311,6 +467,7 @@ export function GuideEditor({ guideId }: { guideId: string }) {
             <p>Record your screen or add steps to get started.</p>
           </div>
         ) : null}
+        </div>
       </div>
       </LiquidGlassMain>
     </div>

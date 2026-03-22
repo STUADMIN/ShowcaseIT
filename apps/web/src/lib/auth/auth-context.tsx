@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { AuthUser, AuthSession } from './config';
-import { mapSupabaseUser, DEV_SESSION } from './config';
+import { mapSupabaseUser, DEV_SESSION, DEV_USER } from './config';
 import { createClient } from '@/lib/supabase/client';
 
 interface AuthContextValue {
@@ -10,6 +10,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   loading: boolean;
+  /** Merge into the current session user (e.g. after Settings profile / avatar save). */
+  updateLocalUser: (partial: Partial<Pick<AuthUser, 'name' | 'image'>>) => void;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string, name?: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
@@ -20,6 +22,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   isAuthenticated: false,
   loading: true,
+  updateLocalUser: () => {},
   signIn: async () => ({ success: false }),
   signUp: async () => ({ success: false }),
   signOut: async () => {},
@@ -33,14 +36,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: supaSession } }) => {
       if (supaSession?.user) {
+        const mapped = mapSupabaseUser(supaSession.user);
         setSession({
-          user: mapSupabaseUser(supaSession.user),
+          user: mapped,
           expires: supaSession.expires_at
             ? new Date(supaSession.expires_at * 1000).toISOString()
             : new Date(Date.now() + 3600000).toISOString(),
         });
+        syncUserToDb(mapped.id, mapped.email, {
+          full_name: mapped.name,
+          name: mapped.name,
+        });
       } else if (process.env.NODE_ENV === 'development') {
         setSession(DEV_SESSION);
+        syncUserToDb(DEV_USER.id, DEV_USER.email, { name: DEV_USER.name, full_name: DEV_USER.name });
       }
       setLoading(false);
     });
@@ -58,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         if (process.env.NODE_ENV === 'development') {
           setSession(DEV_SESSION);
+          syncUserToDb(DEV_USER.id, DEV_USER.email, { name: DEV_USER.name, full_name: DEV_USER.name });
         } else {
           setSession(null);
         }
@@ -72,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) {
       if (process.env.NODE_ENV === 'development' && password === 'demo') {
         setSession(DEV_SESSION);
+        syncUserToDb(DEV_USER.id, DEV_USER.email, { name: DEV_USER.name, full_name: DEV_USER.name });
         return { success: true };
       }
       return { success: false, error: error.message };
@@ -94,6 +105,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
   }, [supabase]);
 
+  const updateLocalUser = useCallback((partial: Partial<Pick<AuthUser, 'name' | 'image'>>) => {
+    setSession((prev) => {
+      if (!prev?.user) return prev;
+      return {
+        ...prev,
+        user: { ...prev.user, ...partial },
+      };
+    });
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -101,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user: session?.user ?? null,
         isAuthenticated: !!session,
         loading,
+        updateLocalUser,
         signIn,
         signUp,
         signOut,

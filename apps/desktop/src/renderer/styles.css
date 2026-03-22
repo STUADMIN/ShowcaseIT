@@ -248,6 +248,58 @@ h2 {
   display: none !important;
 }
 
+.recording-purpose {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.recording-purpose.is-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.recording-purpose-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #888);
+}
+
+.purpose-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.purpose-option input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.purpose-option strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.purpose-option small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: normal;
+}
+
 .options {
   display: flex;
   flex-direction: column;

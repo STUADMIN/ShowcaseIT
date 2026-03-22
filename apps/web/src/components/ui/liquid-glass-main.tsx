@@ -38,7 +38,7 @@ export function LiquidGlassMain({
   children,
   className = '',
   as = 'main',
-  contentClassName = 'relative z-[1] min-h-full',
+  contentClassName = 'relative z-[1] min-h-full min-w-0 max-w-full',
 }: Props) {
   const { prefs } = useLiquidGlassPrefs();
   const reduceMotion = usePrefersReducedMotion();
@@ -133,7 +133,8 @@ export function LiquidGlassMain({
   const intMul = Math.max(0.25, Math.min(1, prefs.intensity / 100));
   const layerOpacity = hovered ? Math.min(1, 0.52 + 0.48 * intMul) : Math.min(1, 0.38 * intMul);
 
-  const outerBase = ['relative', 'flex-1', as === 'div' ? '' : 'overflow-auto', className]
+  /** `overflow-x-hidden` avoids a bottom horizontal scrollbar (layout shift / scroll “jumping” with progress bar). */
+  const outerBase = ['relative', 'flex-1', 'min-w-0', as === 'div' ? 'overflow-x-hidden' : 'overflow-auto overflow-x-hidden', className]
     .filter(Boolean)
     .join(' ');
   const outerFx = `liquid-glass-main ${outerBase}`.trim();
@@ -144,8 +145,8 @@ export function LiquidGlassMain({
 
   const scrollWrapClass =
     as === 'div'
-      ? 'relative flex w-full min-h-0 flex-1 flex-col'
-      : 'relative w-full min-h-full';
+      ? 'relative flex w-full min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden'
+      : 'relative w-full min-h-full min-w-0 max-w-full overflow-x-hidden';
 
   const pointerVars = {
     '--lg-x': `${coords.x}%`,

@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { CircleAlert, CircleCheck } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
+import { IconTile } from '@/components/ui/icon-tile';
 import { ScreenRecorder } from '@/components/recordings/screen-recorder';
 import { dispatchWorkspaceCelebrate } from '@/lib/ui/workspace-celebrate';
 
@@ -19,6 +21,7 @@ export default function NewRecordingPage() {
     blob: Blob;
     duration: number;
     clickEvents: Array<{ x: number; y: number; timestamp: number; button: string }>;
+    hasVoiceover?: boolean;
   }) => {
     setStatus('uploading');
     setProgress('Uploading recording...');
@@ -35,6 +38,7 @@ export default function NewRecordingPage() {
           height: 1080,
           clickEvents: result.clickEvents,
           mouseEvents: [],
+          hasVoiceover: result.hasVoiceover === true,
         })
       );
 
@@ -148,7 +152,9 @@ export default function NewRecordingPage() {
 
           {status === 'upload-error' && (
             <div className="max-w-3xl mx-auto card p-12 text-center">
-              <div className="text-5xl mb-4">⚠️</div>
+              <div className="flex justify-center mb-4">
+                <IconTile icon={CircleAlert} size="xl" variant="danger" />
+              </div>
               <h3 className="text-xl font-semibold text-red-400 mb-2">Upload Failed</h3>
               <p className="text-gray-400 mb-6">{progress}</p>
               <div className="flex gap-4 justify-center">
@@ -167,7 +173,9 @@ export default function NewRecordingPage() {
 
           {status === 'generate-error' && (
             <div className="max-w-3xl mx-auto card p-12 text-center">
-              <div className="text-5xl mb-4">✅</div>
+              <div className="flex justify-center mb-4">
+                <IconTile icon={CircleCheck} size="xl" variant="success" />
+              </div>
               <h3 className="text-xl font-semibold text-green-400 mb-2">Recording Saved!</h3>
               <p className="text-gray-400 mb-2">Your recording was uploaded successfully.</p>
               <p className="text-yellow-400/80 text-sm mb-6">Guide generation had an issue: {progress}</p>
