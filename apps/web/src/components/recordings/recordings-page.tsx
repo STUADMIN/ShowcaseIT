@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Mic, Trash2, Video } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Mic, Sparkles, Trash2, Video } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { IconTile } from '@/components/ui/icon-tile';
 import { useApi, apiPost, apiDelete } from '@/hooks/use-api';
@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { RecordingVideoShareActions } from '@/components/recordings/recording-video-share-actions';
 import { ListSearchInput } from '@/components/ui/list-search-input';
 import { matchesListSearch } from '@/lib/ui/matches-list-search';
+import { MarketingExportModal } from '@/components/recordings/marketing-export-modal';
 
 interface Recording {
   id: string;
@@ -38,6 +39,7 @@ export function RecordingsPage() {
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [marketingRecording, setMarketingRecording] = useState<Recording | null>(null);
   const router = useRouter();
 
   const filteredRecordings = useMemo(() => {
@@ -232,6 +234,16 @@ export function RecordingsPage() {
                         {generating === rec.id ? 'Generating...' : 'Generate Guide'}
                       </button>
                     ) : null}
+                    {rec.status === 'ready' && rec.videoUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setMarketingRecording(rec)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-violet-500/40 text-violet-200 hover:bg-violet-500/10 transition-colors"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 shrink-0" strokeWidth={2} aria-hidden />
+                        Marketing export
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => handleDelete(rec.id)}
@@ -281,6 +293,11 @@ export function RecordingsPage() {
             </div>
           )}
         </div>
+        <MarketingExportModal
+          recording={marketingRecording}
+          open={Boolean(marketingRecording)}
+          onClose={() => setMarketingRecording(null)}
+        />
     </AppShell>
   );
 }

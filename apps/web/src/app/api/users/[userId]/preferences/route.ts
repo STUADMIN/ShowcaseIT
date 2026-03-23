@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
 import type { UserUiPreferences } from '@/lib/user-preferences/types';
 

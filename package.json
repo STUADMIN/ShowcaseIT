@@ -13,7 +13,8 @@
     "dev:web": "turbo dev --filter=@showcaseit/web",
     "dev:desktop": "turbo dev --filter=@showcaseit/desktop",
     "build:web": "turbo build --filter=@showcaseit/web",
-    "build:desktop": "turbo build --filter=@showcaseit/desktop"
+    "build:desktop": "turbo build --filter=@showcaseit/desktop",
+    "worker:marketing": "npm run worker:marketing -w @showcaseit/web"
   },
   "devDependencies": {
     "prisma": "^6.19.2",

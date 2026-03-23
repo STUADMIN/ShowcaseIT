@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
 import { parseSocialPlatformAssets, type SocialPlatformAssetsMap } from '@/lib/brand/social-platform-assets';
 

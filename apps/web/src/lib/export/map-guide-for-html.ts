@@ -1,5 +1,5 @@
 import type { BrandKit, Guide, GuideStep } from './types';
-import type { BrandKit as PrismaBrandKit, GuideStep as PrismaGuideStep } from '@prisma/client';
+import type { BrandKit as PrismaBrandKit, GuideStep as PrismaGuideStep } from '@/generated/prisma';
 import { parseSocialPlatformAssets } from '@/lib/brand/social-platform-assets';
 
 function parseAnnotations(raw: unknown): GuideStep['annotations'] {

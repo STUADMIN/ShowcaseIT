@@ -29,6 +29,11 @@ export default function NewVideoRecordingPage() {
     setProgress('Uploading recording...');
 
     try {
+      if (!result.blob || result.blob.size < 1) {
+        setProgress('Recording is empty. Try recording again.');
+        setStatus('upload-error');
+        return;
+      }
       const formData = new FormData();
       formData.append('video', result.blob, 'recording.webm');
       formData.append(

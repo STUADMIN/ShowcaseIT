@@ -32,5 +32,13 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  /**
+   * Skip API routes: running Supabase session refresh middleware on multipart POSTs (e.g.
+   * `/api/recordings/upload`) can leave the body unreadable and causes
+   * "Failed to parse body as FormData" from Node's multipart parser.
+   * Pages still get session refresh; API routes read cookies from the incoming request as usual.
+   */
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };

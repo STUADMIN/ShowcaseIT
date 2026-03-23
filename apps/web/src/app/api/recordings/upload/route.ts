@@ -96,7 +96,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(updated, { status: 201 });
   } catch (error) {
     console.error('Recording upload error:', error);
-    const message = error instanceof Error ? error.message : 'Upload failed';
+    const err = error instanceof Error ? error : new Error(String(error));
+    const cause = err.cause instanceof Error ? err.cause.message : err.cause;
+    if (cause) console.error('Recording upload cause:', cause);
+    const message = err.message || 'Upload failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

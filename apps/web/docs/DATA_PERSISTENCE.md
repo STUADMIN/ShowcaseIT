@@ -2,12 +2,15 @@
 
 ## PostgreSQL (Prisma / `DATABASE_URL`)
 
+The Prisma client is generated into **`src/generated/prisma`** (gitignored) so `npx prisma generate` does not fight Windows file locks on hoisted `node_modules/.prisma`. Imports use `@/generated/prisma` instead of `@prisma/client`.
+
 Durable app data:
 
 - **Users** — profile, notification toggles, **preferred workspace**, **recording mic default**, **UI prefs** (`ui_preferences` JSON, e.g. liquid glass).
 - **Workspaces & members** — teams, roles.
 - **Projects & guides** — guide metadata, **steps** (titles, descriptions, annotations, export flags, etc.).
 - **Recordings** — metadata; **video/screenshot files** live in Supabase Storage (URLs in DB).
+- **Marketing render jobs** — `marketing_render_jobs` (queued → processing → ready/fail); **output files** will live in storage when a worker is implemented (see `MARKETING_RENDERS.md`).
 - **Brand kits** — colors, logos, banners, social assets.
 - **Confluence** — `workspaces.confluence_integration` (connection settings only).
 - **Publish logs** — Confluence publish history.
@@ -35,7 +38,12 @@ Sign-in state uses **Supabase** session cookies (via `@supabase/ssr`). Sessions 
 
 Published pages live in **Atlassian Confluence**, not in ShowcaseIt’s database. We only store integration credentials and optional publish logs.
 
+## Email (Resend)
+
+Product email uses **Resend** only. Env vars and behavior: [`EMAIL.md`](./EMAIL.md).
+
 ## Deploy checklist
 
 - Set `DATABASE_URL` / `DIRECT_URL` and run **`npx prisma migrate deploy`** so all columns exist.
 - Set Supabase env vars for auth and storage.
+- For outbound email: `RESEND_API_KEY` + `RESEND_FROM_EMAIL` (see `EMAIL.md`).

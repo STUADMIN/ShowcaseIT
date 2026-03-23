@@ -1,5 +1,7 @@
 generator client {
   provider = "prisma-client-js"
+  /// Avoid Windows EPERM on hoisted `node_modules/.prisma` (Next/Cursor locks query_engine DLL).
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -32,6 +34,7 @@ model User {
 
   workspaceMembers     WorkspaceMember[]
   recordings           Recording[]
+  marketingRenderJobs  MarketingRenderJob[]
   guides               Guide[]
   preferredWorkspace   Workspace? @relation("UserPreferredWorkspace", fields: [preferredWorkspaceId], references: [id], onDelete: SetNull)
 
@@ -136,9 +139,35 @@ model Recording {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
-  guides  Guide[]
+  guides              Guide[]
+  marketingRenderJobs MarketingRenderJob[]
 
   @@map("recordings")
+}
+
+/// Async marketing-style outputs from a screen recording (branded video, motion replay, AI pass — see docs/MARKETING_RENDERS.md).
+model MarketingRenderJob {
+  id          String   @id @default(uuid())
+  recordingId String   @map("recording_id")
+  userId      String   @map("user_id")
+  /// branded_screen | motion_walkthrough | ai_enhanced | branded_plus_motion | full_stack
+  mode        String   @map("mode")
+  /// queued | processing | ready | failed
+  status      String   @default("queued") @map("status")
+  /// Public URL when status is ready (e.g. Supabase Storage).
+  outputUrl   String?  @map("output_url")
+  error       String?  @map("error")
+  /// Template / caps / flags — e.g. { "aspectRatio": "16:9", "maxSeconds": 120 }
+  options     Json     @default("{}") @map("options")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  recording Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([recordingId])
+  @@index([status])
+  @@map("marketing_render_jobs")
 }
 
 model Guide {

@@ -9,9 +9,11 @@
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
+    "db:generate:clean": "node ./scripts/prisma-generate-clean.cjs",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "worker:marketing": "node ./scripts/run-marketing-worker.cjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
@@ -41,6 +43,7 @@
     "postcss": "^8.5.8",
     "prisma": "^6.19.2",
     "tailwindcss": "^4.2.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.3"
   }
 }

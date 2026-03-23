@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
 import { createClient } from '@supabase/supabase-js';
 import { extractFrames } from '@/lib/video/extract-frames';

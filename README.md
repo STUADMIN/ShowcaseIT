@@ -65,9 +65,9 @@ showcaseit/
 ## Notifications & weekly digest
 
 - **Settings → Notifications** persists to Postgres (`users.notify_*` columns).
-- **Weekly digest** emails are sent by `POST|GET /api/cron/weekly-digest` (schedule in `apps/web/vercel.json` for Vercel).
+- **Weekly digest** emails are sent by `POST|GET /api/cron/weekly-digest` (schedule in root `vercel.json` for Vercel).
 - Set **`CRON_SECRET`** and call the route with header `Authorization: Bearer <CRON_SECRET>`.
-- Optional: **`RESEND_API_KEY`** + **`RESEND_FROM_EMAIL`** to deliver email; without them the cron still runs but skips sending (see server logs).
+- **Email is sent only via [Resend](https://resend.com):** set **`RESEND_API_KEY`** + **`RESEND_FROM_EMAIL`** (verified domain); without them the cron still runs but skips sending (see [`apps/web/docs/EMAIL.md`](apps/web/docs/EMAIL.md) and server logs).
 - Local test: `curl -X POST "http://localhost:3000/api/cron/weekly-digest?dryRun=1" -H "Authorization: Bearer dev"` (with `CRON_SECRET=dev` in `.env.local`).
 
 After pulling schema changes:
@@ -77,6 +77,18 @@ cd apps/web
 npx prisma migrate deploy
 npx prisma db seed
 ```
+
+## Vercel (web)
+
+Deploy the Next.js app from the **monorepo root** (`npm run build:web`). See [docs/VERCEL.md](docs/VERCEL.md) if the build fails or the project is pointed at `apps/desktop`.
+
+## Roadmap (voiceover, scheduling, campaigns)
+
+Concrete epics (phases, DB/API/UI sketches): [docs/ROADMAP_EPICS_OUTBOUND_VOICE.md](docs/ROADMAP_EPICS_OUTBOUND_VOICE.md).
+
+## Marketing video exports (from recordings)
+
+Recordings → **Marketing export** creates async **render jobs**. **`branded_screen`** (and combo modes for now) are processed by **`npm run worker:marketing`** from the **repo root** or `apps/web` (ffmpeg + Brand Kit letterbox → MP4 → Supabase). One-shot: `npm run worker:marketing -- --once`. Vercel cron skips encoding unless `MARKETING_RENDER_VERCEL=1`. Details: [apps/web/docs/MARKETING_RENDERS.md](apps/web/docs/MARKETING_RENDERS.md).
 
 ## GitHub
 
