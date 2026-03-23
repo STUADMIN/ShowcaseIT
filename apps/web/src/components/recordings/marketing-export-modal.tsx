@@ -9,6 +9,21 @@ import {
 } from '@/lib/marketing-render/modes';
 import { apiPost } from '@/hooks/use-api';
 
+/** Modes that can feed AI style pass (must match API / base-marketing-source). */
+const BASE_MODES_FOR_AI = new Set(['branded_screen', 'motion_walkthrough', 'branded_plus_motion']);
+
+function pickReadyBaseJob(jobs: JobRow[]): JobRow | null {
+  const eligible = jobs.filter(
+    (j) =>
+      j.status === 'ready' &&
+      j.outputUrl?.trim() &&
+      BASE_MODES_FOR_AI.has(j.mode)
+  );
+  if (eligible.length === 0) return null;
+  eligible.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return eligible[0] ?? null;
+}
+
 type Recording = {
   id: string;
   title: string;
@@ -39,6 +54,9 @@ export function MarketingExportModal({
   const [message, setMessage] = useState<string | null>(null);
   const [pollJob, setPollJob] = useState<{ id: string } | null>(null);
   const [jobSnapshot, setJobSnapshot] = useState<JobRow | null>(null);
+  const [priorJobs, setPriorJobs] = useState<JobRow[] | null>(null);
+  const [priorJobsLoading, setPriorJobsLoading] = useState(false);
+  const [priorJobsError, setPriorJobsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -49,7 +67,50 @@ export function MarketingExportModal({
       return;
     }
     setMode('branded_screen');
+    setPriorJobs(null);
+    setPriorJobsError(null);
   }, [open, recording?.id]);
+
+  useEffect(() => {
+    if (!open || !recording || mode !== 'ai_enhanced') {
+      if (!open || mode !== 'ai_enhanced') {
+        setPriorJobsLoading(false);
+      }
+      return;
+    }
+    let cancelled = false;
+    setPriorJobsLoading(true);
+    setPriorJobsError(null);
+    void (async () => {
+      try {
+        const r = await fetch(
+          `/api/recordings/${recording.id}/marketing-renders?userId=${encodeURIComponent(recording.userId)}`
+        );
+        const data = (await r.json()) as JobRow[] | { error?: string };
+        if (cancelled) return;
+        if (!r.ok) {
+          setPriorJobsError(
+            typeof data === 'object' && data && 'error' in data && typeof data.error === 'string'
+              ? data.error
+              : 'Could not load prior exports'
+          );
+          setPriorJobs([]);
+          return;
+        }
+        setPriorJobs(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancelled) {
+          setPriorJobsError('Could not load prior exports');
+          setPriorJobs([]);
+        }
+      } finally {
+        if (!cancelled) setPriorJobsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, recording, mode]);
 
   useEffect(() => {
     if (!pollJob || !recording) return;
@@ -99,18 +160,29 @@ export function MarketingExportModal({
   /** Flat, neutral “marketing illustration” feel (vs default dark chrome). */
   const flatFeel = mode === 'ai_enhanced' || jobSnapshot?.mode === 'ai_enhanced';
 
+  const readyBaseJob = pickReadyBaseJob(priorJobs ?? []);
+  /** Wait for list fetch; block if no eligible ready base (avoids opaque API 400). */
+  const aiBlocked =
+    mode === 'ai_enhanced' &&
+    (priorJobsLoading || priorJobs === null || !readyBaseJob);
+
   const handleSubmit = async () => {
     setMessage(null);
     setBusy(true);
     setJobSnapshot(null);
     try {
+      const options: Record<string, unknown> = {
+        aspectRatio: '16:9',
+        bannerPosition: 'none',
+      };
+      if (mode === 'ai_enhanced' && readyBaseJob?.id) {
+        options.baseMarketingJobId = readyBaseJob.id;
+      }
+
       const job = await apiPost<JobRow>(`/api/recordings/${recording.id}/marketing-renders`, {
         userId: recording.userId,
         mode,
-        options: {
-          aspectRatio: '16:9',
-          bannerPosition: 'none',
-        },
+        options,
       });
       setPollJob({ id: job.id });
       setJobSnapshot(job);
@@ -125,6 +197,20 @@ export function MarketingExportModal({
       }
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Could not create job');
+      if (mode === 'ai_enhanced' && open && recording) {
+        setPriorJobsLoading(true);
+        try {
+          const r = await fetch(
+            `/api/recordings/${recording.id}/marketing-renders?userId=${encodeURIComponent(recording.userId)}`
+          );
+          const data = (await r.json()) as JobRow[] | { error?: string };
+          if (r.ok && Array.isArray(data)) setPriorJobs(data);
+        } catch {
+          /* ignore */
+        } finally {
+          setPriorJobsLoading(false);
+        }
+      }
     } finally {
       setBusy(false);
     }
@@ -237,6 +323,67 @@ export function MarketingExportModal({
           })}
         </select>
 
+        {mode === 'ai_enhanced' ? (
+          <div className="mb-4 space-y-2">
+            {priorJobsLoading ? (
+              <p className="text-xs text-stone-500">Checking for a finished export for this recording…</p>
+            ) : priorJobsError ? (
+              <p className="text-xs text-red-800 bg-red-100/80 border border-red-200 rounded-lg px-3 py-2">
+                {priorJobsError}
+              </p>
+            ) : readyBaseJob ? (
+              <div className="text-xs text-emerald-900 bg-emerald-100/80 border border-emerald-200/90 rounded-lg px-3 py-2 space-y-1">
+                <p className="font-medium">Ready to polish</p>
+                <p className="text-emerald-900/95">
+                  Using your latest finished{' '}
+                  <span className="font-medium">{MARKETING_RENDER_MODE_LABELS[readyBaseJob.mode as MarketingRenderMode] ?? readyBaseJob.mode}</span>{' '}
+                  ({new Date(readyBaseJob.createdAt).toLocaleString()}). AI style pass will run on that file.
+                </p>
+              </div>
+            ) : (
+              <div className="text-xs text-stone-800 bg-amber-100/70 border border-amber-200/80 rounded-lg px-3 py-2 space-y-2">
+                <p className="font-medium">Create a base export first</p>
+                <ol className="list-decimal list-inside space-y-1 text-stone-800/95">
+                  <li>
+                    Choose <strong>Branded screen recording</strong>, <strong>Animated walkthrough</strong>, or{' '}
+                    <strong>Branded + motion</strong> above.
+                  </li>
+                  <li>Click <strong>Create job</strong> and wait until status is <strong>ready</strong> (worker running).</li>
+                  <li>Switch back to <strong>AI style pass</strong> and create this job again.</li>
+                </ol>
+                <button
+                  type="button"
+                  className="rounded-md border border-amber-400/80 bg-white px-2.5 py-1.5 text-[11px] font-medium text-stone-800 hover:bg-amber-50/90"
+                  onClick={() => {
+                    setMessage(null);
+                    setMode('branded_screen');
+                  }}
+                >
+                  Switch to Branded screen to run step 1
+                </button>
+                {(priorJobs?.length ?? 0) > 0 ? (
+                  <div className="pt-1 border-t border-amber-200/60">
+                    <p className="font-medium text-stone-800 mb-1">Recent jobs for this recording</p>
+                    <ul className="space-y-0.5 text-[11px] text-stone-700">
+                      {priorJobs!.slice(0, 6).map((j) => (
+                        <li key={j.id}>
+                          <span className="font-medium">{j.status}</span>
+                          {' · '}
+                          {MARKETING_RENDER_MODE_LABELS[j.mode as MarketingRenderMode] ?? j.mode}
+                          {' · '}
+                          {new Date(j.createdAt).toLocaleString()}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-stone-600 pt-1">No marketing jobs yet for this recording.</p>
+                )}
+              </div>
+            )}
+          </div>
+        ) : null}
+
         {message ? (
           <p
             className={
@@ -345,7 +492,14 @@ export function MarketingExportModal({
           <button
             type="button"
             onClick={() => void handleSubmit()}
-            disabled={busy || !!pollJob}
+            disabled={busy || !!pollJob || aiBlocked}
+            title={
+              aiBlocked && mode === 'ai_enhanced'
+                ? priorJobsLoading || priorJobs === null
+                  ? 'Checking for a finished base export…'
+                  : 'Finish a Branded, Walkthrough, or Branded + motion export first (status must be ready)'
+                : undefined
+            }
             className={
               flatFeel
                 ? 'rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-[#f4f1ea] shadow-sm hover:bg-stone-800 disabled:opacity-50'
