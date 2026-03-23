@@ -118,9 +118,9 @@ function buildMarketingVideoFilter(params: {
   return vf;
 }
 
-/** Light polish on an existing H.264 export (neural style via ai-service is still future work). */
+/** Light polish on an existing H.264 export — calmer, slightly desaturated “flat marketing” feel. */
 function buildPolishOnlyFilter(): string {
-  return 'eq=saturation=1.08:contrast=1.05:brightness=0.012';
+  return 'eq=saturation=0.92:contrast=1.04:brightness=0.018:gamma=0.96';
 }
 
 /**

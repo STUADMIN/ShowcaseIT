@@ -96,6 +96,9 @@ export function MarketingExportModal({
 
   if (!open || !recording) return null;
 
+  /** Flat, neutral “marketing illustration” feel (vs default dark chrome). */
+  const flatFeel = mode === 'ai_enhanced' || jobSnapshot?.mode === 'ai_enhanced';
+
   const handleSubmit = async () => {
     setMessage(null);
     setBusy(true);
@@ -104,7 +107,10 @@ export function MarketingExportModal({
       const job = await apiPost<JobRow>(`/api/recordings/${recording.id}/marketing-renders`, {
         userId: recording.userId,
         mode,
-        options: { aspectRatio: '16:9' },
+        options: {
+          aspectRatio: '16:9',
+          bannerPosition: 'none',
+        },
       });
       setPollJob({ id: job.id });
       setJobSnapshot(job);
@@ -125,49 +131,98 @@ export function MarketingExportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div
+      className={
+        flatFeel
+          ? 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/35 backdrop-blur-[2px]'
+          : 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm'
+      }
+    >
       <div
-        className="card w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className={
+          flatFeel
+            ? 'w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-stone-300/90 bg-[#f4f1ea] p-6 shadow-[0_2px_8px_rgba(15,23,42,0.06)]'
+            : 'card w-full max-w-lg max-h-[90vh] overflow-y-auto'
+        }
         role="dialog"
         aria-labelledby="marketing-export-title"
       >
         <div className="flex items-start justify-between gap-4 mb-4">
-          <h3 id="marketing-export-title" className="text-lg font-semibold text-gray-100">
+          <h3
+            id="marketing-export-title"
+            className={
+              flatFeel
+                ? 'text-lg font-semibold tracking-tight text-stone-900'
+                : 'text-lg font-semibold text-gray-100'
+            }
+          >
             Marketing export
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-300 text-xl leading-none"
+            className={
+              flatFeel
+                ? 'text-stone-500 hover:text-stone-800 text-xl leading-none'
+                : 'text-gray-500 hover:text-gray-300 text-xl leading-none'
+            }
             aria-label="Close"
           >
             ×
           </button>
         </div>
-        <p className="text-sm text-gray-400 mb-4">
-          Create a render job for <span className="text-gray-200">{recording.title}</span>. Heavy
-          encoding runs on a <strong className="text-gray-300">worker</strong>, not inside a short
-          serverless request. See <code className="text-gray-400 text-xs">apps/web/docs/MARKETING_RENDERS.md</code>{' '}
+        <p className={flatFeel ? 'text-sm text-stone-600 mb-4' : 'text-sm text-gray-400 mb-4'}>
+          Create a render job for{' '}
+          <span className={flatFeel ? 'font-medium text-stone-800' : 'text-gray-200'}>
+            {recording.title}
+          </span>
+          . Heavy encoding runs on a{' '}
+          <strong className={flatFeel ? 'font-semibold text-stone-800' : 'text-gray-300'}>worker</strong>, not
+          inside a short serverless request. See{' '}
+          <code
+            className={
+              flatFeel ? 'text-[11px] text-stone-500' : 'text-gray-400 text-xs'
+            }
+          >
+            apps/web/docs/MARKETING_RENDERS.md
+          </code>{' '}
           in the repo for API, cron, and Vercel limits.
         </p>
 
         {mode === 'motion_walkthrough' ? (
-          <p className="text-xs text-gray-500 mb-3 -mt-2">
+          <p
+            className={
+              flatFeel
+                ? 'text-xs text-stone-600 mb-3 -mt-2'
+                : 'text-xs text-gray-500 mb-3 -mt-2'
+            }
+          >
             Uses saved click / step markers on the recording. Desktop captures with click tracking give
             the best results; pure step markers flash at the center of the framed screen.
           </p>
         ) : null}
         {mode === 'ai_enhanced' ? (
-          <p className="text-xs text-gray-500 mb-3 -mt-2">
-            Run <strong className="text-gray-400">Branded screen</strong> or <strong className="text-gray-400">Animated walkthrough</strong>{' '}
-            for this recording first and wait until that job is <strong className="text-gray-400">ready</strong>. This
-            mode then applies a light ffmpeg color polish on that file (neural AI on full video is still planned).
+          <p className="text-xs text-stone-600 mb-3 -mt-2 leading-relaxed">
+            Run <strong className="font-medium text-stone-800">Branded screen</strong> or{' '}
+            <strong className="font-medium text-stone-800">Animated walkthrough</strong> first and wait until
+            that job is <strong className="font-medium text-stone-800">ready</strong>. This pass adds a{' '}
+            <strong className="font-medium text-stone-800">clean, flat polish</strong> (muted contrast, calm
+            tones) — closer to a minimal marketing graphic than a raw screen capture. No bottom banner strip is
+            added to the video.
           </p>
         ) : null}
 
-        <label className="text-sm text-gray-400 block mb-2">Pipeline mode</label>
+        <label
+          className={flatFeel ? 'text-sm text-stone-700 block mb-2' : 'text-sm text-gray-400 block mb-2'}
+        >
+          Pipeline mode
+        </label>
         <select
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-200 mb-4"
+          className={
+            flatFeel
+              ? 'w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-800 mb-4 shadow-sm'
+              : 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-200 mb-4'
+          }
           value={mode}
           onChange={(e) => setMode(e.target.value as MarketingRenderMode)}
         >
@@ -185,20 +240,28 @@ export function MarketingExportModal({
         {message ? (
           <p
             className={
-              jobSnapshot?.status === 'processing'
-                ? 'text-xs text-sky-100/95 bg-sky-950/40 border border-sky-800/50 rounded-lg px-3 py-2 mb-4'
-                : jobSnapshot?.status === 'failed'
-                  ? 'text-xs text-red-100/95 bg-red-950/35 border border-red-900/50 rounded-lg px-3 py-2 mb-4'
-                  : message.includes('Render finished')
-                    ? 'text-xs text-emerald-100/95 bg-emerald-950/35 border border-emerald-800/50 rounded-lg px-3 py-2 mb-4'
-                    : 'text-xs text-amber-100/95 bg-amber-950/35 border border-amber-800/50 rounded-lg px-3 py-2 mb-4'
+              flatFeel
+                ? jobSnapshot?.status === 'processing'
+                  ? 'text-xs text-stone-800 bg-stone-200/80 border border-stone-300 rounded-lg px-3 py-2 mb-4'
+                  : jobSnapshot?.status === 'failed'
+                    ? 'text-xs text-red-900 bg-red-100/90 border border-red-200 rounded-lg px-3 py-2 mb-4'
+                    : message.includes('Render finished')
+                      ? 'text-xs text-emerald-900 bg-emerald-100/80 border border-emerald-200/90 rounded-lg px-3 py-2 mb-4'
+                      : 'text-xs text-stone-800 bg-amber-100/70 border border-amber-200/80 rounded-lg px-3 py-2 mb-4'
+                : jobSnapshot?.status === 'processing'
+                  ? 'text-xs text-sky-100/95 bg-sky-950/40 border border-sky-800/50 rounded-lg px-3 py-2 mb-4'
+                  : jobSnapshot?.status === 'failed'
+                    ? 'text-xs text-red-100/95 bg-red-950/35 border border-red-900/50 rounded-lg px-3 py-2 mb-4'
+                    : message.includes('Render finished')
+                      ? 'text-xs text-emerald-100/95 bg-emerald-950/35 border border-emerald-800/50 rounded-lg px-3 py-2 mb-4'
+                      : 'text-xs text-amber-100/95 bg-amber-950/35 border border-amber-800/50 rounded-lg px-3 py-2 mb-4'
             }
           >
             {message}
           </p>
         ) : null}
 
-        {jobSnapshot?.status === 'processing' ? (
+        {jobSnapshot?.status === 'processing' && !flatFeel ? (
           <p className="text-xs text-gray-500 mb-4 -mt-2">
             Keep <code className="text-gray-600 text-[11px]">npm run worker:marketing</code> running in a
             terminal. If the dev server or worker restarts mid-encode, status can stick until the worker
@@ -208,23 +271,47 @@ export function MarketingExportModal({
         ) : null}
 
         {jobSnapshot ? (
-          <div className="text-xs text-gray-500 mb-4 space-y-1">
+          <div
+            className={
+              flatFeel
+                ? 'text-xs text-stone-600 mb-4 space-y-1'
+                : 'text-xs text-gray-500 mb-4 space-y-1'
+            }
+          >
             <p>
-              Status: <span className="text-gray-300">{jobSnapshot.status}</span> · Mode:{' '}
-              <span className="text-gray-300">{jobSnapshot.mode}</span>
+              Status:{' '}
+              <span className={flatFeel ? 'text-stone-900 font-medium' : 'text-gray-300'}>
+                {jobSnapshot.status}
+              </span>{' '}
+              · Mode:{' '}
+              <span className={flatFeel ? 'text-stone-900 font-medium' : 'text-gray-300'}>
+                {jobSnapshot.mode}
+              </span>
             </p>
             {jobSnapshot.outputUrl ? (
               <a
                 href={jobSnapshot.outputUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-brand-400 hover:underline break-all"
+                className={
+                  flatFeel
+                    ? 'text-stone-800 underline decoration-stone-400 underline-offset-2 hover:text-stone-950 break-all'
+                    : 'text-brand-400 hover:underline break-all'
+                }
               >
                 Open output
               </a>
             ) : null}
             {jobSnapshot.error ? (
-              <p className="text-red-300/95 break-words [overflow-wrap:anywhere]">{jobSnapshot.error}</p>
+              <p
+                className={
+                  flatFeel
+                    ? 'text-red-800 break-words [overflow-wrap:anywhere]'
+                    : 'text-red-300/95 break-words [overflow-wrap:anywhere]'
+                }
+              >
+                {jobSnapshot.error}
+              </p>
             ) : null}
           </div>
         ) : null}
@@ -232,7 +319,11 @@ export function MarketingExportModal({
         {pollJob ? (
           <button
             type="button"
-            className="text-xs text-gray-500 hover:text-gray-300 mb-3"
+            className={
+              flatFeel
+                ? 'text-xs text-stone-500 hover:text-stone-800 mb-3'
+                : 'text-xs text-gray-500 hover:text-gray-300 mb-3'
+            }
             onClick={() => setPollJob(null)}
           >
             Stop polling (job keeps running on the server)
@@ -240,14 +331,26 @@ export function MarketingExportModal({
         ) : null}
 
         <div className="flex gap-2 justify-end">
-          <button type="button" onClick={onClose} className="btn-secondary text-sm">
+          <button
+            type="button"
+            onClick={onClose}
+            className={
+              flatFeel
+                ? 'rounded-lg border border-stone-400 bg-white px-4 py-2 text-sm font-medium text-stone-800 shadow-sm hover:bg-stone-50'
+                : 'btn-secondary text-sm'
+            }
+          >
             Close
           </button>
           <button
             type="button"
             onClick={() => void handleSubmit()}
             disabled={busy || !!pollJob}
-            className="btn-primary text-sm disabled:opacity-50"
+            className={
+              flatFeel
+                ? 'rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-[#f4f1ea] shadow-sm hover:bg-stone-800 disabled:opacity-50'
+                : 'btn-primary text-sm disabled:opacity-50'
+            }
           >
             {busy ? 'Creating…' : pollJob ? 'Polling…' : 'Create job'}
           </button>
