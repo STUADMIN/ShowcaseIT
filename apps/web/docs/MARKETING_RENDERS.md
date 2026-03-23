@@ -64,13 +64,23 @@ Production: run **`worker:marketing`** on a small VM, GitHub Action, or Railway 
 | `MARKETING_RENDER_INLINE=1` | After `POST`, start the processor in the **background** inside the Next process (still OK on **local** dev). The HTTP response returns right away with `queued`; the client should poll like the worker path. Avoid on serverless unless you understand lifecycle limits. |
 | `MARKETING_RENDER_USE_STUB=1` | Force old “stub failed” behavior (tests). |
 | `MARKETING_RENDER_VERCEL=1` | Allow ffmpeg path on Vercel (discouraged). |
+| `MARKETING_RENDER_FFMPEG_TIMEOUT_MS` | Kill ffmpeg after this many ms (default **45 minutes**). Prevents infinite hangs. |
+| `MARKETING_RENDER_STALE_PROCESSING_MIN` | Worker/cron (and each job run) mark `processing` jobs as **failed** if untouched this many minutes (default **12**). Recovers from crashed workers or `next dev` restarts. |
 
 ## Implementation files
 
 - `src/lib/marketing-render/run-job.ts` — download, ffmpeg, Supabase upload, Prisma updates.
+- `src/lib/marketing-render/stale-jobs.ts` — fail `processing` jobs that never finished (worker/cron).
 - `src/lib/marketing-render/click-highlights-vf.ts` — click / step-marker → ffmpeg `drawbox` chain.
 - `src/lib/marketing-render/process-job.ts` — cron / inline entry, stub toggle.
 - `src/scripts/marketing-render-worker.ts` — CLI poll loop.
+
+## Stuck on `processing`
+
+- Ensure **`npm run worker:marketing`** is running (unless you use `MARKETING_RENDER_INLINE=1`).
+- After a **`next dev` restart**, an in-flight job can be orphaned; the worker fails stale **`processing`** rows after **12 minutes** by default (`MARKETING_RENDER_STALE_PROCESSING_MIN`).
+- **ffmpeg** is killed after **45 minutes** per run (`MARKETING_RENDER_FFMPEG_TIMEOUT_MS` to override).
+- To clear one job immediately, set `status` to `failed` (or delete the row) in **`marketing_render_jobs`** via Prisma Studio / SQL, then create a new job.
 
 ## Deploy checklist
 

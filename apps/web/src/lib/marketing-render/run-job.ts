@@ -17,6 +17,7 @@ import {
   wantsMotionHighlights,
 } from '@/lib/marketing-render/click-highlights-vf';
 import { findReadyBaseMarketingVideoUrl } from '@/lib/marketing-render/base-marketing-source';
+import { failStaleMarketingProcessingJobs } from '@/lib/marketing-render/stale-jobs';
 import { getResolvedFfmpegPath } from '@/lib/video/extract-frames';
 
 const execFileAsync = promisify(execFile);
@@ -87,7 +88,16 @@ async function runFfmpegH264(params: {
     '+faststart',
     params.outputPath,
   ];
-  await execFileAsync(ffmpeg, args, { maxBuffer: 20 * 1024 * 1024 });
+  const timeoutRaw = process.env.MARKETING_RENDER_FFMPEG_TIMEOUT_MS?.trim();
+  const timeoutParsed = timeoutRaw ? parseInt(timeoutRaw, 10) : NaN;
+  const timeoutMs =
+    Number.isFinite(timeoutParsed) && timeoutParsed > 0 ? timeoutParsed : 45 * 60 * 1000;
+
+  await execFileAsync(ffmpeg, args, {
+    maxBuffer: 20 * 1024 * 1024,
+    timeout: timeoutMs,
+    killSignal: 'SIGKILL',
+  });
 }
 
 /** Letterbox + optional click highlights + optional ffmpeg “grade” (placeholder until ai-service video pass). */
@@ -127,6 +137,8 @@ export async function executeMarketingRenderJob(jobId: string): Promise<void> {
     });
     return;
   }
+
+  await failStaleMarketingProcessingJobs();
 
   const job = await prisma.marketingRenderJob.findUnique({
     where: { id: jobId },

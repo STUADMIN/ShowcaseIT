@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { processMarketingRenderJobStub } from '@/lib/marketing-render/process-job';
+import { failStaleMarketingProcessingJobs } from '@/lib/marketing-render/stale-jobs';
 
 const CRON_HEADER = 'authorization';
 
@@ -29,6 +30,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await failStaleMarketingProcessingJobs();
+
     const job = await prisma.marketingRenderJob.findFirst({
       where: { status: 'queued' },
       orderBy: { createdAt: 'asc' },

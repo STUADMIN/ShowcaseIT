@@ -9,6 +9,7 @@
  */
 import { prisma } from '@/lib/db/prisma';
 import { executeMarketingRenderJob } from '@/lib/marketing-render/run-job';
+import { failStaleMarketingProcessingJobs } from '@/lib/marketing-render/stale-jobs';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -18,6 +19,8 @@ async function main() {
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
+    await failStaleMarketingProcessingJobs();
+
     const job = await prisma.marketingRenderJob.findFirst({
       where: { status: 'queued' },
       orderBy: { createdAt: 'asc' },
