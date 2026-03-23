@@ -78,7 +78,8 @@ Production: run **`worker:marketing`** on a small VM, GitHub Action, or Railway 
 ## Stuck on `processing`
 
 - Ensure **`npm run worker:marketing`** is running (unless you use `MARKETING_RENDER_INLINE=1`).
-- After a **`next dev` restart**, an in-flight job can be orphaned; the worker fails stale **`processing`** rows after **3 minutes** by default (`MARKETING_RENDER_STALE_PROCESSING_MIN`).
+- The worker runs a **background sweep every 30s** so stale **`processing`** jobs are detected even while ffmpeg is busy on another encode (the main loop cannot run during a long `ffmpeg` call).
+- After a **`next dev` restart**, an in-flight job can be orphaned; stale **`processing`** rows are failed after **3 minutes** of DB inactivity by default (`MARKETING_RENDER_STALE_PROCESSING_MIN`).
 - **ffmpeg** is killed after **45 minutes** per run (`MARKETING_RENDER_FFMPEG_TIMEOUT_MS` to override).
 - To clear one job immediately, set `status` to `failed` (or delete the row) in **`marketing_render_jobs`** via Prisma Studio / SQL, then create a new job.
 

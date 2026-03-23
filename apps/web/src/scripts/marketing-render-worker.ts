@@ -17,34 +17,51 @@ async function main() {
   const once = process.argv.includes('--once');
   console.info('[marketing worker] started', once ? '(single pass)' : '(loop Ctrl+C to stop)');
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    await failStaleMarketingProcessingJobs();
+  await failStaleMarketingProcessingJobs();
 
-    const job = await prisma.marketingRenderJob.findFirst({
-      where: { status: 'queued' },
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    });
+  /**
+   * Stale-job sweep must run while `executeMarketingRenderJob` is blocked on ffmpeg — otherwise a hung
+   * encode never returns to the loop and `processing` rows never age out.
+   */
+  const staleInterval =
+    once
+      ? null
+      : setInterval(() => {
+          void failStaleMarketingProcessingJobs().catch((e) =>
+            console.error('[marketing worker] stale sweep failed', e)
+          );
+        }, 30_000);
 
-    if (!job) {
-      if (once) {
-        console.info('[marketing worker] no queued jobs');
-        break;
+  try {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const job = await prisma.marketingRenderJob.findFirst({
+        where: { status: 'queued' },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+      });
+
+      if (!job) {
+        if (once) {
+          console.info('[marketing worker] no queued jobs');
+          break;
+        }
+        await sleep(4000);
+        continue;
       }
-      await sleep(4000);
-      continue;
+
+      console.info('[marketing worker] processing', job.id);
+      await executeMarketingRenderJob(job.id);
+      const done = await prisma.marketingRenderJob.findUnique({
+        where: { id: job.id },
+        select: { status: true, outputUrl: true, error: true },
+      });
+      console.info('[marketing worker] result', done?.status, done?.outputUrl || done?.error || '');
+
+      if (once) break;
     }
-
-    console.info('[marketing worker] processing', job.id);
-    await executeMarketingRenderJob(job.id);
-    const done = await prisma.marketingRenderJob.findUnique({
-      where: { id: job.id },
-      select: { status: true, outputUrl: true, error: true },
-    });
-    console.info('[marketing worker] result', done?.status, done?.outputUrl || done?.error || '');
-
-    if (once) break;
+  } finally {
+    if (staleInterval) clearInterval(staleInterval);
   }
 
   await prisma.$disconnect();

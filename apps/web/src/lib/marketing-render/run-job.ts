@@ -67,6 +67,7 @@ async function runFfmpegH264(params: {
   const ffmpeg = getResolvedFfmpegPath();
   const args = [
     '-hide_banner',
+    '-nostdin',
     '-y',
     ...PROBE,
     '-i',
