@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
+  isMarketingRenderModeImplemented,
   MARKETING_RENDER_MODES,
   MARKETING_RENDER_MODE_LABELS,
   type MarketingRenderMode,
@@ -72,6 +73,14 @@ export function MarketingExportModal({
           } else {
             setMessage('Render finished — use the link below.');
           }
+        } else if (data.status === 'processing') {
+          setMessage(
+            'Encoding in progress (ffmpeg). Long videos can take several minutes — watch the marketing worker terminal for output or errors.'
+          );
+        } else if (data.status === 'queued') {
+          setMessage(
+            'Job queued. If nothing changes, configure a worker or run cron — see Marketing renders doc.'
+          );
         }
       } catch {
         if (!cancelled) setMessage('Could not poll job status');
@@ -102,6 +111,10 @@ export function MarketingExportModal({
       if (job.status === 'queued') {
         setMessage(
           'Job queued. If nothing changes, configure a worker or run cron — see Marketing renders doc.'
+        );
+      } else if (job.status === 'processing') {
+        setMessage(
+          'Encoding in progress (ffmpeg). Long videos can take several minutes — watch the marketing worker terminal for output or errors.'
         );
       }
     } catch (e) {
@@ -144,15 +157,29 @@ export function MarketingExportModal({
           value={mode}
           onChange={(e) => setMode(e.target.value as MarketingRenderMode)}
         >
-          {MARKETING_RENDER_MODES.map((m) => (
-            <option key={m} value={m}>
-              {MARKETING_RENDER_MODE_LABELS[m]}
-            </option>
-          ))}
+          {MARKETING_RENDER_MODES.map((m) => {
+            const ok = isMarketingRenderModeImplemented(m);
+            return (
+              <option key={m} value={m} disabled={!ok}>
+                {MARKETING_RENDER_MODE_LABELS[m]}
+                {!ok ? ' — coming soon' : ''}
+              </option>
+            );
+          })}
         </select>
 
         {message ? (
-          <p className="text-xs text-amber-100/95 bg-amber-950/35 border border-amber-800/50 rounded-lg px-3 py-2 mb-4">
+          <p
+            className={
+              jobSnapshot?.status === 'processing'
+                ? 'text-xs text-sky-100/95 bg-sky-950/40 border border-sky-800/50 rounded-lg px-3 py-2 mb-4'
+                : jobSnapshot?.status === 'failed'
+                  ? 'text-xs text-red-100/95 bg-red-950/35 border border-red-900/50 rounded-lg px-3 py-2 mb-4'
+                  : message.includes('Render finished')
+                    ? 'text-xs text-emerald-100/95 bg-emerald-950/35 border border-emerald-800/50 rounded-lg px-3 py-2 mb-4'
+                    : 'text-xs text-amber-100/95 bg-amber-950/35 border border-amber-800/50 rounded-lg px-3 py-2 mb-4'
+            }
+          >
             {message}
           </p>
         ) : null}

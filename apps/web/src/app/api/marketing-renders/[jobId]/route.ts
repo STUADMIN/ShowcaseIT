@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import {
-  marketingJobsDelegateMissing,
-  PRISMA_MARKETING_JOBS_HINT,
-} from '@/lib/db/prisma-marketing-jobs-guard';
 
 /**
  * GET — job status for polling. Query: userId (must match job owner).
@@ -19,15 +15,6 @@ export async function GET(
   }
 
   try {
-    if (marketingJobsDelegateMissing()) {
-      return NextResponse.json(
-        {
-          error: `Marketing jobs API unavailable (Prisma client out of date). ${PRISMA_MARKETING_JOBS_HINT}`,
-        },
-        { status: 503 }
-      );
-    }
-
     const job = await prisma.marketingRenderJob.findUnique({
       where: { id: jobId },
     });

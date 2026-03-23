@@ -8,6 +8,10 @@ import { pipeline } from 'stream/promises';
 import { createWriteStream } from 'fs';
 import { createClient } from '@supabase/supabase-js';
 import { prisma } from '@/lib/db/prisma';
+import type { MarketingRenderMode } from '@/lib/marketing-render/modes';
+import { MARKETING_RENDER_IMPLEMENTED_MODES } from '@/lib/marketing-render/modes';
+import { parseMarketingJobOptions } from '@/lib/marketing-render/job-options';
+import type { MarketingBannerPosition } from '@/lib/marketing-render/job-options';
 import { getResolvedFfmpegPath } from '@/lib/video/extract-frames';
 
 const execFileAsync = promisify(execFile);
@@ -18,12 +22,6 @@ function hexToFfmpegColor(hex: string): string {
   const s = hex.replace(/^#/, '').trim();
   if (/^[0-9a-fA-F]{6}$/.test(s)) return `0x${s}`;
   return '0x0f172a';
-}
-
-function clampMaxSeconds(raw: unknown): number {
-  const n = typeof raw === 'number' ? raw : Number(raw);
-  if (!Number.isFinite(n) || n < 10) return 180;
-  return Math.min(600, Math.floor(n));
 }
 
 async function downloadVideo(url: string, destPath: string): Promise<void> {
@@ -88,7 +86,7 @@ async function runBrandedFfmpeg(params: {
   await execFileAsync(ffmpeg, args, { maxBuffer: 20 * 1024 * 1024 });
 }
 
-const FFMPEG_MODES = ['branded_screen', 'branded_plus_motion', 'full_stack'] as const;
+const FFMPEG_MODES: readonly MarketingRenderMode[] = MARKETING_RENDER_IMPLEMENTED_MODES;
 
 /**
  * Process one queued job: download → ffmpeg (branded modes) → Supabase → DB ready/failed.

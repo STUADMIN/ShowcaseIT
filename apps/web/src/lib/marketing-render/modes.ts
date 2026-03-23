@@ -11,6 +11,17 @@ export const MARKETING_RENDER_MODES = [
 
 export type MarketingRenderMode = (typeof MARKETING_RENDER_MODES)[number];
 
+/** Modes the worker can run today (ffmpeg + upload path). Others are UI/API placeholders until implemented. */
+export const MARKETING_RENDER_IMPLEMENTED_MODES = [
+  'branded_screen',
+  'branded_plus_motion',
+  'full_stack',
+] as const satisfies readonly MarketingRenderMode[];
+
+export function isMarketingRenderModeImplemented(mode: MarketingRenderMode): boolean {
+  return (MARKETING_RENDER_IMPLEMENTED_MODES as readonly string[]).includes(mode);
+}
+
 export const MARKETING_RENDER_MODE_LABELS: Record<MarketingRenderMode, string> = {
   branded_screen: 'Branded screen recording (ffmpeg + Brand Kit)',
   motion_walkthrough: 'Animated walkthrough (cursor / steps → video)',

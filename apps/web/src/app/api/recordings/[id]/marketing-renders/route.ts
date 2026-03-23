@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import {
-  marketingJobsDelegateMissing,
-  PRISMA_MARKETING_JOBS_HINT,
-} from '@/lib/db/prisma-marketing-jobs-guard';
-import { parseMarketingRenderMode } from '@/lib/marketing-render/modes';
+  isMarketingRenderModeImplemented,
+  parseMarketingRenderMode,
+} from '@/lib/marketing-render/modes';
 import {
   processMarketingRenderJobStub,
   shouldRunInlineProcessor,
@@ -31,15 +30,6 @@ export async function GET(
   }
 
   try {
-    if (marketingJobsDelegateMissing()) {
-      return NextResponse.json(
-        {
-          error: `Marketing export is not wired in this build (Prisma client out of date). ${PRISMA_MARKETING_JOBS_HINT}`,
-        },
-        { status: 503 }
-      );
-    }
-
     const recording = await prisma.recording.findUnique({
       where: { id: recordingId },
       select: { id: true, userId: true },
@@ -100,16 +90,18 @@ export async function POST(
     );
   }
 
-  try {
-    if (marketingJobsDelegateMissing()) {
-      return NextResponse.json(
-        {
-          error: `Marketing export is not wired in this build (Prisma client out of date). ${PRISMA_MARKETING_JOBS_HINT}`,
-        },
-        { status: 503 }
-      );
-    }
+  if (!isMarketingRenderModeImplemented(mode)) {
+    return NextResponse.json(
+      {
+        error:
+          `Mode "${mode}" is not available yet. Use branded_screen, branded_plus_motion, or full_stack (all use the branded ffmpeg export today). Run the marketing worker for queued jobs — see apps/web/docs/MARKETING_RENDERS.md.`,
+        implementedModes: ['branded_screen', 'branded_plus_motion', 'full_stack'],
+      },
+      { status: 400 }
+    );
+  }
 
+  try {
     const recording = await prisma.recording.findUnique({
       where: { id: recordingId },
     });
@@ -150,11 +142,13 @@ export async function POST(
     return NextResponse.json(job, { status: 201 });
   } catch (e) {
     let message = e instanceof Error ? e.message : 'Failed to create job';
+    const hint =
+      'Run `npx prisma migrate deploy` (or `migrate dev`) and `npx prisma generate` in apps/web, then restart `next dev`.';
     if (message.includes("reading 'create'") || message.includes('marketingRenderJob')) {
-      message = `Database client or schema mismatch. ${PRISMA_MARKETING_JOBS_HINT} Original: ${message}`;
+      message = `Prisma client or DB out of sync. ${hint} (${message})`;
     }
     if (message.includes('does not exist') && message.includes('marketing_render')) {
-      message = `Table missing. ${PRISMA_MARKETING_JOBS_HINT} Original: ${message}`;
+      message = `Table missing. ${hint} (${message})`;
     }
     return NextResponse.json({ error: message }, { status: 500 });
   }
