@@ -49,7 +49,7 @@ export function TeamPage() {
   const { user } = useAuth();
   const wsUrl = user?.id ? `/api/workspaces?userId=${encodeURIComponent(user.id)}` : '';
   const { data: workspaces, loading: wsLoading } = useApi<WorkspaceSummary[]>({ url: wsUrl });
-  const [preferredWorkspaceId, setPreferredWorkspaceId] = usePreferredWorkspaceId(workspaces);
+  const [preferredWorkspaceId, setPreferredWorkspaceId] = usePreferredWorkspaceId(workspaces, user?.id);
   const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');

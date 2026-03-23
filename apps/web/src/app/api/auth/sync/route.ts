@@ -22,11 +22,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (!membership) {
-      await prisma.workspace.create({
+      const ws = await prisma.workspace.create({
         data: {
           name: `${name || email.split('@')[0]}'s Workspace`,
           members: { create: { userId: user.id, role: 'owner' } },
         },
+      });
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { preferredWorkspaceId: ws.id },
       });
     }
 

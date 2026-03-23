@@ -20,19 +20,23 @@ const DELETE_CONFIRM = 'DELETE MY ACCOUNT';
 
 export function SettingsPage() {
   const router = useRouter();
-  const { user, updateLocalUser, signOut } = useAuth();
+  const { user, updateLocalUser, changeSignInEmail, signOut } = useAuth();
   const supabase = useMemo(() => createClient(), []);
 
   const wsUrl = user?.id ? `/api/workspaces?userId=${encodeURIComponent(user.id)}` : '';
   const { data: workspaces, loading: wsLoading, refetch: refetchWorkspaces } = useApi<WorkspaceData[]>({
     url: wsUrl,
   });
-  const [preferredWorkspaceId, setPreferredWorkspaceId] = usePreferredWorkspaceId(workspaces);
+  const [preferredWorkspaceId, setPreferredWorkspaceId] = usePreferredWorkspaceId(workspaces, user?.id);
 
   const [name, setName] = useState('');
   const [workspaceName, setWorkspaceName] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [newSignInEmail, setNewSignInEmail] = useState('');
+  const [signInEmailBusy, setSignInEmailBusy] = useState(false);
+  const [signInEmailMessage, setSignInEmailMessage] = useState<string | null>(null);
+  const [signInEmailError, setSignInEmailError] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -152,6 +156,25 @@ export function SettingsPage() {
     } catch {
       setProfileMessage('Could not update workspace');
       setTimeout(() => setProfileMessage(null), 3000);
+    }
+  };
+
+  const handleRequestSignInEmailChange = async () => {
+    setSignInEmailError(null);
+    setSignInEmailMessage(null);
+    setSignInEmailBusy(true);
+    try {
+      const { ok, error } = await changeSignInEmail(newSignInEmail);
+      if (!ok) {
+        setSignInEmailError(error || 'Could not start email change');
+        return;
+      }
+      setSignInEmailMessage(
+        'Confirmation sent. Open the link in the email sent to your new address (check spam). If your Supabase project uses secure email change, you may also need to confirm from your current address before the update applies.'
+      );
+      setNewSignInEmail('');
+    } finally {
+      setSignInEmailBusy(false);
     }
   };
 
@@ -275,12 +298,79 @@ export function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="text-sm text-gray-400 block mb-1.5">Display Name</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={inputClass}
+                placeholder="Your name"
+                autoComplete="name"
+              />
+              <p className="text-xs text-gray-600 mt-1">
+                Editable — type a new name, then click <strong className="text-gray-400">Save Profile</strong>.
+              </p>
             </div>
             <div>
-              <label className="text-sm text-gray-400 block mb-1.5">Email</label>
-              <input type="email" value={user?.email || ''} disabled className={`${inputClass} opacity-50`} />
-              <p className="text-xs text-gray-600 mt-1">Contact support to change your email</p>
+              <label className="text-sm text-gray-400 block mb-1.5">Email (sign-in)</label>
+              <input
+                type="email"
+                value={user?.email || ''}
+                readOnly
+                aria-readonly="true"
+                title="Current sign-in email"
+                className={`${inputClass} opacity-60 cursor-not-allowed bg-gray-800/80`}
+              />
+              <p className="text-xs text-gray-600 mt-1">
+                This is the address you use to <strong className="text-gray-400">log in</strong>. You can’t type into the
+                box above; use <strong className="text-gray-400">change email</strong> below so Supabase can verify the
+                new address.
+              </p>
+
+              <div className="mt-4 pt-4 border-t border-gray-700/80 space-y-3">
+                <label className="text-sm text-gray-400 block mb-1.5">New sign-in email</label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="email"
+                    value={newSignInEmail}
+                    onChange={(e) => {
+                      setNewSignInEmail(e.target.value);
+                      setSignInEmailError(null);
+                      setSignInEmailMessage(null);
+                    }}
+                    placeholder="you@company.com"
+                    autoComplete="email"
+                    className={inputClass}
+                    disabled={signInEmailBusy || !user?.id}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleRequestSignInEmailChange()}
+                    disabled={
+                      signInEmailBusy || !user?.id || !newSignInEmail.trim() || user.id === DEV_USER.id
+                    }
+                    className="btn-secondary text-sm py-2.5 px-4 whitespace-nowrap shrink-0 disabled:opacity-50"
+                  >
+                    {signInEmailBusy ? 'Sending…' : 'Send confirmation link'}
+                  </button>
+                </div>
+                {user?.id === DEV_USER.id && (
+                  <p className="text-xs text-amber-200/90 bg-amber-950/35 border border-amber-800/50 rounded-lg px-3 py-2">
+                    The <strong className="text-amber-100">local demo</strong> account can’t change email. Use{' '}
+                    <strong className="text-amber-100">Sign up</strong> on the sign-in page to create a real Supabase user,
+                    then change email from Settings.
+                  </p>
+                )}
+                {signInEmailError && (
+                  <p className="text-xs text-red-200/95 bg-red-950/40 border border-red-900/50 rounded-lg px-3 py-2">
+                    {signInEmailError}
+                  </p>
+                )}
+                {signInEmailMessage && (
+                  <p className="text-xs text-green-100/95 bg-green-950/35 border border-green-800/50 rounded-lg px-3 py-2">
+                    {signInEmailMessage}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
           <button

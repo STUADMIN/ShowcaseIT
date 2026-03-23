@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { createClient } from '@supabase/supabase-js';
+import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
+import {
+  isSocialPlatformId,
+  normalizeSocialPlatformAssetsForDb,
+  parseSocialPlatformAssets,
+  type SocialPlatformId,
+} from '@/lib/brand/social-platform-assets';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 
@@ -21,6 +28,7 @@ export async function POST(
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const kind = (formData.get('kind') as string) || 'logo';
+    const platformRaw = (formData.get('platform') as string) || '';
 
     if (!file || file.size === 0) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -34,8 +42,21 @@ export async function POST(
       return NextResponse.json({ error: 'File must be an image' }, { status: 400 });
     }
 
-    if (kind !== 'logo' && kind !== 'guideCover') {
+    if (
+      kind !== 'logo' &&
+      kind !== 'guideCover' &&
+      kind !== 'exportBannerDocument' &&
+      kind !== 'exportBannerSocial' &&
+      kind !== 'socialLogo' &&
+      kind !== 'socialBanner'
+    ) {
       return NextResponse.json({ error: 'Invalid kind' }, { status: 400 });
+    }
+
+    if (kind === 'socialLogo' || kind === 'socialBanner') {
+      if (!isSocialPlatformId(platformRaw)) {
+        return NextResponse.json({ error: 'Invalid or missing platform' }, { status: 400 });
+      }
     }
 
     const ext =
@@ -48,10 +69,16 @@ export async function POST(
             : 'png';
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const storagePath =
-      kind === 'logo'
-        ? `brand-kits/${brandKitId}/logo.${ext}`
-        : `brand-kits/${brandKitId}/guide-cover.${ext}`;
+    const platform = platformRaw as SocialPlatformId;
+    const storagePath = (() => {
+      const base = `brand-kits/${brandKitId}`;
+      if (kind === 'logo') return `${base}/logo.${ext}`;
+      if (kind === 'guideCover') return `${base}/guide-cover.${ext}`;
+      if (kind === 'exportBannerDocument') return `${base}/export-banner-doc.${ext}`;
+      if (kind === 'exportBannerSocial') return `${base}/export-banner-social.${ext}`;
+      if (kind === 'socialLogo') return `${base}/social/${platform}/logo.${ext}`;
+      return `${base}/social/${platform}/banner.${ext}`;
+    })();
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -79,12 +106,52 @@ export async function POST(
       return NextResponse.json(updated);
     }
 
-    /** Raw update so this works even when Prisma Client predates `guideCoverImageUrl`. */
-    await prisma.$executeRaw`
-      UPDATE brand_kits SET guide_cover_image_url = ${publicUrl} WHERE id = ${brandKitId}
-    `;
+    if (kind === 'guideCover') {
+      await prisma.$executeRaw`
+        UPDATE brand_kits SET guide_cover_image_url = ${publicUrl} WHERE id = ${brandKitId}
+      `;
+      const base = await prisma.brandKit.findUnique({ where: { id: brandKitId } });
+      if (!base) {
+        return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
+      }
+      await mergeGuideCoverImageUrl([base]);
+      return NextResponse.json({ ...base, guideCoverImageUrl: publicUrl });
+    }
+
+    if (kind === 'exportBannerDocument') {
+      await prisma.$executeRaw`
+        UPDATE brand_kits SET export_banner_document_url = ${publicUrl} WHERE id = ${brandKitId}
+      `;
+    } else if (kind === 'exportBannerSocial') {
+      await prisma.$executeRaw`
+        UPDATE brand_kits SET export_banner_social_url = ${publicUrl} WHERE id = ${brandKitId}
+      `;
+    } else {
+      const rows = await prisma.$queryRaw<Array<{ social_platform_assets: unknown }>>`
+        SELECT social_platform_assets FROM brand_kits WHERE id = ${brandKitId} LIMIT 1
+      `;
+      const current = parseSocialPlatformAssets(rows[0]?.social_platform_assets);
+      const merged: typeof current = {
+        ...current,
+        [platform]: {
+          ...current[platform],
+          ...(kind === 'socialLogo' ? { logoUrl: publicUrl } : { bannerUrl: publicUrl }),
+        },
+      };
+      const next = normalizeSocialPlatformAssetsForDb(merged);
+      await prisma.$executeRawUnsafe(
+        `UPDATE brand_kits SET social_platform_assets = $1::jsonb WHERE id = $2`,
+        JSON.stringify(next),
+        brandKitId
+      );
+    }
+
     const base = await prisma.brandKit.findUnique({ where: { id: brandKitId } });
-    return NextResponse.json({ ...base, guideCoverImageUrl: publicUrl });
+    if (!base) {
+      return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
+    }
+    await mergeGuideCoverImageUrl([base]);
+    return NextResponse.json(base);
   } catch (e) {
     console.error('Brand kit upload route error:', e);
     return NextResponse.json({ error: 'Upload failed' }, { status: 500 });

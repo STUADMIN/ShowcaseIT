@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/prisma';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get('projectId');
+  const workspaceId = searchParams.get('workspaceId');
+  const forPublish = searchParams.get('forPublish') === '1';
+  const publishForUserId = searchParams.get('publishForUserId');
 
   try {
     /**
@@ -22,8 +26,34 @@ export async function GET(request: NextRequest) {
       colorBackground: true,
     } as const;
 
+    let where: Prisma.GuideWhereInput = {};
+
+    if (forPublish && publishForUserId) {
+      /**
+       * Publish picker: any guide in a project under a workspace the user belongs to,
+       * plus any guide authored as that user (covers tests / id mismatches across envs).
+       */
+      const memberships = await prisma.workspaceMember.findMany({
+        where: { userId: publishForUserId },
+        select: { workspaceId: true },
+      });
+      const memberWorkspaceIds = [...new Set(memberships.map((m) => m.workspaceId))];
+
+      const orBranches: Prisma.GuideWhereInput[] = [{ userId: publishForUserId }];
+      if (memberWorkspaceIds.length > 0) {
+        orBranches.push({ project: { workspaceId: { in: memberWorkspaceIds } } });
+      }
+
+      /** Ignore `workspaceId` here so the picker lists every guide you can publish (any member workspace + your authored guides). */
+      const publishWhere: Prisma.GuideWhereInput = { OR: orBranches };
+      where = projectId ? { AND: [{ projectId }, publishWhere] } : publishWhere;
+    } else {
+      if (projectId) where.projectId = projectId;
+      if (workspaceId) where.project = { workspaceId };
+    }
+
     const guides = await prisma.guide.findMany({
-      where: projectId ? { projectId } : undefined,
+      where,
       include: {
         /** First step only — used for list card cover (avoid loading all steps). */
         steps: {
@@ -61,21 +91,49 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    let projectId = body.projectId;
-    let userId = body.userId;
+    let projectId = body.projectId as string | undefined;
+    let userId = body.userId as string | undefined;
 
-    if (!projectId || !userId) {
-      const defaultProject = await prisma.project.findFirst({
-        orderBy: { createdAt: 'asc' },
+    /**
+     * Prefer a project in a workspace the signed-in user belongs to so `userId` matches auth
+     * and publish/workspace filters work. Fall back to the oldest project in the DB (legacy)
+     * when the client omits `projectId` or the user has no projects yet.
+     */
+    if (!projectId) {
+      if (userId) {
+        const inMemberWorkspace = await prisma.project.findFirst({
+          where: { workspace: { members: { some: { userId } } } },
+          orderBy: { createdAt: 'asc' },
+        });
+        if (inMemberWorkspace) {
+          projectId = inMemberWorkspace.id;
+        }
+      }
+      if (!projectId) {
+        const defaultProject = await prisma.project.findFirst({
+          orderBy: { createdAt: 'asc' },
+          include: { workspace: { include: { members: true } } },
+        });
+        if (!defaultProject) {
+          return NextResponse.json({ error: 'No project found. Create a project first.' }, { status: 400 });
+        }
+        projectId = defaultProject.id;
+      }
+    }
+
+    if (!userId) {
+      const project = await prisma.project.findUnique({
+        where: { id: projectId },
         include: { workspace: { include: { members: true } } },
       });
+      userId = project?.workspace.members[0]?.userId;
+    }
 
-      if (!defaultProject) {
-        return NextResponse.json({ error: 'No project found. Create a project first.' }, { status: 400 });
-      }
-
-      projectId = projectId || defaultProject.id;
-      userId = userId || defaultProject.workspace.members[0]?.userId;
+    if (!projectId || !userId) {
+      return NextResponse.json(
+        { error: 'Missing projectId or userId. Sign in and try again, or pass userId when creating a guide.' },
+        { status: 400 }
+      );
     }
 
     const guide = await prisma.guide.create({

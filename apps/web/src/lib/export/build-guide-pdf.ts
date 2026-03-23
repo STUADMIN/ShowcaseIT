@@ -1,5 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type PDFImage, type RGB } from 'pdf-lib';
 import { solidBrandHex } from '@/lib/brand/brand-color-value';
+import { resolveExportLogoUrl } from '@/lib/brand/social-platform-assets';
+import type { SocialPlatformId } from '@/lib/brand/social-platform-assets';
 import { fetchRasterImage, scaleToMaxWidth } from './export-media';
 import type { BrandKit } from './types';
 import { headerBackgroundRgb, hexToPdfRgb, parseHexToRgb01 } from './export-brand-print';
@@ -17,6 +19,8 @@ export type GuidePdfInput = {
   steps: GuidePdfStep[];
   /** When set, PDF gets branded header (logo + name strip), primary-colored step titles, and footers with page numbers. */
   brand?: BrandKit | null;
+  /** When set with a matching Brand Kit asset, uses that platform’s logo in the header instead of the default logo. */
+  exportSocialPlatform?: SocialPlatformId | null;
 };
 
 const PAGE_W = 595;
@@ -27,10 +31,9 @@ const FOOTER_H = 34;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 const PDF_IMG_MAX_W = CONTENT_W;
 const MIN_CONTENT_Y = MARGIN + FOOTER_H + 8;
-/** Baseline Y for first content line (below header band). */
-function contentTopY(): number {
-  return PAGE_H - MARGIN - HEADER_H - 12;
-}
+/** Max height for export banner strip below PDF header. */
+const BANNER_MAX_H = 72;
+const BANNER_GAP = 6;
 
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
@@ -127,6 +130,22 @@ function drawFooterChrome(
   });
 }
 
+function drawHeaderAndDocumentBanner(
+  page: PDFPage,
+  headerOpts: Parameters<typeof drawHeader>[1],
+  bannerImage: PDFImage | null,
+  bannerBlockH: number
+) {
+  drawHeader(page, headerOpts);
+  if (!bannerImage || bannerBlockH <= 0) return;
+  const scale = Math.min(CONTENT_W / bannerImage.width, BANNER_MAX_H / bannerImage.height);
+  const w = bannerImage.width * scale;
+  const h = bannerImage.height * scale;
+  const x = MARGIN + (CONTENT_W - w) / 2;
+  const y = PAGE_H - HEADER_H - BANNER_GAP - h;
+  page.drawImage(bannerImage, { x, y, width: w, height: h });
+}
+
 export async function buildGuidePdfBuffer(input: GuidePdfInput): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -148,8 +167,13 @@ export async function buildGuidePdfBuffer(input: GuidePdfInput): Promise<Uint8Ar
   const stepTitleRgb = brand ? primaryRgb : rgb(0.07, 0.36, 0.82);
 
   let logoImage: PDFImage | null = null;
-  if (brand?.logoUrl) {
-    const fetched = await fetchRasterImage(brand.logoUrl);
+  const logoUrlForExport = resolveExportLogoUrl(
+    brand?.logoUrl,
+    brand?.socialPlatformAssets,
+    input.exportSocialPlatform ?? null
+  );
+  if (logoUrlForExport) {
+    const fetched = await fetchRasterImage(logoUrlForExport);
     if (fetched) {
       try {
         logoImage =
@@ -159,6 +183,25 @@ export async function buildGuidePdfBuffer(input: GuidePdfInput): Promise<Uint8Ar
       }
     }
   }
+
+  let bannerImage: PDFImage | null = null;
+  let bannerBlockH = 0;
+  if (brand?.exportBannerDocumentUrl) {
+    const br = await fetchRasterImage(brand.exportBannerDocumentUrl);
+    if (br) {
+      try {
+        const embedded = br.type === 'png' ? await pdf.embedPng(br.data) : await pdf.embedJpg(br.data);
+        bannerImage = embedded;
+        const scale = Math.min(CONTENT_W / embedded.width, BANNER_MAX_H / embedded.height);
+        bannerBlockH = embedded.height * scale + BANNER_GAP;
+      } catch {
+        bannerImage = null;
+        bannerBlockH = 0;
+      }
+    }
+  }
+
+  const contentTopY = () => PAGE_H - MARGIN - HEADER_H - bannerBlockH - 12;
 
   const brandName = brand?.name ?? '';
 
@@ -188,27 +231,22 @@ export async function buildGuidePdfBuffer(input: GuidePdfInput): Promise<Uint8Ar
     }
   }
 
-  let page: PDFPage = pdf.addPage([PAGE_W, PAGE_H]);
-  drawHeader(page, {
+  const headerOpts = {
     logo: logoImage,
     brandName,
     font,
     fontBold,
     barRgb: headerBarRgb,
     titleRgb: fgRgb,
-  });
+  };
+
+  let page: PDFPage = pdf.addPage([PAGE_W, PAGE_H]);
+  drawHeaderAndDocumentBanner(page, headerOpts, bannerImage, bannerBlockH);
   let y = contentTopY();
 
   const newPage = () => {
     page = pdf.addPage([PAGE_W, PAGE_H]);
-    drawHeader(page, {
-      logo: logoImage,
-      brandName,
-      font,
-      fontBold,
-      barRgb: headerBarRgb,
-      titleRgb: fgRgb,
-    });
+    drawHeaderAndDocumentBanner(page, headerOpts, bannerImage, bannerBlockH);
     y = contentTopY();
   };
 

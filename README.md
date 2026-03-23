@@ -10,6 +10,8 @@ ShowcaseIt is a hybrid platform:
 - **Desktop Agent** (`apps/desktop`) — Electron app for screen recording, mouse tracking, and capture
 - **AI Service** (`apps/ai-service`) — Python FastAPI microservice for style transfer, frame extraction, and transcription
 
+**Data persistence** (Postgres vs cookies vs `localStorage`) is documented in [`apps/web/docs/DATA_PERSISTENCE.md`](apps/web/docs/DATA_PERSISTENCE.md).
+
 ## Getting Started
 
 ### Prerequisites

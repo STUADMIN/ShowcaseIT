@@ -10,6 +10,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { ListSearchInput } from '@/components/ui/list-search-input';
 import { solidBrandHex } from '@/lib/brand/brand-color-value';
 import { matchesListSearch } from '@/lib/ui/matches-list-search';
+import { useAuth } from '@/lib/auth/auth-context';
 
 /** 12 rows × 3 columns at the `lg` grid breakpoint (see grid below). */
 const GUIDES_PAGE_SIZE = 36;
@@ -90,6 +91,7 @@ function GuideCardCover({ guide }: { guide: Guide }) {
 }
 
 export function GuidesListPage() {
+  const { user } = useAuth();
   const { data: guides, loading, error, refetch } = useApi<Guide[]>({ url: '/api/guides' });
   const guideList = Array.isArray(guides) ? guides : [];
   const listError =
@@ -146,6 +148,7 @@ export function GuidesListPage() {
         title: 'Untitled Guide',
         description: '',
         style: 'business',
+        userId: user?.id,
       });
       if (guide?.id) {
         router.push(`/guides/${guide.id}`);

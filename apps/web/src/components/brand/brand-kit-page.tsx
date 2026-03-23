@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ImagePlus } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Facebook, ImagePlus, Instagram, Linkedin, Twitter, Youtube } from 'lucide-react';
 import { IconTile } from '@/components/ui/icon-tile';
 import { AppShell } from '@/components/layout/app-shell';
 import { ColorPicker } from './color-picker';
@@ -12,6 +13,41 @@ import {
   brandKitGoogleFontsStylesheetHref,
 } from '@/lib/brand-kit-fonts';
 import { brandPaintCss, solidBrandHex } from '@/lib/brand/brand-color-value';
+import {
+  SOCIAL_PLATFORM_IDS,
+  SOCIAL_PLATFORM_LABELS,
+  parseSocialPlatformAssets,
+  type SocialPlatformAssetsMap,
+  type SocialPlatformId,
+} from '@/lib/brand/social-platform-assets';
+
+const SOCIAL_ICONS: Record<SocialPlatformId, LucideIcon> = {
+  youtube: Youtube,
+  linkedin: Linkedin,
+  x: Twitter,
+  facebook: Facebook,
+  instagram: Instagram,
+};
+
+function nextSocialAssetsAfterClear(
+  map: SocialPlatformAssetsMap,
+  platform: SocialPlatformId,
+  asset: 'logo' | 'banner'
+): SocialPlatformAssetsMap {
+  const sp: SocialPlatformAssetsMap = { ...map };
+  const row = { ...(sp[platform] ?? {}) };
+  if (asset === 'logo') {
+    delete row.logoUrl;
+  } else {
+    delete row.bannerUrl;
+  }
+  if (!row.logoUrl && !row.bannerUrl) {
+    delete sp[platform];
+  } else {
+    sp[platform] = row;
+  }
+  return sp;
+}
 
 interface BrandKitData {
   id: string;
@@ -25,7 +61,26 @@ interface BrandKitData {
   fontBody: string;
   logoUrl: string | null;
   guideCoverImageUrl: string | null;
+  exportBannerDocumentUrl?: string | null;
+  exportBannerSocialUrl?: string | null;
+  socialPlatformAssets?: unknown;
 }
+
+/** Local editor shape (empty string instead of null for cleared image fields). */
+type BrandKitEditorState = Omit<
+  BrandKitData,
+  | 'logoUrl'
+  | 'guideCoverImageUrl'
+  | 'exportBannerDocumentUrl'
+  | 'exportBannerSocialUrl'
+  | 'socialPlatformAssets'
+> & {
+  logoUrl: string;
+  guideCoverImageUrl: string;
+  exportBannerDocumentUrl: string;
+  exportBannerSocialUrl: string;
+  socialPlatformAssets: SocialPlatformAssetsMap;
+};
 
 const MAX_UPLOAD_MB = 2;
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
@@ -133,7 +188,7 @@ function BrandAssetDropZone(props: {
 
 export function BrandKitPage() {
   const { data: brandKits, loading, refetch } = useApi<BrandKitData[]>({ url: '/api/brand-kits' });
-  const [kit, setKit] = useState({
+  const [kit, setKit] = useState<BrandKitEditorState>({
     id: '',
     name: 'My Brand',
     colorPrimary: '#2563EB',
@@ -145,10 +200,17 @@ export function BrandKitPage() {
     fontBody: 'Inter',
     logoUrl: '',
     guideCoverImageUrl: '',
+    exportBannerDocumentUrl: '',
+    exportBannerSocialUrl: '',
+    socialPlatformAssets: {},
   });
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingExportDocBanner, setUploadingExportDocBanner] = useState(false);
+  const [uploadingExportSocialBanner, setUploadingExportSocialBanner] = useState(false);
+  /** Keys like `linkedin:logo` */
+  const [socialUploading, setSocialUploading] = useState<Record<string, boolean>>({});
   const [brandBanner, setBrandBanner] = useState<{ tone: 'error' | 'warning'; message: string } | null>(null);
 
   /** Load Google Fonts for dropdown previews (otherwise the browser falls back and “Inter” may not match). */
@@ -199,6 +261,9 @@ export function BrandKitPage() {
         fontBody: bk.fontBody,
         logoUrl: bk.logoUrl || '',
         guideCoverImageUrl: bk.guideCoverImageUrl || '',
+        exportBannerDocumentUrl: bk.exportBannerDocumentUrl || '',
+        exportBannerSocialUrl: bk.exportBannerSocialUrl || '',
+        socialPlatformAssets: parseSocialPlatformAssets(bk.socialPlatformAssets),
       });
     }
   }, [brandKits]);
@@ -217,13 +282,16 @@ export function BrandKitPage() {
   }, [kit, refetch]);
 
   const uploadAsset = useCallback(
-    async (kind: 'logo' | 'guideCover', file: File) => {
+    async (
+      kind: 'logo' | 'guideCover' | 'exportBannerDocument' | 'exportBannerSocial',
+      file: File
+    ) => {
       setBrandBanner(null);
       if (!kit.id) {
         setBrandBanner({
           tone: 'warning',
           message:
-            'Save your brand kit first (click **Save Brand Kit** at the top) so we know which workspace to attach images to. Then you can upload a logo or cover.',
+            'Save your brand kit first (click **Save Brand Kit** at the top) so we know which workspace to attach images to. Then you can upload a logo, cover, or export banners.',
         });
         return;
       }
@@ -231,7 +299,14 @@ export function BrandKitPage() {
         setBrandBanner({ tone: 'error', message: fileTooLargeCopy(file) });
         return;
       }
-      const setBusy = kind === 'logo' ? setUploadingLogo : setUploadingCover;
+      const setBusy =
+        kind === 'logo'
+          ? setUploadingLogo
+          : kind === 'guideCover'
+            ? setUploadingCover
+            : kind === 'exportBannerDocument'
+              ? setUploadingExportDocBanner
+              : setUploadingExportSocialBanner;
       setBusy(true);
       try {
         const fd = new FormData();
@@ -245,8 +320,14 @@ export function BrandKitPage() {
         const updated = (await res.json()) as BrandKitData;
         setKit((prev) => ({
           ...prev,
-          logoUrl: updated.logoUrl || '',
-          guideCoverImageUrl: updated.guideCoverImageUrl || '',
+          logoUrl: updated.logoUrl ?? prev.logoUrl,
+          guideCoverImageUrl: updated.guideCoverImageUrl ?? prev.guideCoverImageUrl,
+          exportBannerDocumentUrl: updated.exportBannerDocumentUrl ?? prev.exportBannerDocumentUrl,
+          exportBannerSocialUrl: updated.exportBannerSocialUrl ?? prev.exportBannerSocialUrl,
+          socialPlatformAssets:
+            updated.socialPlatformAssets != null
+              ? parseSocialPlatformAssets(updated.socialPlatformAssets)
+              : prev.socialPlatformAssets,
         }));
         /** Clear before refetch: refetch() sets useApi `loading` and unmounts the grid; leaving uploading=true stuck the UI. */
         setBusy(false);
@@ -262,8 +343,71 @@ export function BrandKitPage() {
     [kit.id, refetch]
   );
 
+  const uploadSocialPlatformAsset = useCallback(
+    async (platform: SocialPlatformId, asset: 'logo' | 'banner', file: File) => {
+      setBrandBanner(null);
+      if (!kit.id) {
+        setBrandBanner({
+          tone: 'warning',
+          message:
+            'Save your brand kit first (click **Save Brand Kit** at the top) so we know which workspace to attach images to.',
+        });
+        return;
+      }
+      if (file.size > MAX_UPLOAD_BYTES) {
+        setBrandBanner({ tone: 'error', message: fileTooLargeCopy(file) });
+        return;
+      }
+      const busyKey = `${platform}:${asset}`;
+      setSocialUploading((u) => ({ ...u, [busyKey]: true }));
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('kind', asset === 'logo' ? 'socialLogo' : 'socialBanner');
+        fd.append('platform', platform);
+        const res = await fetch(`/api/brand-kits/${kit.id}/upload`, { method: 'POST', body: fd });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(typeof err.error === 'string' ? err.error : `HTTP ${res.status}`);
+        }
+        const updated = (await res.json()) as BrandKitData;
+        setKit((prev) => ({
+          ...prev,
+          socialPlatformAssets:
+            updated.socialPlatformAssets != null
+              ? parseSocialPlatformAssets(updated.socialPlatformAssets)
+              : prev.socialPlatformAssets,
+        }));
+        setSocialUploading((u) => ({ ...u, [busyKey]: false }));
+        setBrandBanner(null);
+        void refetch();
+      } catch (e) {
+        const raw = e instanceof Error ? e.message : 'Something went wrong while uploading. Check your connection and try again.';
+        setBrandBanner({ tone: 'error', message: friendlyUploadError(file, raw) });
+      } finally {
+        setSocialUploading((u) => ({ ...u, [busyKey]: false }));
+      }
+    },
+    [kit.id, refetch]
+  );
+
+  const clearSocialPlatformAsset = useCallback(
+    async (platform: SocialPlatformId, asset: 'logo' | 'banner') => {
+      if (!kit.id) return;
+      const nextSp = nextSocialAssetsAfterClear(kit.socialPlatformAssets, platform, asset);
+      try {
+        await apiPatch(`/api/brand-kits/${kit.id}`, { socialPlatformAssets: nextSp });
+        setKit((prev) => ({ ...prev, socialPlatformAssets: nextSp }));
+        refetch();
+      } catch {}
+    },
+    [kit.id, kit.socialPlatformAssets, refetch]
+  );
+
   const clearAsset = useCallback(
-    async (field: 'logoUrl' | 'guideCoverImageUrl') => {
+    async (
+      field: 'logoUrl' | 'guideCoverImageUrl' | 'exportBannerDocumentUrl' | 'exportBannerSocialUrl'
+    ) => {
       if (!kit.id) return;
       try {
         await apiPatch(`/api/brand-kits/${kit.id}`, { [field]: null });
@@ -294,6 +438,16 @@ export function BrandKitPage() {
   const onCoverFiles = (files: FileList | null) => {
     const f = files?.[0];
     if (f) void uploadAsset('guideCover', f);
+  };
+
+  const onExportDocBannerFiles = (files: FileList | null) => {
+    const f = files?.[0];
+    if (f) void uploadAsset('exportBannerDocument', f);
+  };
+
+  const onExportSocialBannerFiles = (files: FileList | null) => {
+    const f = files?.[0];
+    if (f) void uploadAsset('exportBannerSocial', f);
   };
 
   return (
@@ -353,7 +507,7 @@ export function BrandKitPage() {
                     <ColorPicker
                       key={key}
                       label={label}
-                      value={(kit as Record<string, string>)[key]}
+                      value={(kit as unknown as Record<string, string>)[key]}
                       onChange={(val) => updateColor(key, val)}
                       allowGradient={key !== 'colorForeground'}
                     />
@@ -473,6 +627,100 @@ export function BrandKitPage() {
                   onPickFiles={onCoverFiles}
                   onRemove={() => void clearAsset('guideCoverImageUrl')}
                 />
+              </div>
+              <div className="lg:col-span-2 space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Export banners</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Optional images for HTML, PDF, and Word exports. The document banner appears under the guide cover
+                    when both are set. The default social image is used for link previews (
+                    <code className="text-gray-400">og:image</code>) unless you export with{' '}
+                    <code className="text-gray-400">?social=linkedin</code> (values: youtube, linkedin, x, facebook,
+                    instagram) to use that platform&apos;s banner from the section below. Recommended default banner size
+                    about <strong className="text-gray-300">1200×627</strong>.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <BrandAssetDropZone
+                    inputId="brand-export-banner-doc-upload"
+                    title="Document export banner"
+                    hint={`Shown in exported guides below the cover. PNG, JPG, or WebP up to ${MAX_UPLOAD_MB}MB.`}
+                    previewUrl={kit.exportBannerDocumentUrl}
+                    aspectClass="aspect-[21/9] max-h-[200px]"
+                    uploading={uploadingExportDocBanner}
+                    onPickFiles={onExportDocBannerFiles}
+                    onRemove={() => void clearAsset('exportBannerDocumentUrl')}
+                  />
+                  <BrandAssetDropZone
+                    inputId="brand-export-banner-social-upload"
+                    title="Social / link preview"
+                    hint={`~1200×627 recommended. Falls back to the document banner in HTML if unset. Up to ${MAX_UPLOAD_MB}MB.`}
+                    previewUrl={kit.exportBannerSocialUrl}
+                    aspectClass="aspect-[1200/627] max-h-[200px]"
+                    uploading={uploadingExportSocialBanner}
+                    onPickFiles={onExportSocialBannerFiles}
+                    onRemove={() => void clearAsset('exportBannerSocialUrl')}
+                  />
+                </div>
+              </div>
+              <div className="lg:col-span-2 space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Social media assets</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Optional <strong className="text-gray-300">logo</strong> and{' '}
+                    <strong className="text-gray-300">link-preview banner</strong> for each network. Defaults fall back to
+                    the main Logo and default social banner above. Use them when exporting with{' '}
+                    <code className="text-gray-400">?social=…</code> for the right{' '}
+                    <code className="text-gray-400">og:image</code> and PDF/Word header logo.
+                  </p>
+                </div>
+                <div className="space-y-6">
+                  {SOCIAL_PLATFORM_IDS.map((pid) => {
+                    const Icon = SOCIAL_ICONS[pid];
+                    const row = kit.socialPlatformAssets[pid];
+                    const logoUrl = row?.logoUrl ?? '';
+                    const bannerUrl = row?.bannerUrl ?? '';
+                    return (
+                      <div
+                        key={pid}
+                        className="rounded-xl border border-gray-800 bg-gray-900/40 p-4 sm:p-6 space-y-4"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-5 h-5 text-gray-300 shrink-0" aria-hidden />
+                          <h4 className="text-base font-semibold text-gray-100">{SOCIAL_PLATFORM_LABELS[pid]}</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <BrandAssetDropZone
+                            inputId={`brand-social-logo-${pid}`}
+                            title="Logo"
+                            hint={`Square or wide logo, up to ${MAX_UPLOAD_MB}MB`}
+                            previewUrl={logoUrl}
+                            aspectClass="min-h-[120px]"
+                            uploading={socialUploading[`${pid}:logo`] ?? false}
+                            onPickFiles={(files) => {
+                              const f = files?.[0];
+                              if (f) void uploadSocialPlatformAsset(pid, 'logo', f);
+                            }}
+                            onRemove={() => void clearSocialPlatformAsset(pid, 'logo')}
+                          />
+                          <BrandAssetDropZone
+                            inputId={`brand-social-banner-${pid}`}
+                            title="Link preview banner"
+                            hint={`~1200×627 recommended, up to ${MAX_UPLOAD_MB}MB`}
+                            previewUrl={bannerUrl}
+                            aspectClass="aspect-[1200/627] max-h-[180px]"
+                            uploading={socialUploading[`${pid}:banner`] ?? false}
+                            onPickFiles={(files) => {
+                              const f = files?.[0];
+                              if (f) void uploadSocialPlatformAsset(pid, 'banner', f);
+                            }}
+                            onRemove={() => void clearSocialPlatformAsset(pid, 'banner')}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}

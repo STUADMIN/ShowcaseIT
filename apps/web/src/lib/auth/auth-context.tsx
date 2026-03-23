@@ -12,6 +12,11 @@ interface AuthContextValue {
   loading: boolean;
   /** Merge into the current session user (e.g. after Settings profile / avatar save). */
   updateLocalUser: (partial: Partial<Pick<AuthUser, 'name' | 'image'>>) => void;
+  /**
+   * Request a sign-in email change (Supabase sends a confirmation link to the new address).
+   * No-op for the local dev demo session without a real Supabase user.
+   */
+  changeSignInEmail: (newEmail: string) => Promise<{ ok: boolean; error?: string }>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string, name?: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
@@ -23,6 +28,7 @@ const AuthContext = createContext<AuthContextValue>({
   isAuthenticated: false,
   loading: true,
   updateLocalUser: () => {},
+  changeSignInEmail: async () => ({ ok: false, error: 'Not available' }),
   signIn: async () => ({ success: false }),
   signUp: async () => ({ success: false }),
   signOut: async () => {},
@@ -105,6 +111,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
   }, [supabase]);
 
+  const changeSignInEmail = useCallback(
+    async (newEmail: string) => {
+      const trimmed = newEmail.trim().toLowerCase();
+      if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        return { ok: false, error: 'Enter a valid email address.' };
+      }
+
+      const {
+        data: { session: supaSession },
+      } = await supabase.auth.getSession();
+
+      if (!supaSession?.user) {
+        return {
+          ok: false,
+          error:
+            'No active Supabase session. Sign out and sign in with email/password (not the local demo shortcut), then try again.',
+        };
+      }
+
+      if (supaSession.user.id === DEV_USER.id) {
+        return {
+          ok: false,
+          error:
+            'The local demo account cannot change email. Use Sign up to create a real account, or sign in with Supabase email/password.',
+        };
+      }
+
+      const current = (supaSession.user.email || '').toLowerCase();
+      if (trimmed === current) {
+        return { ok: false, error: 'That is already your sign-in email.' };
+      }
+
+      const origin =
+        typeof window !== 'undefined' && window.location?.origin
+          ? window.location.origin.replace(/\/$/, '')
+          : (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/$/, '');
+      const emailRedirectTo = origin
+        ? `${origin}/auth/callback?next=${encodeURIComponent('/settings')}`
+        : undefined;
+
+      const { error } = await supabase.auth.updateUser(
+        { email: trimmed },
+        emailRedirectTo ? { emailRedirectTo } : {}
+      );
+
+      if (error) return { ok: false, error: error.message };
+      return { ok: true };
+    },
+    [supabase]
+  );
+
   const updateLocalUser = useCallback((partial: Partial<Pick<AuthUser, 'name' | 'image'>>) => {
     setSession((prev) => {
       if (!prev?.user) return prev;
@@ -123,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!session,
         loading,
         updateLocalUser,
+        changeSignInEmail,
         signIn,
         signUp,
         signOut,

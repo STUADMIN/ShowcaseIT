@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
+import { normalizeSocialPlatformAssetsForDb, parseSocialPlatformAssets } from '@/lib/brand/social-platform-assets';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -44,6 +45,16 @@ export async function POST(request: NextRequest) {
       await prisma.$executeRaw`
         UPDATE brand_kits SET guide_cover_image_url = ${coverUrl ?? null} WHERE id = ${brandKit.id}
       `;
+    }
+
+    if ('socialPlatformAssets' in body) {
+      const map = parseSocialPlatformAssets(rest.socialPlatformAssets);
+      const normalized = normalizeSocialPlatformAssetsForDb(map);
+      await prisma.$executeRawUnsafe(
+        `UPDATE brand_kits SET social_platform_assets = $1::jsonb WHERE id = $2`,
+        JSON.stringify(normalized),
+        brandKit.id
+      );
     }
 
     const fresh = await prisma.brandKit.findUnique({ where: { id: brandKit.id } });

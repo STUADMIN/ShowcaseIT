@@ -8,6 +8,8 @@ import {
   showClickTargetRipple,
   showClickTargetRippleViewportCenter,
 } from '@/lib/ui/click-target-ripple';
+import { useAuth } from '@/lib/auth/auth-context';
+import { apiPatch } from '@/hooks/use-api';
 
 /** Browser recordings cannot see clicks on other windows; use `step-marker` via the Mark step control. */
 interface ClickEvent {
@@ -60,6 +62,7 @@ export function ScreenRecorder({
   allowVoiceover = false,
   saveButtonLabel = 'Save & Generate Guide',
 }: ScreenRecorderProps) {
+  const { user } = useAuth();
   const [state, setState] = useState<'idle' | 'recording' | 'preview'>('idle');
   const [elapsed, setElapsed] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -75,26 +78,46 @@ export function ScreenRecorder({
       setMicEnabled(false);
       return;
     }
-    try {
-      const v = localStorage.getItem(MIC_PREF_KEY);
-      if (v === '1') setMicEnabled(true);
-      if (v === '0') setMicEnabled(false);
-    } catch {
-      /* ignore */
+    if (!user?.id) {
+      try {
+        const v = localStorage.getItem('showcaseit-recording-mic-enabled');
+        if (v === '1') setMicEnabled(true);
+        if (v === '0') setMicEnabled(false);
+      } catch {
+        /* ignore */
+      }
+      return;
     }
-  }, [allowVoiceover]);
+    let cancelled = false;
+    void fetch(`/api/users/${encodeURIComponent(user.id)}/preferences`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p: { recordingMicEnabled?: boolean } | null) => {
+        if (cancelled || !p || typeof p.recordingMicEnabled !== 'boolean') return;
+        setMicEnabled(p.recordingMicEnabled);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [allowVoiceover, user?.id]);
 
   const setMicEnabledPersist = useCallback(
     (on: boolean) => {
       if (!allowVoiceover) return;
       setMicEnabled(on);
-      try {
-        localStorage.setItem(MIC_PREF_KEY, on ? '1' : '0');
-      } catch {
-        /* ignore */
+      if (user?.id) {
+        void apiPatch(`/api/users/${encodeURIComponent(user.id)}/preferences`, {
+          recordingMicEnabled: on,
+        }).catch(() => {});
+      } else {
+        try {
+          localStorage.setItem('showcaseit-recording-mic-enabled', on ? '1' : '0');
+        } catch {
+          /* ignore */
+        }
       }
     },
-    [allowVoiceover]
+    [allowVoiceover, user?.id]
   );
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);

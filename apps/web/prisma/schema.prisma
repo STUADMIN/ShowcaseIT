@@ -23,9 +23,17 @@ model User {
   /** Set by weekly digest cron after a successful send (throttle) */
   weeklyDigestLastSentAt DateTime? @map("weekly_digest_last_sent_at")
 
-  workspaceMembers WorkspaceMember[]
-  recordings       Recording[]
-  guides           Guide[]
+  /** Active team for Settings / Publish / Confluence (synced across devices). */
+  preferredWorkspaceId String? @map("preferred_workspace_id")
+  /** Screen + mic recording: remember voiceover toggle (Settings → Recordings / video flow). */
+  recordingMicEnabled  Boolean @default(true) @map("recording_mic_enabled")
+  /** Client UI state: e.g. `{ liquidGlass: { ... } }` for workspace visual prefs. */
+  uiPreferences        Json    @default("{}") @map("ui_preferences")
+
+  workspaceMembers     WorkspaceMember[]
+  recordings           Recording[]
+  guides               Guide[]
+  preferredWorkspace   Workspace? @relation("UserPreferredWorkspace", fields: [preferredWorkspaceId], references: [id], onDelete: SetNull)
 
   @@map("users")
 }
@@ -37,9 +45,14 @@ model Workspace {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  /** Confluence Cloud integration (base URL, API token, space, etc.) — stored in Supabase Postgres when DATABASE_URL points there. */
+  confluenceIntegration Json? @map("confluence_integration")
+
   members   WorkspaceMember[]
   projects  Project[]
   brandKits BrandKit[]
+
+  usersPreferringThis User[] @relation("UserPreferredWorkspace")
 
   @@map("workspaces")
 }
@@ -89,6 +102,12 @@ model BrandKit {
   logoUrl         String?  @map("logo_url")
   /** Standard guide list / marketing cover; UI prefers this over the first step screenshot when set. */
   guideCoverImageUrl String? @map("guide_cover_image_url")
+  /** Wide banner on HTML/PDF/Word exports (below guide cover when both are set). */
+  exportBannerDocumentUrl String? @map("export_banner_document_url")
+  /** Reserved for link previews / social (e.g. ~1200×627); stored in Brand Kit for future Publish flows. */
+  exportBannerSocialUrl String? @map("export_banner_social_url")
+  /** Per social platform: { "linkedin": { "logoUrl", "bannerUrl" }, ... } */
+  socialPlatformAssets Json @default("{}") @map("social_platform_assets")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

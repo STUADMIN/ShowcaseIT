@@ -32,7 +32,7 @@ function usePrefersReducedMotion(): boolean {
 
 /**
  * Workspace main area: optional liquid glass + ambient layers (grain, pattern, mesh, spotlight),
- * scroll progress, pointer-linked coords. Settings → Workspace (localStorage).
+ * scroll progress, pointer-linked coords. Prefs persist to your account (Settings → Workspace).
  */
 export function LiquidGlassMain({
   children,

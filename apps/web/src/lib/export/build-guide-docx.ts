@@ -14,6 +14,8 @@ import {
   convertInchesToTwip,
 } from 'docx';
 import { solidBrandHex } from '@/lib/brand/brand-color-value';
+import { resolveExportLogoUrl } from '@/lib/brand/social-platform-assets';
+import type { SocialPlatformId } from '@/lib/brand/social-platform-assets';
 import { fetchRasterImage, scaleToMaxWidth } from './export-media';
 import type { BrandKit } from './types';
 import { hexToDocxColor } from './export-brand-print';
@@ -30,6 +32,8 @@ export type GuideDocxInput = {
   description: string | null;
   steps: GuideDocxStep[];
   brand?: BrandKit | null;
+  /** When set with a matching Brand Kit asset, uses that platform’s logo in the header instead of the default logo. */
+  exportSocialPlatform?: SocialPlatformId | null;
 };
 
 const DOC_IMG_MAX_W = 520;
@@ -44,7 +48,12 @@ export async function buildGuideDocxBuffer(input: GuideDocxInput): Promise<Buffe
   const headerLabel = (brand?.name ?? '').trim() || 'ShowcaseIt';
 
   const headerChildren: (TextRun | ImageRun)[] = [];
-  const logo = await fetchRasterImage(brand?.logoUrl ?? null);
+  const logoUrlForExport = resolveExportLogoUrl(
+    brand?.logoUrl,
+    brand?.socialPlatformAssets,
+    input.exportSocialPlatform ?? null
+  );
+  const logo = await fetchRasterImage(logoUrlForExport ?? null);
   if (logo) {
     const { width, height } = scaleToMaxWidth(logo.width, logo.height, 100);
     headerChildren.push(
@@ -122,6 +131,24 @@ export async function buildGuideDocxBuffer(input: GuideDocxInput): Promise<Buffe
       }),
       new Paragraph({
         children: [new PageBreak()],
+      })
+    );
+  }
+
+  const docBannerRaster = await fetchRasterImage(brand?.exportBannerDocumentUrl ?? null);
+  if (docBannerRaster) {
+    const { width, height } = scaleToMaxWidth(docBannerRaster.width, docBannerRaster.height, DOC_IMG_MAX_W);
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 0, after: 200 },
+        children: [
+          new ImageRun({
+            type: docBannerRaster.type,
+            data: docBannerRaster.data,
+            transformation: { width, height },
+          }),
+        ],
       })
     );
   }

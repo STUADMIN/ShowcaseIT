@@ -196,6 +196,7 @@ export function orbTransitionDuration(follow: PointerFollow): string {
   }
 }
 
+/** Used when logged out; signed-in users load/save via `/api/users/[id]/preferences`. */
 export function loadLiquidGlassPrefs(): LiquidGlassPrefs {
   if (typeof window === 'undefined') return { ...LIQUID_GLASS_DEFAULTS };
   try {

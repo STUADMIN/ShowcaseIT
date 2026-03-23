@@ -1,4 +1,6 @@
 import type { Guide, BrandKit } from './types';
+import { resolveLinkPreviewImageUrl } from '@/lib/brand/social-platform-assets';
+import type { SocialPlatformId } from '@/lib/brand/social-platform-assets';
 import { brandPaintCss, solidBrandHex } from '@/lib/brand/brand-color-value';
 import { computeArrowParts } from '@/lib/editor/arrow-geometry';
 import { circleFillRgba, resolveCircleStroke, resolveHighlightColor } from '@/lib/editor/circle-colors';
@@ -15,10 +17,22 @@ export interface HtmlExportOptions {
    * Uses `.si-export-root` so the same CSS works without a document `<body>`.
    */
   includeDocumentShell?: boolean;
+  /**
+   * When set, `og:image` prefers that platform’s banner from the brand kit, then default social banner, then document banner.
+   * Use export URL `?social=linkedin` (youtube | linkedin | x | facebook | instagram).
+   */
+  linkPreviewPlatform?: SocialPlatformId | null;
 }
 
 export function generateHtmlExport(options: HtmlExportOptions): string {
-  const { guide, brandKit, embedMode, includeAnimations, includeDocumentShell = true } = options;
+  const {
+    guide,
+    brandKit,
+    embedMode,
+    includeAnimations,
+    includeDocumentShell = true,
+    linkPreviewPlatform = null,
+  } = options;
 
   const colors = brandKit?.colors ?? {
     primary: '#2563EB',
@@ -113,12 +127,30 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
       ? `<section class="si-export-cover" aria-label="Guide cover"><img src="${escapeHtml(coverUrl)}" alt="" /></section>`
       : '';
 
+  const docBannerUrl = brandKit?.exportBannerDocumentUrl?.trim();
+  const bannerHtml =
+    docBannerUrl && docBannerUrl.length > 0
+      ? `<section class="si-export-banner" aria-label="Brand banner"><img src="${escapeHtml(docBannerUrl)}" alt="" role="presentation" /></section>`
+      : '';
+  const ogImageUrl = resolveLinkPreviewImageUrl(
+    brandKit?.socialPlatformAssets,
+    linkPreviewPlatform,
+    brandKit?.exportBannerSocialUrl,
+    brandKit?.exportBannerDocumentUrl
+  ).trim();
+  const ogImageMeta =
+    includeDocumentShell && ogImageUrl.length > 0
+      ? `  <meta property="og:image" content="${escapeHtml(ogImageUrl)}" />
+  <meta name="twitter:card" content="summary_large_image" />
+`
+      : '';
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtml(guide.title)}</title>
+${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
   <link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(fonts.heading)}:wght@400;600;700&family=${encodeURIComponent(fonts.body)}:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -298,6 +330,27 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
       color: color-mix(in srgb, var(--color-fg) 30%, transparent);
       font-size: 0.8rem;
     }
+    .si-export-banner {
+      margin-bottom: 32px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+      background: var(--color-bg-solid);
+    }
+    .si-export-banner img {
+      width: 100%;
+      max-height: 160px;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+    ${embedMode === 'standalone' ? `
+    .si-export-banner {
+      margin-left: -24px;
+      margin-right: -24px;
+      width: calc(100% + 48px);
+      border-radius: 0;
+    }` : ''}
     .si-export-cover {
       display: flex;
       align-items: center;
@@ -340,6 +393,7 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
 </head>
 <body>
   ${coverHtml}
+  ${bannerHtml}
   <div class="guide-header">
     <h1 class="guide-title">${escapeHtml(guide.title)}</h1>
     ${guide.description ? `<p class="guide-description">${escapeHtml(guide.description)}</p>` : ''}

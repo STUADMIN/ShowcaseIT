@@ -8,6 +8,9 @@ out/
 .env.local
 .env.*.local
 
+# Vercel (link / deploy metadata — keep local)
+.vercel/
+
 # Python AI service
 __pycache__/
 *.py[cod]

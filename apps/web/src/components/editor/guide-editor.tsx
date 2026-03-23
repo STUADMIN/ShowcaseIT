@@ -66,6 +66,9 @@ export function GuideEditor({ guideId }: { guideId: string }) {
   const [activeTool, setActiveTool] = useState<Tool>('select');
   const [focusMode, setFocusMode] = useState(false);
   const editorShellRef = useRef<HTMLDivElement>(null);
+  /** Last title successfully saved to the API (avoids losing edits on blur/tab close). */
+  const savedTitleRef = useRef('');
+  const editorBootGuideId = useRef<string | null>(null);
 
   const toggleBrowserFullscreen = useCallback(async () => {
     const el = editorShellRef.current;
@@ -82,19 +85,22 @@ export function GuideEditor({ guideId }: { guideId: string }) {
   }, []);
 
   useEffect(() => {
-    if (guide) {
+    if (!guide) return;
+    if (editorBootGuideId.current !== guide.id) {
+      editorBootGuideId.current = guide.id;
       setGuideName(guide.title);
-      const mapped = guide.steps.map((s: any) => ({
-        ...s,
-        screenshotUrl: s.screenshotUrl || '',
-        screenshotOriginalUrl: s.screenshotOriginalUrl ?? null,
-        annotations: Array.isArray(s.annotations) ? s.annotations : [],
-        blurRegions: Array.isArray(s.blurRegions) ? s.blurRegions : [],
-        includeInExport: s.includeInExport !== false,
-      }));
-      setSteps(mapped);
-      if (mapped.length > 0 && !selectedStepId) setSelectedStepId(mapped[0].id);
+      savedTitleRef.current = guide.title;
     }
+    const mapped = guide.steps.map((s: any) => ({
+      ...s,
+      screenshotUrl: s.screenshotUrl || '',
+      screenshotOriginalUrl: s.screenshotOriginalUrl ?? null,
+      annotations: Array.isArray(s.annotations) ? s.annotations : [],
+      blurRegions: Array.isArray(s.blurRegions) ? s.blurRegions : [],
+      includeInExport: s.includeInExport !== false,
+    }));
+    setSteps(mapped);
+    setSelectedStepId((cur) => (mapped.length > 0 && !cur ? mapped[0].id : cur));
   }, [guide]);
 
   const router = useRouter();
@@ -102,9 +108,49 @@ export function GuideEditor({ guideId }: { guideId: string }) {
   const hasRealContent = steps.some((s) => s.screenshotUrl);
   const selectedStepIndex = Math.max(0, steps.findIndex((s) => s.id === selectedStepId));
 
-  const saveTitle = useCallback(async (title: string) => {
-    try { await apiPatch(`/api/guides/${guideId}`, { title }); } catch {}
-  }, [guideId]);
+  const flushTitleToServer = useCallback(async () => {
+    const t = guideName.trim() || 'Untitled Guide';
+    if (t === savedTitleRef.current) return;
+    try {
+      await apiPatch(`/api/guides/${guideId}`, { title: t });
+      savedTitleRef.current = t;
+    } catch {
+      /* keep dirty so user can retry */
+    }
+  }, [guideId, guideName]);
+
+  /** Debounced persist while typing the guide title */
+  useEffect(() => {
+    if (!guideId || !guide) return;
+    const next = guideName.trim() || 'Untitled Guide';
+    if (next === savedTitleRef.current) return;
+    const id = window.setTimeout(() => {
+      void flushTitleToServer();
+    }, 900);
+    return () => window.clearTimeout(id);
+  }, [guide, guideName, guideId, flushTitleToServer]);
+
+  /** Flush when leaving the tab or closing the page */
+  useEffect(() => {
+    if (!guide) return;
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden') void flushTitleToServer();
+    };
+    const onPageHide = () => {
+      void flushTitleToServer();
+    };
+    const onBeforeUnload = () => {
+      void flushTitleToServer();
+    };
+    document.addEventListener('visibilitychange', onHidden);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      document.removeEventListener('visibilitychange', onHidden);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [guide, flushTitleToServer]);
 
   const autoStepTitle = /^step\s+\d+$/i;
 
@@ -236,7 +282,7 @@ export function GuideEditor({ guideId }: { guideId: string }) {
             type="text"
             value={guideName}
             onChange={(e) => setGuideName(e.target.value)}
-            onBlur={() => saveTitle(guideName)}
+            onBlur={() => void flushTitleToServer()}
             className="w-full bg-transparent text-lg font-bold text-gray-100 outline-none placeholder:text-gray-600"
             placeholder="Guide title..."
           />

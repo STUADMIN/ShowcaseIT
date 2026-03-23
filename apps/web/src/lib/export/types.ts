@@ -1,3 +1,5 @@
+import type { SocialPlatformAssetsMap } from '@/lib/brand/social-platform-assets';
+
 export interface Guide {
   id: string;
   title: string;
@@ -62,4 +64,10 @@ export interface BrandKit {
   logoUrl?: string;
   /** Brand kit “Guide cover” image — used as export cover sheet when set. */
   guideCoverImageUrl?: string;
+  /** Wide banner for HTML/PDF/Word (below guide cover when both exist). */
+  exportBannerDocumentUrl?: string;
+  /** For link previews / social posts (~1200×627); stored for future Publish integrations. */
+  exportBannerSocialUrl?: string;
+  /** Optional per-platform logo + banner (YouTube, LinkedIn, X, Facebook, Instagram). */
+  socialPlatformAssets?: SocialPlatformAssetsMap;
 }

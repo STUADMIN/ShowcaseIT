@@ -1,5 +1,6 @@
 import type { BrandKit, Guide, GuideStep } from './types';
 import type { BrandKit as PrismaBrandKit, GuideStep as PrismaGuideStep } from '@prisma/client';
+import { parseSocialPlatformAssets } from '@/lib/brand/social-platform-assets';
 
 function parseAnnotations(raw: unknown): GuideStep['annotations'] {
   return Array.isArray(raw) ? (raw as GuideStep['annotations']) : [];
@@ -30,7 +31,14 @@ export function mapPrismaStepToExportStep(s: PrismaGuideStep): GuideStep {
   };
 }
 
-export function mapPrismaBrandKit(bk: PrismaBrandKit): BrandKit {
+/** Includes export banner + social JSON (may be absent on older generated Prisma clients). */
+export type PrismaBrandKitForExport = PrismaBrandKit & {
+  exportBannerDocumentUrl?: string | null;
+  exportBannerSocialUrl?: string | null;
+  socialPlatformAssets?: unknown;
+};
+
+export function mapPrismaBrandKit(bk: PrismaBrandKitForExport): BrandKit {
   return {
     id: bk.id,
     name: bk.name,
@@ -47,6 +55,9 @@ export function mapPrismaBrandKit(bk: PrismaBrandKit): BrandKit {
     },
     logoUrl: bk.logoUrl ?? undefined,
     guideCoverImageUrl: bk.guideCoverImageUrl ?? undefined,
+    exportBannerDocumentUrl: bk.exportBannerDocumentUrl ?? undefined,
+    exportBannerSocialUrl: bk.exportBannerSocialUrl ?? undefined,
+    socialPlatformAssets: parseSocialPlatformAssets(bk.socialPlatformAssets),
   };
 }
 

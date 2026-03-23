@@ -5,6 +5,8 @@ import { generateHtmlExport } from '@/lib/export/html-generator';
 import { buildExportGuide, mapPrismaBrandKit } from '@/lib/export/map-guide-for-html';
 import { buildGuideDocxBuffer } from '@/lib/export/build-guide-docx';
 import { buildGuidePdfBuffer } from '@/lib/export/build-guide-pdf';
+import { isSocialPlatformId } from '@/lib/brand/social-platform-assets';
+import type { SocialPlatformId } from '@/lib/brand/social-platform-assets';
 
 export async function GET(
   request: NextRequest,
@@ -17,6 +19,9 @@ export async function GET(
     const mode = searchParams.get('mode') || 'standalone';
     /** all = every step (default); exportable = only steps with Include in HTML export checked */
     const scope = searchParams.get('scope') || 'all';
+    const socialRaw = searchParams.get('social');
+    const exportSocialPlatform: SocialPlatformId | null =
+      socialRaw && isSocialPlatformId(socialRaw) ? socialRaw : null;
 
     const guide = await prisma.guide.findUnique({
       where: { id },
@@ -60,6 +65,7 @@ export async function GET(
         embedMode: isSnippet ? 'iframe' : 'standalone',
         includeAnimations: false,
         includeDocumentShell: !isSnippet,
+        linkPreviewPlatform: exportSocialPlatform,
       });
 
       if (mode === 'download') {
@@ -104,6 +110,7 @@ export async function GET(
         description: guide.description,
         steps: exportSteps,
         brand: mappedBrandKit,
+        exportSocialPlatform,
       });
       return new NextResponse(Buffer.from(bytes), {
         headers: {
