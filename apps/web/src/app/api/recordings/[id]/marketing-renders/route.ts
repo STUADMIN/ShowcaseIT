@@ -156,9 +156,10 @@ export async function POST(
     });
 
     if (shouldRunInlineProcessor()) {
-      await processMarketingRenderJobStub(job.id);
-      const updated = await prisma.marketingRenderJob.findUnique({ where: { id: job.id } });
-      return NextResponse.json(updated, { status: 201 });
+      // Do not await: ffmpeg can run for minutes; blocking the POST leaves the UI stuck on "Creating…".
+      void processMarketingRenderJobStub(job.id).catch((err) => {
+        console.error('[marketing-renders] inline processor failed', job.id, err);
+      });
     }
 
     return NextResponse.json(job, { status: 201 });

@@ -39,7 +39,7 @@ async function markStubFailed(jobId: string): Promise<void> {
   });
 }
 
-/** For tests or local smoke when POST should process immediately (Vercel: risky for long videos). */
+/** Local dev: kick ffmpeg after POST without a separate worker (runs in background; POST still returns immediately). */
 export function shouldRunInlineProcessor(): boolean {
   return process.env.MARKETING_RENDER_INLINE === '1';
 }

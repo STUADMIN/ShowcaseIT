@@ -61,7 +61,7 @@ Production: run **`worker:marketing`** on a small VM, GitHub Action, or Railway 
 
 | Variable | Purpose |
 |----------|---------|
-| `MARKETING_RENDER_INLINE=1` | After `POST` job creation, run the processor **immediately** in the API process (OK on **local** dev; avoid long videos). |
+| `MARKETING_RENDER_INLINE=1` | After `POST`, start the processor in the **background** inside the Next process (still OK on **local** dev). The HTTP response returns right away with `queued`; the client should poll like the worker path. Avoid on serverless unless you understand lifecycle limits. |
 | `MARKETING_RENDER_USE_STUB=1` | Force old “stub failed” behavior (tests). |
 | `MARKETING_RENDER_VERCEL=1` | Allow ffmpeg path on Vercel (discouraged). |
 
