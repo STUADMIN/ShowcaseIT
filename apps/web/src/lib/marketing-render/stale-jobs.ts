@@ -7,8 +7,8 @@ import { prisma } from '@/lib/db/prisma';
 export async function failStaleMarketingProcessingJobs(): Promise<number> {
   const raw = process.env.MARKETING_RENDER_STALE_PROCESSING_MIN?.trim();
   const parsed = raw ? parseInt(raw, 10) : NaN;
-  /** Default 12m: marketing clips should finish sooner; bump via env for very long encodes. */
-  const minutes = Number.isFinite(parsed) && parsed > 0 ? parsed : 12;
+  /** Default 3m: fast feedback in dev; raise MARKETING_RENDER_STALE_PROCESSING_MIN for long encodes. */
+  const minutes = Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
   const cutoff = new Date(Date.now() - minutes * 60 * 1000);
 
   const r = await prisma.marketingRenderJob.updateMany({

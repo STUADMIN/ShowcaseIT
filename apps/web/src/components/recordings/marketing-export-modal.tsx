@@ -202,7 +202,7 @@ export function MarketingExportModal({
           <p className="text-xs text-gray-500 mb-4 -mt-2">
             Keep <code className="text-gray-600 text-[11px]">npm run worker:marketing</code> running in a
             terminal. If the dev server or worker restarts mid-encode, status can stick until the worker
-            marks stale jobs failed (~12 min by default, configurable — see{' '}
+            marks stale jobs failed (~3 min by default, configurable — see{' '}
             <code className="text-gray-600 text-[11px]">MARKETING_RENDERS.md</code>).
           </p>
         ) : null}
