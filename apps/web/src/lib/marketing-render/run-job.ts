@@ -16,6 +16,7 @@ import {
   wantsAiGradePass,
   wantsMotionHighlights,
 } from '@/lib/marketing-render/click-highlights-vf';
+import { findReadyBaseMarketingVideoUrl } from '@/lib/marketing-render/base-marketing-source';
 import { getResolvedFfmpegPath } from '@/lib/video/extract-frames';
 
 const execFileAsync = promisify(execFile);
@@ -111,37 +112,6 @@ function buildPolishOnlyFilter(): string {
   return 'eq=saturation=1.08:contrast=1.05:brightness=0.012';
 }
 
-async function resolveBaseMarketingOutputUrl(params: {
-  recordingId: string;
-  userId: string;
-  explicitJobId?: string | null;
-}): Promise<string | null> {
-  const id = params.explicitJobId?.trim();
-  if (id) {
-    const j = await prisma.marketingRenderJob.findFirst({
-      where: {
-        id,
-        recordingId: params.recordingId,
-        userId: params.userId,
-        status: 'ready',
-        outputUrl: { not: null },
-      },
-    });
-    return j?.outputUrl?.trim() || null;
-  }
-  const j = await prisma.marketingRenderJob.findFirst({
-    where: {
-      recordingId: params.recordingId,
-      userId: params.userId,
-      status: 'ready',
-      mode: { in: ['branded_screen', 'motion_walkthrough', 'branded_plus_motion'] },
-      outputUrl: { not: null },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-  return j?.outputUrl?.trim() || null;
-}
-
 /**
  * Process one queued job: download → ffmpeg → Supabase → DB ready/failed.
  */
@@ -231,7 +201,7 @@ export async function executeMarketingRenderJob(jobId: string): Promise<void> {
     const motionDrawboxes = buildClickHighlightFilters(srcW, srcH, clickEvents);
 
     if (mode === 'ai_enhanced') {
-      const baseUrl = await resolveBaseMarketingOutputUrl({
+      const baseUrl = await findReadyBaseMarketingVideoUrl({
         recordingId: job.recordingId,
         userId: job.userId,
         explicitJobId: parsedOpts.baseMarketingJobId,

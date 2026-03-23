@@ -159,9 +159,9 @@ export function MarketingExportModal({
         ) : null}
         {mode === 'ai_enhanced' ? (
           <p className="text-xs text-gray-500 mb-3 -mt-2">
-            Needs a <strong className="text-gray-400">finished</strong> branded or walkthrough export for
-            this recording first (or pass <code className="text-gray-500">baseMarketingJobId</code> in the
-            API). Today this runs a light color polish in ffmpeg; full neural style on video is planned.
+            Run <strong className="text-gray-400">Branded screen</strong> or <strong className="text-gray-400">Animated walkthrough</strong>{' '}
+            for this recording first and wait until that job is <strong className="text-gray-400">ready</strong>. This
+            mode then applies a light ffmpeg color polish on that file (neural AI on full video is still planned).
           </p>
         ) : null}
 

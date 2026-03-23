@@ -22,7 +22,7 @@ ShowcaseIt can produce **marketing-style outputs** from a screen recording in se
 ## API
 
 - `GET /api/recordings/[recordingId]/marketing-renders?userId=...` — list recent jobs.
-- `POST /api/recordings/[recordingId]/marketing-renders` — body `{ userId, mode, options? }` — creates a **`queued`** job for any supported mode.
+- `POST /api/recordings/[recordingId]/marketing-renders` — body `{ userId, mode, options? }` — creates a **`queued`** job for any supported mode. For **`ai_enhanced`**, the API returns **400** if there is no eligible **ready** base job (same recording) so you don’t enqueue a job that cannot run.
 - `GET /api/marketing-renders/[jobId]?userId=...` — poll status.
 - `POST /api/cron/marketing-renders` — header `Authorization: Bearer <CRON_SECRET>` — processes **one** queued job **only if not on Vercel** (or if `MARKETING_RENDER_VERCEL=1`). See below.
 

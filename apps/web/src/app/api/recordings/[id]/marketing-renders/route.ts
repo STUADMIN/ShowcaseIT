@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
+import { findReadyBaseMarketingVideoUrl } from '@/lib/marketing-render/base-marketing-source';
+import { parseMarketingJobOptions } from '@/lib/marketing-render/job-options';
 import {
   isMarketingRenderModeImplemented,
   MARKETING_RENDER_MODES,
@@ -124,6 +126,24 @@ export async function POST(
       body.options && typeof body.options === 'object' && !Array.isArray(body.options)
         ? body.options
         : {};
+
+    if (mode === 'ai_enhanced') {
+      const parsedOpts = parseMarketingJobOptions(options);
+      const baseUrl = await findReadyBaseMarketingVideoUrl({
+        recordingId,
+        userId,
+        explicitJobId: parsedOpts.baseMarketingJobId,
+      });
+      if (!baseUrl) {
+        return NextResponse.json(
+          {
+            error:
+              'AI style pass needs a finished export for this recording first. Run "Branded screen recording" or "Animated walkthrough" (or "Branded + motion"), wait until it completes, then try again. Optional API field: options.baseMarketingJobId.',
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     const job = await prisma.marketingRenderJob.create({
       data: {
