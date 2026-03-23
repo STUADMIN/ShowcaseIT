@@ -4,11 +4,11 @@ ShowcaseIt can produce **marketing-style outputs** from a screen recording in se
 
 | Mode | Worker behavior today |
 |------|------------------------|
-| `branded_screen` | **Implemented:** letterbox to 16:9 using Brand Kit **primary** as pad color, H.264 MP4, max duration cap (see options), upload to Supabase `recordings` bucket. |
-| `branded_plus_motion` | Same as `branded_screen` for now; motion pass logged as future work. |
-| `full_stack` | Same as `branded_screen` for now; motion + AI logged as future work. |
-| `motion_walkthrough` | **Not implemented** — job fails with a clear message. |
-| `ai_enhanced` | **Not implemented** — job fails with a clear message. |
+| `branded_screen` | Letterbox to 16:9 using Brand Kit **primary** as pad color, H.264 MP4, max duration cap (see options), upload to Supabase `recordings` bucket. |
+| `motion_walkthrough` | Same letterbox as above, plus **short white flashes** at **click** and **step-marker** times (from `recordings.click_events`, timestamps in ms). Desktop captures with real x/y work best; browser markers use the **center** of the framed content. |
+| `branded_plus_motion` | Branded letterbox **+** the same click/step highlight pass. |
+| `full_stack` | Branded + highlights + a light **ffmpeg grade** (`eq` saturation/contrast/brightness). **Neural** “AI style” on full video via `ai-service` is still future work. |
+| `ai_enhanced` | Downloads a **finished** marketing MP4 (another job on the **same** recording) and runs the same light **ffmpeg grade**. Picks the newest ready job in modes `branded_screen`, `motion_walkthrough`, or `branded_plus_motion`, or set `options.baseMarketingJobId` to a specific ready job. Output object key: `ai-polish.mp4`. |
 
 ## Data model
 
@@ -17,10 +17,12 @@ ShowcaseIt can produce **marketing-style outputs** from a screen recording in se
 
 `options.maxSeconds` — optional number, clamped **10–600**, default **180** (ffmpeg `-t`).
 
+`options.baseMarketingJobId` — optional string (UUID). For **`ai_enhanced`** only: use this **ready** job’s `outputUrl` as the source instead of auto-picking the latest eligible job.
+
 ## API
 
 - `GET /api/recordings/[recordingId]/marketing-renders?userId=...` — list recent jobs.
-- `POST /api/recordings/[recordingId]/marketing-renders` — body `{ userId, mode, options? }` — creates a **`queued`** job. **`motion_walkthrough`** and **`ai_enhanced`** return **400** until implemented (avoids jobs stuck in `queued` without a worker).
+- `POST /api/recordings/[recordingId]/marketing-renders` — body `{ userId, mode, options? }` — creates a **`queued`** job for any supported mode.
 - `GET /api/marketing-renders/[jobId]?userId=...` — poll status.
 - `POST /api/cron/marketing-renders` — header `Authorization: Bearer <CRON_SECRET>` — processes **one** queued job **only if not on Vercel** (or if `MARKETING_RENDER_VERCEL=1`). See below.
 
@@ -66,6 +68,7 @@ Production: run **`worker:marketing`** on a small VM, GitHub Action, or Railway 
 ## Implementation files
 
 - `src/lib/marketing-render/run-job.ts` — download, ffmpeg, Supabase upload, Prisma updates.
+- `src/lib/marketing-render/click-highlights-vf.ts` — click / step-marker → ffmpeg `drawbox` chain.
 - `src/lib/marketing-render/process-job.ts` — cron / inline entry, stub toggle.
 - `src/scripts/marketing-render-worker.ts` — CLI poll loop.
 

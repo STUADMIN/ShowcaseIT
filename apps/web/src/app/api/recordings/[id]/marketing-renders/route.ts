@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
 import {
   isMarketingRenderModeImplemented,
+  MARKETING_RENDER_MODES,
   parseMarketingRenderMode,
 } from '@/lib/marketing-render/modes';
 import {
@@ -94,8 +96,8 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          `Mode "${mode}" is not available yet. Use branded_screen, branded_plus_motion, or full_stack (all use the branded ffmpeg export today). Run the marketing worker for queued jobs — see apps/web/docs/MARKETING_RENDERS.md.`,
-        implementedModes: ['branded_screen', 'branded_plus_motion', 'full_stack'],
+          `Mode "${mode}" is not available yet. See apps/web/docs/MARKETING_RENDERS.md for supported modes.`,
+        implementedModes: [...MARKETING_RENDER_MODES],
       },
       { status: 400 }
     );
@@ -129,7 +131,7 @@ export async function POST(
         userId,
         mode,
         status: 'queued',
-        options,
+        options: options as Prisma.InputJsonValue,
       },
     });
 

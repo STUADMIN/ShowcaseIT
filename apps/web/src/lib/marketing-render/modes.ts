@@ -11,9 +11,11 @@ export const MARKETING_RENDER_MODES = [
 
 export type MarketingRenderMode = (typeof MARKETING_RENDER_MODES)[number];
 
-/** Modes the worker can run today (ffmpeg + upload path). Others are UI/API placeholders until implemented. */
+/** Modes the worker can run today (ffmpeg + upload path). */
 export const MARKETING_RENDER_IMPLEMENTED_MODES = [
   'branded_screen',
+  'motion_walkthrough',
+  'ai_enhanced',
   'branded_plus_motion',
   'full_stack',
 ] as const satisfies readonly MarketingRenderMode[];

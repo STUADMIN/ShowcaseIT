@@ -151,6 +151,20 @@ export function MarketingExportModal({
           in the repo for API, cron, and Vercel limits.
         </p>
 
+        {mode === 'motion_walkthrough' ? (
+          <p className="text-xs text-gray-500 mb-3 -mt-2">
+            Uses saved click / step markers on the recording. Desktop captures with click tracking give
+            the best results; pure step markers flash at the center of the framed screen.
+          </p>
+        ) : null}
+        {mode === 'ai_enhanced' ? (
+          <p className="text-xs text-gray-500 mb-3 -mt-2">
+            Needs a <strong className="text-gray-400">finished</strong> branded or walkthrough export for
+            this recording first (or pass <code className="text-gray-500">baseMarketingJobId</code> in the
+            API). Today this runs a light color polish in ffmpeg; full neural style on video is planned.
+          </p>
+        ) : null}
+
         <label className="text-sm text-gray-400 block mb-2">Pipeline mode</label>
         <select
           className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-200 mb-4"

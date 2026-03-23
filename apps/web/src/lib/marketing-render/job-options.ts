@@ -10,6 +10,8 @@ export type ParsedMarketingJobOptions = {
   bannerLogoFromBrandKit: boolean;
   /** Banner strip height in px (clamped). */
   bannerHeightPx: number;
+  /** For `ai_enhanced`: prefer this finished marketing job as the source video. */
+  baseMarketingJobId: string | undefined;
 };
 
 const BANNER_HEIGHT_MIN = 48;
@@ -38,10 +40,15 @@ export function parseMarketingJobOptions(raw: unknown): ParsedMarketingJobOption
     bannerHeightPx = Math.min(BANNER_HEIGHT_MAX, Math.max(BANNER_HEIGHT_MIN, Math.floor(bh)));
   }
 
+  const baseRaw = o.baseMarketingJobId;
+  const baseMarketingJobId =
+    typeof baseRaw === 'string' && baseRaw.trim().length > 0 ? baseRaw.trim() : undefined;
+
   return {
     maxSeconds,
     bannerPosition,
     bannerLogoFromBrandKit,
     bannerHeightPx,
+    baseMarketingJobId,
   };
 }

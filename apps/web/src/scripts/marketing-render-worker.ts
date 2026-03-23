@@ -3,6 +3,9 @@
  *
  * From repo: cd apps/web && npm run worker:marketing
  * Once:     npm run worker:marketing -- --once
+ *
+ * Restart this process after editing `src/lib/marketing-render/run-job.ts` (or related
+ * ffmpeg code) — Node caches the imported module until exit.
  */
 import { prisma } from '@/lib/db/prisma';
 import { executeMarketingRenderJob } from '@/lib/marketing-render/run-job';
