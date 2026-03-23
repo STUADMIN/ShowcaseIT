@@ -92,7 +92,9 @@ export async function PATCH(
 
     const data: Prisma.UserUpdateInput = {};
     if (body.preferredWorkspaceId !== undefined) {
-      data.preferredWorkspaceId = body.preferredWorkspaceId || null;
+      data.preferredWorkspace = body.preferredWorkspaceId
+        ? { connect: { id: body.preferredWorkspaceId } }
+        : { disconnect: true };
     }
     if (typeof body.recordingMicEnabled === 'boolean') {
       data.recordingMicEnabled = body.recordingMicEnabled;
