@@ -8,13 +8,16 @@
   ],
   "scripts": {
     "dev": "turbo dev",
+    "dev:direct": "npm run dev:direct -w @showcaseit/web",
     "build": "turbo build",
     "lint": "turbo lint",
     "dev:web": "turbo dev --filter=@showcaseit/web",
     "dev:desktop": "turbo dev --filter=@showcaseit/desktop",
     "build:web": "turbo build --filter=@showcaseit/web",
     "build:desktop": "turbo build --filter=@showcaseit/desktop",
-    "worker:marketing": "npm run worker:marketing -w @showcaseit/web"
+    "worker:marketing": "npm run worker:marketing -w @showcaseit/web",
+    "docs:scan": "npm run docs:scan -w @showcaseit/web",
+    "docs:generate": "npm run docs:generate -w @showcaseit/web"
   },
   "devDependencies": {
     "prisma": "^6.19.2",

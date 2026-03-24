@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
-import { ChevronLeft, ChevronRight, Mic, Sparkles, Trash2, Video } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Mic, Play, Sparkles, Trash2, Video } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { IconTile } from '@/components/ui/icon-tile';
 import { useApi, apiPost, apiPatch, apiDelete } from '@/hooks/use-api';
@@ -11,6 +11,7 @@ import { dispatchWorkspaceCelebrate } from '@/lib/ui/workspace-celebrate';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { RecordingVideoShareActions } from '@/components/recordings/recording-video-share-actions';
+import { VideoPreviewModal } from '@/components/recordings/video-preview-modal';
 import { ListSearchInput } from '@/components/ui/list-search-input';
 import { matchesListSearch } from '@/lib/ui/matches-list-search';
 import { MarketingExportModal } from '@/components/recordings/marketing-export-modal';
@@ -114,6 +115,7 @@ export function RecordingsPage() {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [marketingRecording, setMarketingRecording] = useState<Recording | null>(null);
+  const [previewRecording, setPreviewRecording] = useState<Recording | null>(null);
   const router = useRouter();
 
   const filteredRecordings = useMemo(() => {
@@ -351,7 +353,21 @@ export function RecordingsPage() {
                   className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <IconTile icon={Video} size="md" variant="brand" />
+                    {rec.status === 'ready' && rec.videoUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewRecording(rec)}
+                        className="relative group flex-shrink-0"
+                        title="Preview video"
+                      >
+                        <IconTile icon={Video} size="md" variant="brand" />
+                        <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Play className="w-5 h-5 text-white" fill="white" />
+                        </span>
+                      </button>
+                    ) : (
+                      <IconTile icon={Video} size="md" variant="brand" />
+                    )}
                     <div>
                       <h4 className="font-medium text-gray-200">{rec.title}</h4>
                       <p className="text-xs text-gray-500">
@@ -519,6 +535,12 @@ export function RecordingsPage() {
           recording={marketingRecording}
           open={Boolean(marketingRecording)}
           onClose={() => setMarketingRecording(null)}
+        />
+        <VideoPreviewModal
+          videoUrl={previewRecording?.videoUrl ?? null}
+          title={previewRecording?.title ?? ''}
+          open={Boolean(previewRecording)}
+          onClose={() => setPreviewRecording(null)}
         />
     </AppShell>
   );

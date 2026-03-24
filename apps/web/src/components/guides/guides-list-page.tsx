@@ -32,6 +32,7 @@ interface Guide {
   description: string | null;
   style: string;
   published: boolean;
+  isDocumentation?: boolean;
   updatedAt: string;
   _count: { steps: number };
   steps?: { screenshotUrl: string | null; styledScreenshotUrl: string | null }[];
@@ -277,9 +278,20 @@ export function GuidesListPage() {
                 <>
                   <div className="si-stagger-in grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {paginatedGuides.map((guide) => (
-                      <Link key={guide.id} href={`/guides/${guide.id}`} className="card-hover cursor-pointer block">
+                      <Link
+                        key={guide.id}
+                        href={guide.isDocumentation ? `/help/${guide.id}` : `/guides/${guide.id}`}
+                        className="card-hover cursor-pointer block"
+                      >
                         <GuideCardCover guide={guide} />
-                        <h3 className="font-semibold text-gray-200">{guide.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-200 truncate">{guide.title}</h3>
+                          {guide.isDocumentation && (
+                            <span className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-brand-600/15 text-brand-400 border border-brand-600/20">
+                              Docs
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500 mt-1">{guide.description || 'No description'}</p>
                         <div className="flex items-center justify-between mt-4 text-xs text-gray-600">
                           <span>{guide._count.steps} steps</span>

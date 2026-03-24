@@ -27,6 +27,9 @@ Thumbs.db
 # Cursor (local agent / IDE state)
 .cursor/
 
+# Auto-docs runner output (regenerated on each run)
+apps/web/scripts/docs/.report.json
+
 # IDE
 .vscode/
 !.vscode/settings.json

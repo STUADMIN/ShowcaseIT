@@ -6,6 +6,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   BookOpen,
   Download,
+  HelpCircle,
   LayoutDashboard,
   Palette,
   Send,
@@ -27,6 +28,7 @@ const navItems: { id: string; label: string; icon: LucideIcon; href: string }[] 
 ];
 
 const bottomNavItems: { id: string; label: string; icon: LucideIcon; href: string }[] = [
+  { id: 'help', label: 'Help', icon: HelpCircle, href: '/help' },
   { id: 'team', label: 'Team', icon: Users, href: '/team' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
 ];
