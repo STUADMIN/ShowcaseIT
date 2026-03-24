@@ -48,9 +48,7 @@ export function MarketingExportModal({
     let cancelled = false;
     const tick = async () => {
       try {
-        const r = await fetch(
-          `/api/marketing-renders/${pollJob.id}?userId=${encodeURIComponent(recording.userId)}`
-        );
+        const r = await fetch(`/api/marketing-renders/${pollJob.id}`);
         const data = (await r.json()) as JobRow & { error?: string };
         if (cancelled) return;
         if (!r.ok) {
@@ -94,7 +92,6 @@ export function MarketingExportModal({
     setJobSnapshot(null);
     try {
       const job = await apiPost<JobRow>(`/api/recordings/${recording.id}/marketing-renders`, {
-        userId: recording.userId,
         mode: 'branded_screen',
         options: {
           aspectRatio: '16:9',

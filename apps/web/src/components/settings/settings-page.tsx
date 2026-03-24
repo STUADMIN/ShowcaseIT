@@ -4,12 +4,11 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { LiquidGlassSettingsSection } from '@/components/settings/liquid-glass-settings-section';
+import { MfaSettingsSection } from '@/components/settings/mfa-settings-section';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useApi, apiPatch, apiDeleteWithBody } from '@/hooks/use-api';
 import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
 import { createClient } from '@/lib/supabase/client';
-import { DEV_USER } from '@/lib/auth/config';
-
 interface WorkspaceData {
   id: string;
   name: string;
@@ -191,12 +190,10 @@ export function SettingsPage() {
         { name }
       );
       updateLocalUser({ name: updated.name || name });
-      if (user.id !== DEV_USER.id) {
-        const { error } = await supabase.auth.updateUser({
-          data: { full_name: name, name, display_name: name },
-        });
-        if (error) console.warn('Supabase profile update:', error.message);
-      }
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: name, name, display_name: name },
+      });
+      if (error) console.warn('Supabase profile update:', error.message);
       setProfileMessage('Profile saved');
       setTimeout(() => setProfileMessage(null), 2500);
     } catch {
@@ -348,21 +345,12 @@ export function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => void handleRequestSignInEmailChange()}
-                    disabled={
-                      signInEmailBusy || !user?.id || !newSignInEmail.trim() || user.id === DEV_USER.id
-                    }
+                    disabled={signInEmailBusy || !user?.id || !newSignInEmail.trim()}
                     className="btn-secondary text-sm py-2.5 px-4 whitespace-nowrap shrink-0 disabled:opacity-50"
                   >
                     {signInEmailBusy ? 'Sending…' : 'Send confirmation link'}
                   </button>
                 </div>
-                {user?.id === DEV_USER.id && (
-                  <p className="text-xs text-amber-200/90 bg-amber-950/35 border border-amber-800/50 rounded-lg px-3 py-2">
-                    The <strong className="text-amber-100">local demo</strong> account can’t change email. Use{' '}
-                    <strong className="text-amber-100">Sign up</strong> on the sign-in page to create a real Supabase user,
-                    then change email from Settings.
-                  </p>
-                )}
                 {signInEmailError && (
                   <p className="text-xs text-red-200/95 bg-red-950/40 border border-red-900/50 rounded-lg px-3 py-2">
                     {signInEmailError}
@@ -385,6 +373,8 @@ export function SettingsPage() {
             {profileSaving ? 'Saving…' : 'Save Profile'}
           </button>
         </section>
+
+        <MfaSettingsSection userId={user?.id} />
 
         {/* Workspace */}
         <section className="card mb-6">

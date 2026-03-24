@@ -16,6 +16,8 @@ export async function GET(
         email: true,
         name: true,
         avatarUrl: true,
+        preferredWorkspaceId: true,
+        onboardingCompletedAt: true,
       },
     });
     if (!user) {

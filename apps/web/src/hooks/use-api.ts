@@ -28,7 +28,7 @@ export function useApi<T>({ url, initialData, immediate = true }: UseApiOptions<
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { credentials: 'include' });
       let json: unknown = null;
       try {
         json = await res.json();
@@ -70,6 +70,7 @@ export async function apiPost<T>(url: string, body: unknown): Promise<T> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    credentials: 'include',
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
@@ -83,6 +84,7 @@ export async function apiPatch<T>(url: string, body: unknown): Promise<T> {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    credentials: 'include',
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
@@ -92,7 +94,7 @@ export async function apiPatch<T>(url: string, body: unknown): Promise<T> {
 }
 
 export async function apiDelete(url: string): Promise<void> {
-  const res = await fetch(url, { method: 'DELETE' });
+  const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
     throw new Error(err.error || `HTTP ${res.status}`);
@@ -104,6 +106,7 @@ export async function apiDeleteWithBody<T = unknown>(url: string, body: unknown)
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    credentials: 'include',
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));

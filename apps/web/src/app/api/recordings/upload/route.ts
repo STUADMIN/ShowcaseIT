@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { createClient } from '@supabase/supabase-js';
+import { orgKeyForProjectId } from '@/lib/db/org-key';
+import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { EnsureProjectError, ensureProjectForBrand } from '@/lib/projects/ensure-project-for-brand';
+import { isUserMemberOfProjectWorkspace } from '@/lib/projects/verify-project-access';
 
 export async function POST(request: NextRequest) {
+  const authSupabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await authSupabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const authId = authUser.id;
+
   try {
     const formData = await request.formData();
     const videoFile = formData.get('video') as File | null;
@@ -44,36 +58,33 @@ export async function POST(request: NextRequest) {
     }
 
     if (!projectId || !userId) {
-      const defaultProject = await prisma.project.findFirst({
-        orderBy: { createdAt: 'asc' },
-        include: { workspace: { include: { members: true } } },
-      });
-
-      if (!defaultProject) {
-        return NextResponse.json(
-          { error: 'No project found. Create a project in the web app first.' },
-          { status: 400 }
-        );
-      }
-
-      projectId = projectId || defaultProject.id;
-      userId = userId || defaultProject.workspace.members[0]?.userId;
-
-      if (!userId) {
-        const firstUser = await prisma.user.findFirst();
-        userId = firstUser?.id;
-      }
-
-      if (!userId) {
-        return NextResponse.json({ error: 'No user found in the system.' }, { status: 400 });
-      }
+      return NextResponse.json(
+        {
+          error:
+            'workspaceId (or projectId) and userId are required. Open the app signed in and start recording from the web UI.',
+        },
+        { status: 400 }
+      );
     }
 
-    const supabase = createClient(
+    if (userId !== authId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const allowedProject = await isUserMemberOfProjectWorkspace(authId, projectId);
+    if (!allowedProject) {
+      return NextResponse.json(
+        { error: 'You are not a member of the workspace for this project.' },
+        { status: 403 }
+      );
+    }
+
+    const supabase = createSupabaseAdmin(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
     );
 
+    const orgKey = await orgKeyForProjectId(projectId);
     const recording = await prisma.recording.create({
       data: {
         projectId,
@@ -86,6 +97,7 @@ export async function POST(request: NextRequest) {
         clickEvents: metadata.clickEvents || [],
         hasVoiceover: Boolean(metadata.hasVoiceover),
         status: 'uploading',
+        orgKey,
       },
     });
 

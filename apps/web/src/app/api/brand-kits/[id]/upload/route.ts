@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import { findWorkspaceMembership } from '@/lib/workspaces/workspace-access';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 import {
   isSocialPlatformId,
@@ -17,12 +19,26 @@ export async function POST(
 ) {
   const { id: brandKitId } = await params;
   try {
+    const supabaseAuth = await createClient();
+    const {
+      data: { user: authUser },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!authUser?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const kit = await prisma.brandKit.findUnique({
       where: { id: brandKitId },
-      select: { id: true },
+      select: { id: true, workspaceId: true },
     });
     if (!kit) {
       return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
+    }
+
+    const member = await findWorkspaceMembership(kit.workspaceId, authUser.id);
+    if (!member) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const formData = await request.formData();
@@ -82,7 +98,7 @@ export async function POST(
       return `${base}/social/${platform}/banner.${ext}`;
     })();
 
-    const supabase = createClient(
+    const supabase = createSupabaseAdmin(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
     );

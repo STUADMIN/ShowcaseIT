@@ -24,6 +24,9 @@ release/
 .DS_Store
 Thumbs.db
 
+# Cursor (local agent / IDE state)
+.cursor/
+
 # IDE
 .vscode/
 !.vscode/settings.json

@@ -5,17 +5,41 @@ import { useAuth } from '@/lib/auth/auth-context';
 import Link from 'next/link';
 
 export function UserMenu() {
-  const { user, signOut } = useAuth();
+  const { user, loading, isSigningOut } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
+
+  if (loading || isSigningOut) {
+    return (
+      <div
+        className="w-full flex items-center gap-3 p-2.5 rounded-xl animate-pulse"
+        aria-busy="true"
+        aria-label="Loading account"
+      >
+        <div className="w-9 h-9 rounded-full bg-gray-700 flex-shrink-0" />
+        <div className="flex-1 space-y-2 min-w-0">
+          <div className="h-3.5 bg-gray-700 rounded-md w-[55%]" />
+          <div className="h-3 bg-gray-700 rounded-md w-[80%]" />
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
-      <Link
-        href="/auth/signin"
-        className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-brand-600/10 text-brand-400 text-sm font-medium hover:bg-brand-600/20 transition-colors"
-      >
-        Sign In
-      </Link>
+      <div className="w-full space-y-2">
+        <Link
+          href="/auth?mode=signin"
+          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-500 transition-colors"
+        >
+          Sign In
+        </Link>
+        <Link
+          href="/auth?mode=signup"
+          className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-brand-600/10 text-brand-400 text-sm font-medium hover:bg-brand-600/20 transition-colors border border-brand-600/20"
+        >
+          Register
+        </Link>
+      </div>
     );
   }
 
@@ -27,10 +51,11 @@ export function UserMenu() {
     .slice(0, 2);
 
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <button
+        type="button"
         onClick={() => setShowMenu(!showMenu)}
-        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-800/50 transition-colors"
+        className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-800/50 transition-colors text-left"
       >
         <div className="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
           {user.image ? (
@@ -63,17 +88,6 @@ export function UserMenu() {
             >
               Team Management
             </Link>
-            <div className="border-t border-gray-700" />
-            <button
-              onClick={() => {
-                signOut();
-                setShowMenu(false);
-                window.location.href = '/auth/signin';
-              }}
-              className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors"
-            >
-              Sign Out
-            </button>
           </div>
         </>
       )}

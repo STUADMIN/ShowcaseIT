@@ -2,16 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 import { normalizeSocialPlatformAssetsForDb, parseSocialPlatformAssets } from '@/lib/brand/social-platform-assets';
+import { createClient } from '@/lib/supabase/server';
+import { findWorkspaceMembership } from '@/lib/workspaces/workspace-access';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   try {
     const brandKit = await prisma.brandKit.findUnique({ where: { id } });
     if (!brandKit) {
       return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
+    }
+    const member = await findWorkspaceMembership(brandKit.workspaceId, authUser.id);
+    if (!member) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     await mergeGuideCoverImageUrl([brandKit]);
     return NextResponse.json(brandKit);
@@ -24,8 +39,28 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   try {
+    const existing = await prisma.brandKit.findUnique({
+      where: { id },
+      select: { workspaceId: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
+    }
+    const member = await findWorkspaceMembership(existing.workspaceId, authUser.id);
+    if (!member) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const body = await request.json();
     const { guideCoverImageUrl: coverUrl, videoOutroImageUrl: outroUrl, ...rest } = body as Record<
       string,
@@ -104,8 +139,28 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { id } = await params;
   try {
+    const existing = await prisma.brandKit.findUnique({
+      where: { id },
+      select: { workspaceId: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
+    }
+    const member = await findWorkspaceMembership(existing.workspaceId, authUser.id);
+    if (!member) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     await prisma.brandKit.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {

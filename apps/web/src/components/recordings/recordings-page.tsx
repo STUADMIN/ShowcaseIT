@@ -106,7 +106,9 @@ export function RecordingsPage() {
     });
     return `/api/recordings?${qs}`;
   }, [preferredWorkspaceId, activeBrandKitId]);
-  const { data: recordings, loading, refetch } = useApi<Recording[]>({ url: recordingsUrl });
+  const { data: recordings, loading, error: recordingsError, refetch } = useApi<Recording[]>({
+    url: recordingsUrl,
+  });
   const [generating, setGenerating] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -194,12 +196,26 @@ export function RecordingsPage() {
                   <span className="font-medium text-brand-300">
                     {brandKits?.find((k) => k.id === activeBrandKitId)?.name ?? 'this brand'}
                   </span>
-                  . Choose <span className="text-gray-400">All brands</span> in the sidebar to see the full list.
+                  .
+                  {brandKits && brandKits.length > 0 ? (
+                    <>
+                      {' '}
+                      Under the logo, open <span className="text-gray-400">Guides &amp; recordings</span> and choose{' '}
+                      <span className="text-gray-400">All brands</span> to see everything again.
+                    </>
+                  ) : null}
+                </p>
+              ) : brandKits && brandKits.length > 0 ? (
+                <p className="text-sm text-gray-500 mt-2">
+                  Showing <span className="text-gray-400">All brands</span> — every recording you can access. Under the
+                  logo, use <span className="text-gray-400">Guides &amp; recordings</span> in the sidebar to narrow by
+                  brand.
                 </p>
               ) : (
                 <p className="text-sm text-gray-500 mt-2">
-                  Showing <span className="text-gray-400">All brands</span> — everything in the queue. Pick a brand in
-                  the sidebar to narrow the list.
+                  Showing every recording you can access. Add a brand under{' '}
+                  <span className="text-gray-400">Brand Kit</span> to enable filtering here and under the logo in the
+                  sidebar.
                 </p>
               )}
             </div>
@@ -238,16 +254,45 @@ export function RecordingsPage() {
             <div className="card p-16 text-center">
               <p className="text-gray-500">Loading recordings...</p>
             </div>
+          ) : recordingsError ? (
+            <div className="card p-16 text-center max-w-lg mx-auto">
+              <h3 className="text-xl font-semibold text-gray-200 mb-2">Could not load recordings</h3>
+              <p className="text-gray-500 mb-4">{recordingsError}</p>
+              <p className="text-sm text-gray-600 mb-6">
+                If you see &ldquo;Unauthorized&rdquo;, try signing out and back in. The list uses your signed-in session,
+                not your email domain alone.
+              </p>
+              <button type="button" onClick={() => void refetch()} className="btn-primary">
+                Try again
+              </button>
+            </div>
           ) : !recordings?.length ? (
             <div className="card p-16 text-center">
               <div className="flex justify-center mb-4">
                 <IconTile icon={Video} size="xl" variant="brand" />
               </div>
               <h3 className="text-xl font-semibold text-gray-200 mb-2">No recordings yet</h3>
-              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+              <p className="text-gray-500 mb-4 max-w-md mx-auto">
                 Record your screen to auto-generate step-by-step guides, or use video (voice optional) for clips you can
                 share or embed.
               </p>
+              <p className="text-sm text-gray-600 mb-6 max-w-lg mx-auto leading-relaxed">
+                When you record while signed in, your captures will show up here. If you work with teammates, you may also
+                see recordings from shared workspaces once you&apos;ve been invited on the{' '}
+                <Link href="/team" className="text-gray-400 underline-offset-2 hover:underline hover:text-gray-300">
+                  Team
+                </Link>{' '}
+                page. If something you expect is missing, your admin can check that you&apos;re in the same workspace as
+                those captures.
+              </p>
+              {activeBrandKitId && brandKits && brandKits.length > 1 ? (
+                <p className="text-sm text-gray-500 mb-6 max-w-lg mx-auto">
+                  This brand filter only shows recordings stored on that brand&apos;s project. Under the logo, choose{' '}
+                  <span className="text-gray-400">All brands</span> to list everything (including captures made while All
+                  brands was selected), then use the <span className="text-gray-400">Brand</span> dropdown on each row to
+                  move a recording onto this brand.
+                </p>
+              ) : null}
               <Link href="/recordings/new" className="btn-primary inline-block">
                 Start Recording
               </Link>
@@ -354,7 +399,6 @@ export function RecordingsPage() {
                                   try {
                                     await apiPatch(`/api/recordings/${rec.id}`, {
                                       projectId: next,
-                                      userId: uid,
                                     });
                                     await refetch();
                                   } catch (err) {

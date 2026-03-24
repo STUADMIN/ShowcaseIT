@@ -2,14 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 import { normalizeSocialPlatformAssetsForDb, parseSocialPlatformAssets } from '@/lib/brand/social-platform-assets';
+import { createClient } from '@/lib/supabase/server';
+import { findWorkspaceMembership } from '@/lib/workspaces/workspace-access';
 
 export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
-  const workspaceId = searchParams.get('workspaceId');
+  const workspaceId = searchParams.get('workspaceId')?.trim();
+  if (!workspaceId) {
+    return NextResponse.json({ error: 'workspaceId is required' }, { status: 400 });
+  }
 
   try {
+    const member = await findWorkspaceMembership(workspaceId, authUser.id);
+    if (!member) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const brandKits = await prisma.brandKit.findMany({
-      where: workspaceId ? { workspaceId } : undefined,
+      where: { workspaceId },
       orderBy: { updatedAt: 'desc' },
     });
     await mergeGuideCoverImageUrl(brandKits);
@@ -20,6 +39,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { guideCoverImageUrl: coverUrl, videoOutroImageUrl: outroUrl, ...rest } = body as typeof body & {
@@ -27,9 +55,20 @@ export async function POST(request: NextRequest) {
       videoOutroImageUrl?: string | null;
     };
 
+    const ws =
+      typeof rest.workspaceId === 'string' && rest.workspaceId.trim() ? rest.workspaceId.trim() : '';
+    if (!ws) {
+      return NextResponse.json({ error: 'workspaceId is required' }, { status: 400 });
+    }
+
+    const member = await findWorkspaceMembership(ws, authUser.id);
+    if (!member) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const brandKit = await prisma.brandKit.create({
       data: {
-        workspaceId: rest.workspaceId,
+        workspaceId: ws,
         name: rest.name || 'My Brand',
         colorPrimary: rest.colorPrimary,
         colorSecondary: rest.colorSecondary,

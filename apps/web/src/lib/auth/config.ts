@@ -5,7 +5,8 @@ export interface AuthUser {
   name: string;
   email: string;
   image?: string | null;
-  role: 'owner' | 'admin' | 'editor' | 'viewer';
+  /** App shell placeholder; real workspace role comes from `workspace_members`. */
+  role: 'admin' | 'member';
   workspaceId: string;
 }
 
@@ -24,21 +25,7 @@ export function mapSupabaseUser(supaUser: SupabaseUser): AuthUser {
       'User',
     email: supaUser.email || '',
     image: supaUser.user_metadata?.avatar_url || null,
-    role: 'owner',
+    role: 'member',
     workspaceId: '',
   };
 }
-
-export const DEV_USER: AuthUser = {
-  id: 'dev-user-1',
-  name: 'Demo User',
-  email: 'demo@showcaseit.app',
-  image: null,
-  role: 'owner',
-  workspaceId: 'ws-1',
-};
-
-export const DEV_SESSION: AuthSession = {
-  user: DEV_USER,
-  expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-};

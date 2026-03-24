@@ -31,6 +31,8 @@ model User {
   recordingMicEnabled  Boolean @default(true) @map("recording_mic_enabled")
   /** Client UI state: e.g. `{ liquidGlass: { ... } }` for workspace visual prefs. */
   uiPreferences        Json    @default("{}") @map("ui_preferences")
+  /** Set when the user finishes first-run onboarding; null means redirect to `/onboarding`. */
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
 
   workspaceMembers     WorkspaceMember[]
   recordings           Recording[]
@@ -48,6 +50,12 @@ model Workspace {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  /**
+   * Stable org / tenant key for tagging and exports (e.g. `xertilox`). Lowercase slug; unique when set.
+   * Recordings and guides copy this at write time into their own `org_key` for simple filtering.
+   */
+  orgKey String? @unique @map("org_key")
+
   /** Confluence Cloud integration (base URL, API token, space, etc.) — stored in Supabase Postgres when DATABASE_URL points there. */
   confluenceIntegration Json? @map("confluence_integration")
 
@@ -64,7 +72,8 @@ model WorkspaceMember {
   id          String   @id @default(uuid())
   workspaceId String   @map("workspace_id")
   userId      String   @map("user_id")
-  role        String   @default("editor")
+  /** `admin` — manage team & workspace settings; `member` — default. */
+  role        String   @default("member")
   joinedAt    DateTime @default(now()) @map("joined_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -139,11 +148,15 @@ model Recording {
   status      String   @default("processing")
   createdAt   DateTime @default(now()) @map("created_at")
 
+  /** Denormalized from `workspaces.org_key` via the project’s workspace (set on create / move). */
+  orgKey String? @map("org_key")
+
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
   guides              Guide[]
   marketingRenderJobs MarketingRenderJob[]
 
+  @@index([orgKey])
   @@map("recordings")
 }
 
@@ -185,12 +198,16 @@ model Guide {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  /** Denormalized from `workspaces.org_key` via the project’s workspace (set on create / project change). */
+  orgKey String? @map("org_key")
+
   project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user      User       @relation(fields: [userId], references: [id])
   recording Recording? @relation(fields: [recordingId], references: [id])
   brandKit  BrandKit?  @relation(fields: [brandKitId], references: [id])
   steps     GuideStep[]
 
+  @@index([orgKey])
   @@map("guides")
 }
 

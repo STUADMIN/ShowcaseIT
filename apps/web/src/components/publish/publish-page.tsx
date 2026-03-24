@@ -67,9 +67,8 @@ export function PublishPage() {
   } = useApi<ConfluenceIntegrationDto>({ url: confluenceUrl });
 
   /**
-   * Same source as Guides + Export (`GET /api/guides` unfiltered). Many guides were created without a
-   * `userId` from the client, so they were attributed to another workspace member — a scoped publish
-   * list hid them. Confluence publish still validates access server-side.
+   * Lists guides the signed-in user may access (auth + same visibility rules as Recordings).
+   * Confluence publish still validates access server-side.
    */
   const guidesUrl = '/api/guides';
   const {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { normalizeOrgKey } from '@/lib/db/org-key';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,10 +23,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (!membership) {
+      /** First workspace for this account: they become the workspace admin (team owner). */
+      const defaultOrgKey = normalizeOrgKey(process.env.DEFAULT_WORKSPACE_ORG_KEY);
       const ws = await prisma.workspace.create({
         data: {
           name: `${name || email.split('@')[0]}'s Workspace`,
-          members: { create: { userId: user.id, role: 'owner' } },
+          ...(defaultOrgKey ? { orgKey: defaultOrgKey } : {}),
+          members: { create: { userId: user.id, role: 'admin' } },
         },
       });
       await prisma.user.update({

@@ -71,7 +71,9 @@ export function WorkspaceBrandProvider({ children }: { children: ReactNode }) {
     setRecordingProjectLoading(true);
     const qs = new URLSearchParams({ userId: user.id });
     if (activeBrandKitId) qs.set('brandKitId', activeBrandKitId);
-    void fetch(`/api/workspaces/${encodeURIComponent(preferredWorkspaceId)}/default-project?${qs}`)
+    void fetch(`/api/workspaces/${encodeURIComponent(preferredWorkspaceId)}/default-project?${qs}`, {
+      credentials: 'include',
+    })
       .then(async (r) => {
         if (!r.ok) throw new Error('default-project');
         return r.json() as Promise<{ projectId?: string }>;

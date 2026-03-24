@@ -230,7 +230,14 @@ function BrandAssetDropZone(props: {
 }
 
 export function BrandKitPage() {
-  const { preferredWorkspaceId, activeBrandKitId, setActiveBrandKitId } = useWorkspaceBrand();
+  const {
+    preferredWorkspaceId,
+    activeBrandKitId,
+    setActiveBrandKitId,
+    workspaces,
+    workspacesLoading,
+    setPreferredWorkspaceId,
+  } = useWorkspaceBrand();
   const kitsUrl = useMemo(
     () =>
       preferredWorkspaceId
@@ -238,7 +245,14 @@ export function BrandKitPage() {
         : '',
     [preferredWorkspaceId]
   );
-  const { data: brandKits, loading, refetch } = useApi<BrandKitData[]>({ url: kitsUrl });
+  const { data: brandKits, loading, error: kitsFetchError, refetch } = useApi<BrandKitData[]>({
+    url: kitsUrl,
+  });
+  const currentWorkspaceName = useMemo(
+    () => workspaces?.find((w) => w.id === preferredWorkspaceId)?.name,
+    [workspaces, preferredWorkspaceId]
+  );
+  const hasMultipleWorkspaces = (workspaces?.length ?? 0) > 1;
   const [selectedKitId, setSelectedKitId] = useState<string | 'new' | null>(null);
   const [kit, setKit] = useState<BrandKitEditorState>(() => ({ ...EMPTY_EDITOR }));
   const [saving, setSaving] = useState(false);
@@ -584,6 +598,40 @@ export function BrandKitPage() {
                 <h2 className="text-3xl font-bold">Brand Kit</h2>
                 <p className="text-gray-400 mt-1">Configure brand identity per kit; use the sidebar to filter guides and recordings</p>
               </div>
+              {(workspacesLoading || (workspaces && workspaces.length > 0)) && (
+                <div className="rounded-lg border border-gray-800 bg-gray-900/40 px-3 py-2.5 max-w-lg">
+                  {workspaces && workspaces.length > 1 ? (
+                    <>
+                      <label htmlFor="si-brand-kit-workspace" className="text-xs text-gray-500 block mb-1">
+                        Workspace for these kits
+                      </label>
+                      <select
+                        id="si-brand-kit-workspace"
+                        value={preferredWorkspaceId}
+                        onChange={(e) => setPreferredWorkspaceId(e.target.value)}
+                        disabled={workspacesLoading}
+                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-200 outline-none focus:border-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {workspaces.map((w) => (
+                          <option key={w.id} value={w.id}>
+                            {w.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[11px] text-gray-600 mt-1.5 leading-snug">
+                        Kits are stored per workspace. If older kits are missing, try another workspace here (your default is also set from Team or Settings).
+                      </p>
+                    </>
+                  ) : workspaces?.length === 1 ? (
+                    <p className="text-xs text-gray-500">
+                      Workspace:{' '}
+                      <span className="text-gray-300 font-medium">{workspaces[0].name}</span>
+                    </p>
+                  ) : workspacesLoading ? (
+                    <p className="text-xs text-gray-600">Loading workspaces…</p>
+                  ) : null}
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-2">
                 <span id="si-brand-kit-picker-label" className="text-xs text-gray-500 shrink-0">
                   Editing kit
@@ -688,9 +736,13 @@ export function BrandKitPage() {
                 </p>
               </div>
               <p className="text-xs text-gray-500 max-w-xl leading-relaxed">
-                {!(brandKits ?? []).length && !loading
-                  ? 'Then set colors and fonts below and click Save Brand Kit to create your first kit.'
-                  : 'Open the list to switch kits or start another new one. Saving writes the kit to your workspace.'}
+                {!(brandKits ?? []).length && !loading && !kitsFetchError
+                  ? hasMultipleWorkspaces
+                    ? `No brand kits in ${currentWorkspaceName ?? 'this workspace'} yet. If you expected existing kits, choose another workspace above—they stay tied to the workspace where you saved them.`
+                    : 'Then set colors and fonts below and click Save Brand Kit to create your first kit.'
+                  : kitsFetchError
+                    ? ''
+                    : 'Open the list to switch kits or start another new one. Saving writes the kit to your workspace.'}
               </p>
             </div>
             <button onClick={handleSave} disabled={saving} className="btn-primary disabled:opacity-50 shrink-0">
@@ -700,6 +752,16 @@ export function BrandKitPage() {
 
           {loading ? (
             <div className="card p-16 text-center"><p className="text-gray-500">Loading brand kit...</p></div>
+          ) : kitsFetchError ? (
+            <div className="card p-10 text-center space-y-3 max-w-lg mx-auto">
+              <p className="text-sm text-red-200/95">{kitsFetchError}</p>
+              <p className="text-xs text-gray-500">
+                If you are signed in, refresh the page. You must be a member of this workspace to load its brand kits.
+              </p>
+              <button type="button" className="btn-primary text-sm" onClick={() => void refetch()}>
+                Try again
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {brandBanner && (

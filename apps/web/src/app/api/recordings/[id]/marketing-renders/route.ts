@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
+import { isRecordingAccessibleToUser } from '@/lib/recordings/recording-access';
+import { createClient } from '@/lib/supabase/server';
 import {
   isMarketingRenderModeImplemented,
   MARKETING_RENDER_IMPLEMENTED_MODES,
@@ -12,35 +14,32 @@ import {
 } from '@/lib/marketing-render/process-job';
 
 type PostBody = {
-  userId?: string;
   mode?: string;
   options?: Record<string, unknown>;
 };
 
 /**
  * GET — list marketing render jobs for this recording (newest first).
- * Query: userId (must match recording owner).
+ * Caller must be a member of the recording’s workspace.
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: recordingId } = await params;
-  const userId = request.nextUrl.searchParams.get('userId')?.trim();
-  if (!userId) {
-    return NextResponse.json({ error: 'userId query is required' }, { status: 400 });
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const recording = await prisma.recording.findUnique({
-      where: { id: recordingId },
-      select: { id: true, userId: true },
-    });
-    if (!recording) {
+    const ok = await isRecordingAccessibleToUser(recordingId, authUser.id);
+    if (!ok) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
-    }
-    if (recording.userId !== userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const jobs = await prisma.marketingRenderJob.findMany({
@@ -57,13 +56,24 @@ export async function GET(
 
 /**
  * POST — enqueue a marketing render job.
- * Body: { userId, mode, options? }
+ * Body: { mode, options? } — session user must be in the recording’s workspace.
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: recordingId } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const authId = authUser.id;
+
   let body: PostBody = {};
   try {
     body = (await request.json()) as PostBody;
@@ -71,11 +81,7 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const userId = body.userId?.trim();
   const mode = parseMarketingRenderMode(body.mode);
-  if (!userId) {
-    return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-  }
   if (!mode) {
     return NextResponse.json(
       {
@@ -103,7 +109,8 @@ export async function POST(
     if (!recording) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }
-    if (recording.userId !== userId) {
+    const canAccess = await isRecordingAccessibleToUser(recordingId, authId);
+    if (!canAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (recording.status !== 'ready' || !recording.videoUrl?.trim()) {
@@ -121,7 +128,7 @@ export async function POST(
     const job = await prisma.marketingRenderJob.create({
       data: {
         recordingId,
-        userId,
+        userId: authId,
         mode,
         status: 'queued',
         options: options as Prisma.InputJsonValue,

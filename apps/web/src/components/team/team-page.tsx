@@ -29,20 +29,21 @@ interface WorkspaceData {
   _count: { projects: number; members: number };
 }
 
-const roles = ['owner', 'admin', 'editor', 'viewer'] as const;
+const roles = ['admin', 'member'] as const;
+
+function isMemberAdminRole(role: string | undefined): boolean {
+  return role === 'admin' || role === 'owner';
+}
 
 const roleDescriptions: Record<string, string> = {
-  owner: 'Full access, billing, and team management',
-  admin: 'Manage team members and all guides',
-  editor: 'Create and edit guides',
-  viewer: 'View guides only',
+  admin: 'Manage workspace settings, invites, and member roles',
+  member: 'Create and use guides, recordings, and brand content',
 };
 
 const roleBadgeColors: Record<string, string> = {
-  owner: 'bg-purple-600/15 text-purple-400 border-purple-600/30',
   admin: 'bg-blue-600/15 text-blue-400 border-blue-600/30',
-  editor: 'bg-green-600/15 text-green-400 border-green-600/30',
-  viewer: 'bg-gray-600/15 text-gray-400 border-gray-600/30',
+  member: 'bg-green-600/15 text-green-400 border-green-600/30',
+  owner: 'bg-blue-600/15 text-blue-400 border-blue-600/30',
 };
 
 export function TeamPage() {
@@ -57,7 +58,7 @@ export function TeamPage() {
   const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<'admin' | 'editor' | 'viewer'>('editor');
+  const [inviteRole, setInviteRole] = useState<'admin' | 'member'>('member');
 
   useEffect(() => {
     if (!preferredWorkspaceId) {
@@ -65,7 +66,7 @@ export function TeamPage() {
       return;
     }
     let cancelled = false;
-    fetch(`/api/workspaces/${preferredWorkspaceId}`)
+    fetch(`/api/workspaces/${preferredWorkspaceId}`, { credentials: 'include' })
       .then((r) => r.json())
       .then((data) => {
         if (!cancelled) setWorkspace(data);
@@ -82,7 +83,9 @@ export function TeamPage() {
     if (!inviteEmail || !workspace) return;
     try {
       await apiPost(`/api/workspaces/${workspace.id}/members`, { email: inviteEmail, role: inviteRole });
-      const updated = await fetch(`/api/workspaces/${workspace.id}`).then((r) => r.json());
+      const updated = await fetch(`/api/workspaces/${workspace.id}`, { credentials: 'include' }).then((r) =>
+        r.json()
+      );
       setWorkspace(updated);
       setInviteEmail('');
       setShowInvite(false);
@@ -109,6 +112,9 @@ export function TeamPage() {
   };
 
   const members = workspace?.members ?? [];
+  const currentMembership = user?.id ? members.find((m) => m.user.id === user.id) : undefined;
+  const viewerIsAdmin = isMemberAdminRole(currentMembership?.role);
+  const adminMemberCount = members.filter((m) => isMemberAdminRole(m.role)).length;
 
   const inputClass =
     'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-200 outline-none focus:border-brand-600';
@@ -137,9 +143,11 @@ export function TeamPage() {
                 </div>
               )}
             </div>
-            <button onClick={() => setShowInvite(true)} className="btn-primary shrink-0">
-              + Invite Member
-            </button>
+            {viewerIsAdmin ? (
+              <button type="button" onClick={() => setShowInvite(true)} className="btn-primary shrink-0">
+                + Invite member
+              </button>
+            ) : null}
           </div>
 
           {wsLoading || !workspace ? (
@@ -167,7 +175,11 @@ export function TeamPage() {
                 Members
               </h3>
               <div className="card divide-y divide-gray-800">
-                {members.map((member) => (
+                {members.map((member) => {
+                  const rowIsAdmin = isMemberAdminRole(member.role);
+                  const soleAdminLocked = rowIsAdmin && adminMemberCount <= 1;
+                  const displayRole = rowIsAdmin ? 'admin' : 'member';
+                  return (
                   <div key={member.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">
@@ -180,35 +192,39 @@ export function TeamPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-gray-600">{new Date(member.joinedAt).toLocaleDateString()}</span>
-                      {member.role === 'owner' ? (
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${roleBadgeColors[member.role]}`}>
-                          Owner
+                      {!viewerIsAdmin || soleAdminLocked ? (
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium border ${roleBadgeColors[displayRole] ?? roleBadgeColors.member}`}
+                        >
+                          {displayRole === 'admin' ? 'Admin' : 'Member'}
                         </span>
                       ) : (
                         <select
-                          value={member.role}
+                          value={displayRole}
                           onChange={(e) => handleRoleChange(member.id, e.target.value)}
                           className="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-xs text-gray-300 outline-none"
                         >
-                          {roles.filter((r) => r !== 'owner').map((r) => (
+                          {roles.map((r) => (
                             <option key={r} value={r}>
                               {r.charAt(0).toUpperCase() + r.slice(1)}
                             </option>
                           ))}
                         </select>
                       )}
-                      {member.role !== 'owner' && (
+                      {viewerIsAdmin && !soleAdminLocked ? (
                         <button
+                          type="button"
                           onClick={() => handleRemoveMember(member.id)}
                           className="text-gray-600 hover:text-red-400 transition-colors text-sm"
                           title="Remove member"
                         >
                           ×
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
@@ -224,10 +240,15 @@ export function TeamPage() {
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${roleBadgeColors[role]}`}>
                     {role.charAt(0).toUpperCase() + role.slice(1)}
                   </span>
-                  <span className="text-sm text-gray-500">{roleDescriptions[role]}</span>
+                  <span className="text-sm text-gray-500">{roleDescriptions[role] ?? ''}</span>
                 </div>
               ))}
             </div>
+            {!viewerIsAdmin ? (
+              <p className="text-sm text-gray-500 mt-3">
+                Only admins can invite people or change roles. Ask a workspace admin if you need access updated.
+              </p>
+            ) : null}
           </div>
 
           {/* Invite modal */}
@@ -260,12 +281,11 @@ export function TeamPage() {
                     <label className="text-sm text-gray-400 block mb-1.5">Role</label>
                     <select
                       value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value as 'admin' | 'editor' | 'viewer')}
+                      onChange={(e) => setInviteRole(e.target.value as 'admin' | 'member')}
                       className={inputClass}
                     >
+                      <option value="member">Member — {roleDescriptions.member}</option>
                       <option value="admin">Admin — {roleDescriptions.admin}</option>
-                      <option value="editor">Editor — {roleDescriptions.editor}</option>
-                      <option value="viewer">Viewer — {roleDescriptions.viewer}</option>
                     </select>
                   </div>
                 </div>

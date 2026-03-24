@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { orgKeyForProjectId } from '@/lib/db/org-key';
+import { findRecordingAccessibleToUser } from '@/lib/recordings/recording-access';
+import { createClient } from '@/lib/supabase/server';
 import { isUserMemberOfProjectWorkspace } from '@/lib/projects/verify-project-access';
 
 export async function GET(
@@ -7,8 +10,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const recording = await prisma.recording.findUnique({ where: { id } });
+    const recording = await findRecordingAccessibleToUser(id, authUser.id);
     if (!recording) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }
@@ -23,6 +35,17 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const authId = authUser.id;
+
   try {
     const body = (await request.json()) as {
       title?: string;
@@ -31,12 +54,13 @@ export async function PATCH(
       userId?: string;
     };
 
-    const existing = await prisma.recording.findUnique({ where: { id } });
+    const existing = await findRecordingAccessibleToUser(id, authId);
     if (!existing) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }
 
-    const data: { title?: string; status?: string; projectId?: string } = {};
+    const data: { title?: string; status?: string; projectId?: string; orgKey?: string | null } =
+      {};
     if (body.title !== undefined) data.title = body.title;
     if (body.status !== undefined) data.status = body.status;
 
@@ -50,14 +74,6 @@ export async function PATCH(
       nextProjectId.length > 0 &&
       nextProjectId !== existing.projectId
     ) {
-      const userId = body.userId?.trim();
-      if (!userId) {
-        return NextResponse.json(
-          { error: 'userId is required to assign a recording to another project/brand.' },
-          { status: 400 }
-        );
-      }
-
       const [srcProject, tgtProject] = await Promise.all([
         prisma.project.findUnique({
           where: { id: existing.projectId },
@@ -79,14 +95,14 @@ export async function PATCH(
       }
 
       const member = await prisma.workspaceMember.findFirst({
-        where: { userId, workspaceId: srcProject.workspaceId },
+        where: { userId: authId, workspaceId: srcProject.workspaceId },
         select: { id: true },
       });
       if (!member) {
         return NextResponse.json({ error: 'Not allowed to move this recording.' }, { status: 403 });
       }
 
-      const targetReachable = await isUserMemberOfProjectWorkspace(userId, nextProjectId);
+      const targetReachable = await isUserMemberOfProjectWorkspace(authId, nextProjectId);
       if (!targetReachable) {
         return NextResponse.json(
           { error: 'That project was not found or you are not a member of its workspace.' },
@@ -95,6 +111,7 @@ export async function PATCH(
       }
 
       data.projectId = nextProjectId;
+      data.orgKey = await orgKeyForProjectId(nextProjectId);
     }
 
     const recording = await prisma.recording.update({
@@ -112,7 +129,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
+    const existing = await findRecordingAccessibleToUser(id, authUser.id);
+    if (!existing) {
+      return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
+    }
     await prisma.recording.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {

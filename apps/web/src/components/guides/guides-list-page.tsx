@@ -192,9 +192,25 @@ export function GuidesListPage() {
                   <span className="font-medium text-brand-300">
                     {brandKits?.find((k) => k.id === activeBrandKitId)?.name ?? 'this brand'}
                   </span>
-                  . Use the sidebar to switch brands or show all.
+                  .
+                  {brandKits && brandKits.length > 0 ? (
+                    <>
+                      {' '}
+                      Under the logo, open <span className="text-gray-400">Guides &amp; recordings</span> to switch
+                      brands or choose <span className="text-gray-400">All brands</span>.
+                    </>
+                  ) : null}
                 </p>
-              ) : null}
+              ) : brandKits && brandKits.length > 0 ? (
+                <p className="text-sm text-gray-500 mt-2">
+                  Showing all guides you can access. Under the logo, use{' '}
+                  <span className="text-gray-400">Guides &amp; recordings</span> to filter by brand.
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 mt-2">
+                  Showing all guides you can access. Add a brand under Brand Kit to enable filtering in the sidebar.
+                </p>
+              )}
             </div>
             {guideList.length > 0 && (
               <button onClick={handleCreateBlankGuide} disabled={creating} className="btn-primary">

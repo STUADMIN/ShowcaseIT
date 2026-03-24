@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
-import { createClient } from '@supabase/supabase-js';
+import { orgKeyForProjectId } from '@/lib/db/org-key';
+import { isRecordingAccessibleToUser } from '@/lib/recordings/recording-access';
+import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { extractFrames } from '@/lib/video/extract-frames';
 import { FRAME_EXTRACTION_PLACEHOLDER_DESCRIPTION } from '@/lib/frame-extraction-placeholder';
 import {
@@ -13,9 +16,20 @@ import {
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
+  const authSb = await createClient();
+  const {
+    data: { user: authUser },
+  } = await authSb.auth.getUser();
+
+  if (!authUser?.id) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const authId = authUser.id;
+
   try {
     const body = await request.json();
-    const { recordingId, style = 'clean', title, userId, projectId } = body;
+    const { recordingId, style = 'clean', title, projectId } = body;
 
     if (!recordingId) {
       return NextResponse.json({ error: 'recordingId is required' }, { status: 400 });
@@ -24,6 +38,11 @@ export async function POST(request: NextRequest) {
     const recording = await prisma.recording.findUnique({ where: { id: recordingId } });
     if (!recording) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
+    }
+
+    const canAccess = await isRecordingAccessibleToUser(recordingId, authId);
+    if (!canAccess) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     if (!recording.videoUrl) {
@@ -40,7 +59,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient(
+    const supabase = createSupabaseAdmin(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!
     );
@@ -143,14 +162,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 3: Create the guide
+    const resolvedProjectId = projectId || recording.projectId;
+    const orgKey = await orgKeyForProjectId(resolvedProjectId);
     const guide = await prisma.guide.create({
       data: {
-        projectId: projectId || recording.projectId,
-        userId: userId || recording.userId,
+        projectId: resolvedProjectId,
+        userId: authId,
         recordingId: recording.id,
         title: title || `Guide from ${recording.title}`,
         description: `Auto-generated from recording "${recording.title}"`,
         style,
+        orgKey,
       },
     });
 

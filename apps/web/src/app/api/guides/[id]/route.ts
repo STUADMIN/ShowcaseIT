@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
+import { orgKeyForProjectId } from '@/lib/db/org-key';
 import { isUserMemberOfProjectWorkspace } from '@/lib/projects/verify-project-access';
 
 export async function GET(
@@ -100,6 +101,7 @@ export async function PATCH(
     if (body.published !== undefined) data.published = body.published;
     if (changingProject) {
       data.project = { connect: { id: nextProjectId } };
+      data.orgKey = await orgKeyForProjectId(nextProjectId);
     }
 
     if (body.brandKitId !== undefined) {

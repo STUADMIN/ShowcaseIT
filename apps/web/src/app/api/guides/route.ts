@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
+import { orgKeyForProjectId } from '@/lib/db/org-key';
 import { EnsureProjectError, ensureProjectForBrand } from '@/lib/projects/ensure-project-for-brand';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -50,20 +52,86 @@ export async function GET(request: NextRequest) {
       const publishWhere: Prisma.GuideWhereInput = { OR: orBranches };
       where = projectId ? { AND: [{ projectId }, publishWhere] } : publishWhere;
     } else {
-      if (projectId) where.projectId = projectId;
-      if (workspaceId) where.project = { workspaceId };
-    }
+      const supabase = await createClient();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
 
-    if (!forPublish && workspaceId && brandKitIdParam?.trim()) {
-      const bid = brandKitIdParam.trim();
-      const brandWhere: Prisma.GuideWhereInput = {
-        OR: [
-          { brandKitId: bid },
-          { AND: [{ brandKitId: null }, { project: { brandKitId: bid } }] },
-        ],
-      };
+      if (!authUser?.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      const authId = authUser.id;
+      const memberships = await prisma.workspaceMember.findMany({
+        where: { userId: authId },
+        select: { workspaceId: true },
+      });
+      const memberWorkspaceIds = memberships.map((m) => m.workspaceId);
+
+      const visibilityScope: Prisma.GuideWhereInput =
+        memberWorkspaceIds.length > 0
+          ? {
+              OR: [
+                { userId: authId },
+                { project: { workspaceId: { in: memberWorkspaceIds } } },
+              ],
+            }
+          : { userId: authId };
+
+      let extra: Prisma.GuideWhereInput = {};
+
+      if (projectId) {
+        const allowed = await prisma.project.findFirst({
+          where: {
+            id: projectId,
+            workspace: { members: { some: { userId: authId } } },
+          },
+          select: { id: true },
+        });
+        if (!allowed) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+        extra = { projectId };
+      } else if (workspaceId) {
+        if (!memberWorkspaceIds.includes(workspaceId)) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+        const bid = brandKitIdParam?.trim();
+        if (bid) {
+          const kitsInWs = await prisma.brandKit.findMany({
+            where: { workspaceId },
+            select: { id: true },
+            take: 2,
+          });
+          const onlyKit = kitsInWs.length === 1 ? kitsInWs[0] : null;
+          const mergeUnassigned = onlyKit?.id === bid;
+
+          const brandOr: Prisma.GuideWhereInput[] = [
+            { brandKitId: bid },
+            { AND: [{ brandKitId: null }, { project: { brandKitId: bid } }] },
+          ];
+          if (mergeUnassigned) {
+            brandOr.push({ AND: [{ brandKitId: null }, { project: { brandKitId: null } }] });
+          }
+
+          extra = {
+            AND: [
+              { project: { workspaceId } },
+              { OR: brandOr },
+            ],
+          };
+        } else {
+          extra = { project: { workspaceId } };
+        }
+      } else if (brandKitIdParam?.trim()) {
+        return NextResponse.json(
+          { error: 'workspaceId is required when filtering by brandKitId' },
+          { status: 400 }
+        );
+      }
+
       where =
-        Object.keys(where).length > 0 ? { AND: [where, brandWhere] } : brandWhere;
+        Object.keys(extra).length > 0 ? { AND: [visibilityScope, extra] } : visibilityScope;
     }
 
     const guides = await prisma.guide.findMany({
@@ -173,6 +241,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const orgKey = await orgKeyForProjectId(projectId);
     const guide = await prisma.guide.create({
       data: {
         projectId,
@@ -182,6 +251,7 @@ export async function POST(request: NextRequest) {
         style: body.style || 'clean',
         brandKitId: body.brandKitId,
         recordingId: body.recordingId,
+        orgKey,
       },
       include: { steps: true },
     });

@@ -3,14 +3,19 @@ import { PrismaClient } from '../src/generated/prisma';
 const prisma = new PrismaClient();
 
 async function main() {
-  /** Matches `DEV_USER` in `src/lib/auth/config.ts` for local demo sessions */
+  /** Optional fixture user for local `prisma db seed` (create a matching Supabase user to sign in). */
   const demo = await prisma.user.upsert({
     where: { id: 'dev-user-1' },
-    update: { email: 'demo@showcaseit.app', name: 'Demo User' },
+    update: {
+      email: 'demo@showcaseit.app',
+      name: 'Demo User',
+      onboardingCompletedAt: new Date(),
+    },
     create: {
       id: 'dev-user-1',
       email: 'demo@showcaseit.app',
       name: 'Demo User',
+      onboardingCompletedAt: new Date(),
     },
   });
 
@@ -31,7 +36,7 @@ async function main() {
       members: {
         create: {
           userId: demo.id,
-          role: 'owner',
+          role: 'admin',
         },
       },
     },
