@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo, type CSSProperties } from 'react';
 import {
+  BRAND_GRADIENT_PRESETS,
   brandPaintCss,
   buildSimpleLinearGradient,
   isCssGradient,
@@ -18,8 +19,6 @@ interface ColorPickerProps {
   allowGradient?: boolean;
 }
 
-const ANGLE_OPTIONS = [90, 135, 180, 270] as const;
-
 export function ColorPicker({ label, value, onChange, allowGradient = true }: ColorPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(value);
@@ -35,6 +34,8 @@ export function ColorPicker({ label, value, onChange, allowGradient = true }: Co
   const [gAngle, setGAngle] = useState(parsed?.angle ?? 135);
   const [g1, setG1] = useState(parsed?.color1 ?? '#2563EB');
   const [g2, setG2] = useState(parsed?.color2 ?? '#7C3AED');
+  const [gStop1, setGStop1] = useState(parsed?.stop1 ?? 0);
+  const [gStop2, setGStop2] = useState(parsed?.stop2 ?? 100);
 
   useEffect(() => {
     setInputValue(value);
@@ -52,6 +53,8 @@ export function ColorPicker({ label, value, onChange, allowGradient = true }: Co
         setGAngle(p.angle);
         setG1(p.color1);
         setG2(p.color2);
+        setGStop1(p.stop1);
+        setGStop2(p.stop2);
         setUseCustomGradient(false);
       } else {
         setUseCustomGradient(true);
@@ -63,8 +66,14 @@ export function ColorPicker({ label, value, onChange, allowGradient = true }: Co
     }
   }, [value, allowGradient]);
 
-  const applySimpleGradient = (angle: number, c1: string, c2: string) => {
-    onChange(buildSimpleLinearGradient(angle, c1, c2));
+  const emitSimpleGradient = (
+    angle: number,
+    c1: string,
+    c2: string,
+    stop1: number = gStop1,
+    stop2: number = gStop2
+  ) => {
+    onChange(buildSimpleLinearGradient(angle, c1, c2, stop1, stop2));
   };
 
   const handleSolidInputChange = (val: string) => {
@@ -127,7 +136,7 @@ export function ColorPicker({ label, value, onChange, allowGradient = true }: Co
                     setMode('gradient');
                     if (!isCssGradient(value)) {
                       const base = solidBrandHex(value, '#2563EB');
-                      applySimpleGradient(gAngle, base, g2);
+                      emitSimpleGradient(gAngle, base, g2, gStop1, gStop2);
                     }
                   }}
                   className={`px-2 py-1 rounded-md transition-colors ${
@@ -160,7 +169,7 @@ export function ColorPicker({ label, value, onChange, allowGradient = true }: Co
                       onChange={(e) => {
                         const v = e.target.value;
                         setG1(v);
-                        applySimpleGradient(gAngle, v, g2);
+                        emitSimpleGradient(gAngle, v, g2);
                       }}
                       className="h-9 w-12 cursor-pointer rounded border border-gray-600 bg-gray-900"
                       title="Start color"
@@ -171,26 +180,80 @@ export function ColorPicker({ label, value, onChange, allowGradient = true }: Co
                       onChange={(e) => {
                         const v = e.target.value;
                         setG2(v);
-                        applySimpleGradient(gAngle, g1, v);
+                        emitSimpleGradient(gAngle, g1, v);
                       }}
                       className="h-9 w-12 cursor-pointer rounded border border-gray-600 bg-gray-900"
                       title="End color"
                     />
-                    <select
-                      value={gAngle}
-                      onChange={(e) => {
-                        const a = Number(e.target.value);
-                        setGAngle(a);
-                        applySimpleGradient(a, g1, g2);
-                      }}
-                      className="bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-brand-600"
-                    >
-                      {ANGLE_OPTIONS.map((a) => (
-                        <option key={a} value={a}>
-                          {a}°
-                        </option>
-                      ))}
-                    </select>
+                  </div>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div>
+                      <label className="text-[10px] text-gray-600 block mb-0.5">Angle (°)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={360}
+                        step={1}
+                        value={gAngle}
+                        onChange={(e) => {
+                          const a = Number(e.target.value);
+                          if (!Number.isFinite(a)) return;
+                          setGAngle(a);
+                          emitSimpleGradient(a, g1, g2);
+                        }}
+                        className="w-[4.25rem] bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-brand-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-600 block mb-0.5">Stop 1 %</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.01}
+                        value={gStop1}
+                        onChange={(e) => {
+                          const n = Number(e.target.value);
+                          if (!Number.isFinite(n)) return;
+                          setGStop1(n);
+                          emitSimpleGradient(gAngle, g1, g2, n, gStop2);
+                        }}
+                        className="w-[4.5rem] bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-brand-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-600 block mb-0.5">Stop 2 %</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.01}
+                        value={gStop2}
+                        onChange={(e) => {
+                          const n = Number(e.target.value);
+                          if (!Number.isFinite(n)) return;
+                          setGStop2(n);
+                          emitSimpleGradient(gAngle, g1, g2, gStop1, n);
+                        }}
+                        className="w-[4.5rem] bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-brand-600"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-600 leading-snug">
+                    Use any angle (e.g. 319°) and stop positions so each color sits where you want along the line.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] text-gray-600 shrink-0">Presets</span>
+                    {BRAND_GRADIENT_PRESETS.map((pr) => (
+                      <button
+                        key={pr.id}
+                        type="button"
+                        onClick={() => onChange(pr.value)}
+                        className="text-[10px] px-2 py-1 rounded-md border border-gray-700 bg-gray-800/80 text-gray-300 hover:border-brand-600 hover:text-brand-200 transition-colors"
+                      >
+                        {pr.label}
+                      </button>
+                    ))}
                   </div>
                   <input
                     type="text"
@@ -210,7 +273,7 @@ export function ColorPicker({ label, value, onChange, allowGradient = true }: Co
                     if (!useCustomGradient) {
                       setCustomGradient(value);
                     } else {
-                      applySimpleGradient(gAngle, g1, g2);
+                      emitSimpleGradient(gAngle, g1, g2);
                     }
                   }}
                   className="text-xs text-brand-400 hover:text-brand-300"
@@ -230,11 +293,12 @@ export function ColorPicker({ label, value, onChange, allowGradient = true }: Co
                     }}
                     rows={2}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-[11px] text-gray-300 font-mono outline-none focus:border-brand-600 resize-y min-h-[52px]"
-                    placeholder="linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)"
+                    placeholder="linear-gradient(319deg, #02143F 23.29%, #49898A 76.71%)"
                     spellCheck={false}
                   />
                   <p className="text-[10px] text-gray-600 mt-1">
-                    linear-gradient or radial-gradient only. PDF export uses the first color stop as a flat fill.
+                    Paste any <code className="text-gray-500">linear-gradient</code> or{' '}
+                    <code className="text-gray-500">radial-gradient</code>. PDF/DOCX use the first hex stop as a flat fill.
                   </p>
                 </div>
               ) : null}

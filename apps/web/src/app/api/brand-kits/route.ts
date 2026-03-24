@@ -22,8 +22,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { guideCoverImageUrl: coverUrl, ...rest } = body as typeof body & {
+    const { guideCoverImageUrl: coverUrl, videoOutroImageUrl: outroUrl, ...rest } = body as typeof body & {
       guideCoverImageUrl?: string | null;
+      videoOutroImageUrl?: string | null;
     };
 
     const brandKit = await prisma.brandKit.create({
@@ -44,6 +45,14 @@ export async function POST(request: NextRequest) {
     if ('guideCoverImageUrl' in body) {
       await prisma.$executeRaw`
         UPDATE brand_kits SET guide_cover_image_url = ${coverUrl ?? null} WHERE id = ${brandKit.id}
+      `;
+    }
+
+    if ('videoOutroImageUrl' in body) {
+      const sqlOutro =
+        outroUrl === '' || outroUrl === undefined || outroUrl === null ? null : outroUrl;
+      await prisma.$executeRaw`
+        UPDATE brand_kits SET video_outro_image_url = ${sqlOutro} WHERE id = ${brandKit.id}
       `;
     }
 

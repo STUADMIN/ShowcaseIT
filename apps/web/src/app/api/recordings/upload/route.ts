@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { createClient } from '@supabase/supabase-js';
+import { EnsureProjectError, ensureProjectForBrand } from '@/lib/projects/ensure-project-for-brand';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,9 +15,33 @@ export async function POST(request: NextRequest) {
 
     const metadata = metadataStr ? JSON.parse(metadataStr) : {};
 
-    // Resolve projectId and userId -- fall back to first available project/member
-    let projectId = metadata.projectId;
-    let userId = metadata.userId;
+    // Resolve projectId and userId -- prefer workspace + brand (member-checked), then legacy fallbacks
+    let projectId = metadata.projectId as string | undefined;
+    let userId = metadata.userId as string | undefined;
+    const metaWorkspaceId = metadata.workspaceId as string | undefined;
+    const metaBrandKitId = metadata.brandKitId as string | undefined;
+
+    if ((!projectId || !userId) && metaWorkspaceId && metadata.userId) {
+      try {
+        const { projectId: ensured } = await ensureProjectForBrand(
+          metaWorkspaceId,
+          metadata.userId as string,
+          typeof metaBrandKitId === 'string' && metaBrandKitId.trim()
+            ? { brandKitId: metaBrandKitId.trim() }
+            : undefined
+        );
+        projectId = projectId || ensured;
+        userId = userId || (metadata.userId as string);
+      } catch (e) {
+        if (e instanceof EnsureProjectError) {
+          return NextResponse.json(
+            { error: e.message },
+            { status: e.code === 'FORBIDDEN' ? 403 : 400 }
+          );
+        }
+        throw e;
+      }
+    }
 
     if (!projectId || !userId) {
       const defaultProject = await prisma.project.findFirst({

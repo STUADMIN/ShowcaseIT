@@ -11,14 +11,11 @@ export const MARKETING_RENDER_MODES = [
 
 export type MarketingRenderMode = (typeof MARKETING_RENDER_MODES)[number];
 
-/** Modes the worker can run today (ffmpeg + upload path). */
-export const MARKETING_RENDER_IMPLEMENTED_MODES = [
-  'branded_screen',
-  'motion_walkthrough',
-  'ai_enhanced',
-  'branded_plus_motion',
-  'full_stack',
-] as const satisfies readonly MarketingRenderMode[];
+/**
+ * Modes the app allows when **creating** jobs (POST). The worker can still finish older queued jobs
+ * for other modes; we only expose branded screen in the UI because the other pipelines are not reliable enough yet.
+ */
+export const MARKETING_RENDER_IMPLEMENTED_MODES = ['branded_screen'] as const satisfies readonly MarketingRenderMode[];
 
 export function isMarketingRenderModeImplemented(mode: MarketingRenderMode): boolean {
   return (MARKETING_RENDER_IMPLEMENTED_MODES as readonly string[]).includes(mode);

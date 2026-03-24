@@ -11,6 +11,7 @@ import { ListSearchInput } from '@/components/ui/list-search-input';
 import { solidBrandHex } from '@/lib/brand/brand-color-value';
 import { matchesListSearch } from '@/lib/ui/matches-list-search';
 import { useAuth } from '@/lib/auth/auth-context';
+import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
 
 /** 12 rows × 3 columns at the `lg` grid breakpoint (see grid below). */
 const GUIDES_PAGE_SIZE = 36;
@@ -92,7 +93,17 @@ function GuideCardCover({ guide }: { guide: Guide }) {
 
 export function GuidesListPage() {
   const { user } = useAuth();
-  const { data: guides, loading, error, refetch } = useApi<Guide[]>({ url: '/api/guides' });
+  const { preferredWorkspaceId, activeBrandKitId, brandKits } = useWorkspaceBrand();
+  /** Unscoped when “All brands” — matches pre–brand-filter behavior so guides in any project stay visible. */
+  const guidesUrl = useMemo(() => {
+    if (!activeBrandKitId || !preferredWorkspaceId) return '/api/guides';
+    const qs = new URLSearchParams({
+      workspaceId: preferredWorkspaceId,
+      brandKitId: activeBrandKitId,
+    });
+    return `/api/guides?${qs}`;
+  }, [preferredWorkspaceId, activeBrandKitId]);
+  const { data: guides, loading, error, refetch } = useApi<Guide[]>({ url: guidesUrl });
   const guideList = Array.isArray(guides) ? guides : [];
   const listError =
     error ||
@@ -149,6 +160,12 @@ export function GuidesListPage() {
         description: '',
         style: 'business',
         userId: user?.id,
+        ...(preferredWorkspaceId
+          ? {
+              workspaceId: preferredWorkspaceId,
+              ...(activeBrandKitId ? { brandKitIdForProject: activeBrandKitId } : {}),
+            }
+          : {}),
       });
       if (guide?.id) {
         router.push(`/guides/${guide.id}`);
@@ -169,6 +186,15 @@ export function GuidesListPage() {
             <div>
               <h2 className="text-3xl font-bold">Guides</h2>
               <p className="text-gray-400 mt-1">Create and manage your step-by-step guides</p>
+              {activeBrandKitId ? (
+                <p className="text-sm text-brand-400/90 mt-2">
+                  Showing guides for{' '}
+                  <span className="font-medium text-brand-300">
+                    {brandKits?.find((k) => k.id === activeBrandKitId)?.name ?? 'this brand'}
+                  </span>
+                  . Use the sidebar to switch brands or show all.
+                </p>
+              ) : null}
             </div>
             {guideList.length > 0 && (
               <button onClick={handleCreateBlankGuide} disabled={creating} className="btn-primary">

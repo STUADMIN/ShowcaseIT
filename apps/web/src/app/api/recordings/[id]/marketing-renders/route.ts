@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
-import { findReadyBaseMarketingVideoUrl } from '@/lib/marketing-render/base-marketing-source';
-import { parseMarketingJobOptions } from '@/lib/marketing-render/job-options';
 import {
   isMarketingRenderModeImplemented,
-  MARKETING_RENDER_MODES,
+  MARKETING_RENDER_IMPLEMENTED_MODES,
   parseMarketingRenderMode,
 } from '@/lib/marketing-render/modes';
 import {
@@ -82,13 +80,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: 'Invalid mode',
-        allowed: [
-          'branded_screen',
-          'motion_walkthrough',
-          'ai_enhanced',
-          'branded_plus_motion',
-          'full_stack',
-        ],
+        allowed: [...MARKETING_RENDER_IMPLEMENTED_MODES],
       },
       { status: 400 }
     );
@@ -97,9 +89,8 @@ export async function POST(
   if (!isMarketingRenderModeImplemented(mode)) {
     return NextResponse.json(
       {
-        error:
-          `Mode "${mode}" is not available yet. See apps/web/docs/MARKETING_RENDERS.md for supported modes.`,
-        implementedModes: [...MARKETING_RENDER_MODES],
+        error: `Mode "${mode}" is not available. Only branded screen export can be created from the app right now.`,
+        implementedModes: [...MARKETING_RENDER_IMPLEMENTED_MODES],
       },
       { status: 400 }
     );
@@ -126,24 +117,6 @@ export async function POST(
       body.options && typeof body.options === 'object' && !Array.isArray(body.options)
         ? body.options
         : {};
-
-    if (mode === 'ai_enhanced') {
-      const parsedOpts = parseMarketingJobOptions(options);
-      const baseUrl = await findReadyBaseMarketingVideoUrl({
-        recordingId,
-        userId,
-        explicitJobId: parsedOpts.baseMarketingJobId,
-      });
-      if (!baseUrl) {
-        return NextResponse.json(
-          {
-            error:
-              'AI style pass needs a finished export for this recording first. Run "Branded screen recording" or "Animated walkthrough" (or "Branded + motion"), wait until it completes, then try again. Optional API field: options.baseMarketingJobId.',
-          },
-          { status: 400 }
-        );
-      }
-    }
 
     const job = await prisma.marketingRenderJob.create({
       data: {

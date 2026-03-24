@@ -45,6 +45,7 @@ export async function POST(
     if (
       kind !== 'logo' &&
       kind !== 'guideCover' &&
+      kind !== 'videoOutro' &&
       kind !== 'exportBannerDocument' &&
       kind !== 'exportBannerSocial' &&
       kind !== 'socialLogo' &&
@@ -74,6 +75,7 @@ export async function POST(
       const base = `brand-kits/${brandKitId}`;
       if (kind === 'logo') return `${base}/logo.${ext}`;
       if (kind === 'guideCover') return `${base}/guide-cover.${ext}`;
+      if (kind === 'videoOutro') return `${base}/video-outro.${ext}`;
       if (kind === 'exportBannerDocument') return `${base}/export-banner-doc.${ext}`;
       if (kind === 'exportBannerSocial') return `${base}/export-banner-social.${ext}`;
       if (kind === 'socialLogo') return `${base}/social/${platform}/logo.${ext}`;
@@ -116,6 +118,18 @@ export async function POST(
       }
       await mergeGuideCoverImageUrl([base]);
       return NextResponse.json({ ...base, guideCoverImageUrl: publicUrl });
+    }
+
+    if (kind === 'videoOutro') {
+      await prisma.$executeRaw`
+        UPDATE brand_kits SET video_outro_image_url = ${publicUrl} WHERE id = ${brandKitId}
+      `;
+      const base = await prisma.brandKit.findUnique({ where: { id: brandKitId } });
+      if (!base) {
+        return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
+      }
+      await mergeGuideCoverImageUrl([base]);
+      return NextResponse.json({ ...base, videoOutroImageUrl: publicUrl });
     }
 
     if (kind === 'exportBannerDocument') {

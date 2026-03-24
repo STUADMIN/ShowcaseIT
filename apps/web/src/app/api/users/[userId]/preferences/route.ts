@@ -17,6 +17,13 @@ function mergeUiPreferences(
     const prev = asRecord(current.liquidGlass);
     next.liquidGlass = { ...prev, ...asRecord(patch.liquidGlass) } as UserUiPreferences['liquidGlass'];
   }
+  if (patch.activeBrandKitByWorkspace) {
+    const prev = asRecord(current.activeBrandKitByWorkspace);
+    next.activeBrandKitByWorkspace = {
+      ...prev,
+      ...asRecord(patch.activeBrandKitByWorkspace),
+    } as UserUiPreferences['activeBrandKitByWorkspace'];
+  }
   return next;
 }
 

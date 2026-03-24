@@ -18,6 +18,7 @@ import {
 } from '@/lib/marketing-render/click-highlights-vf';
 import { findReadyBaseMarketingVideoUrl } from '@/lib/marketing-render/base-marketing-source';
 import { failStaleMarketingProcessingJobs } from '@/lib/marketing-render/stale-jobs';
+import { applyMarketingVideoBookends } from '@/lib/marketing-render/video-bookends';
 import { getResolvedFfmpegPath } from '@/lib/video/extract-frames';
 
 const execFileAsync = promisify(execFile);
@@ -196,6 +197,7 @@ export async function executeMarketingRenderJob(jobId: string): Promise<void> {
 
   const tmpRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'si-mr-'));
   const inputPath = path.join(tmpRoot, 'source.bin');
+  const coreEncodedPath = path.join(tmpRoot, 'core.mp4');
   const outputPath = path.join(tmpRoot, 'out.mp4');
 
   try {
@@ -236,7 +238,25 @@ export async function executeMarketingRenderJob(jobId: string): Promise<void> {
       });
     }
 
-    await runFfmpegH264({ inputPath, outputPath, maxSeconds, vf });
+    await runFfmpegH264({ inputPath, outputPath: coreEncodedPath, maxSeconds, vf });
+
+    const brandKit = job.recording.project?.brandKit;
+    const introImageUrl = brandKit?.guideCoverImageUrl?.trim() || null;
+    const outroImageUrl =
+      (brandKit as { videoOutroImageUrl?: string | null } | null | undefined)?.videoOutroImageUrl?.trim() || null;
+    const padFfmpeg = hexToFfmpegColor(primary);
+
+    if (introImageUrl || outroImageUrl) {
+      await applyMarketingVideoBookends({
+        coreVideoPath: coreEncodedPath,
+        outputPath,
+        introImageUrl,
+        outroImageUrl,
+        padColorFfmpeg: padFfmpeg,
+      });
+    } else {
+      await fs.promises.copyFile(coreEncodedPath, outputPath);
+    }
 
     const buffer = await fs.promises.readFile(outputPath);
     const supabase = supabaseService();

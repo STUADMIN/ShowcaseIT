@@ -6,7 +6,7 @@ import { AppShell } from '@/components/layout/app-shell';
 import { LiquidGlassSettingsSection } from '@/components/settings/liquid-glass-settings-section';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useApi, apiPatch, apiDeleteWithBody } from '@/hooks/use-api';
-import { usePreferredWorkspaceId } from '@/hooks/use-preferred-workspace-id';
+import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
 import { createClient } from '@/lib/supabase/client';
 import { DEV_USER } from '@/lib/auth/config';
 
@@ -23,11 +23,14 @@ export function SettingsPage() {
   const { user, updateLocalUser, changeSignInEmail, signOut } = useAuth();
   const supabase = useMemo(() => createClient(), []);
 
-  const wsUrl = user?.id ? `/api/workspaces?userId=${encodeURIComponent(user.id)}` : '';
-  const { data: workspaces, loading: wsLoading, refetch: refetchWorkspaces } = useApi<WorkspaceData[]>({
-    url: wsUrl,
-  });
-  const [preferredWorkspaceId, setPreferredWorkspaceId] = usePreferredWorkspaceId(workspaces, user?.id);
+  const {
+    workspaces,
+    workspacesLoading: wsLoading,
+    refetchWorkspaces,
+    preferredWorkspaceId,
+    setPreferredWorkspaceId,
+  } = useWorkspaceBrand();
+  const workspaceList = workspaces as WorkspaceData[] | null;
 
   const [name, setName] = useState('');
   const [workspaceName, setWorkspaceName] = useState('');
@@ -79,9 +82,9 @@ export function SettingsPage() {
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- sync once per user id
 
   useEffect(() => {
-    const w = workspaces?.find((x) => x.id === preferredWorkspaceId);
+    const w = workspaceList?.find((x) => x.id === preferredWorkspaceId);
     if (w) setWorkspaceName(w.name);
-  }, [workspaces, preferredWorkspaceId]);
+  }, [workspaceList, preferredWorkspaceId]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -253,7 +256,7 @@ export function SettingsPage() {
   const inputClass =
     'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-200 outline-none focus:border-brand-600';
 
-  const activeWorkspace = workspaces?.find((w) => w.id === preferredWorkspaceId);
+  const activeWorkspace = workspaceList?.find((w) => w.id === preferredWorkspaceId);
   const planLabel = activeWorkspace?.plan ?? '—';
 
   return (
@@ -388,11 +391,11 @@ export function SettingsPage() {
           <h3 className="text-lg font-semibold mb-6">Workspace</h3>
           {wsLoading ? (
             <p className="text-sm text-gray-500">Loading workspaces…</p>
-          ) : !workspaces?.length ? (
+          ) : !workspaceList?.length ? (
             <p className="text-sm text-gray-500">No workspaces found.</p>
           ) : (
             <div className="space-y-4">
-              {workspaces.length > 1 && (
+              {workspaceList.length > 1 && (
                 <div>
                   <label className="text-sm text-gray-400 block mb-1.5">Active workspace</label>
                   <select
@@ -400,7 +403,7 @@ export function SettingsPage() {
                     onChange={(e) => setPreferredWorkspaceId(e.target.value)}
                     className={inputClass}
                   >
-                    {workspaces.map((w) => (
+                    {workspaceList.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name}
                       </option>

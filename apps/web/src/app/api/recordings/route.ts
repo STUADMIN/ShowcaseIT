@@ -1,14 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get('projectId');
+  const workspaceId = searchParams.get('workspaceId');
+  const brandKitId = searchParams.get('brandKitId');
 
   try {
+    const where: Prisma.RecordingWhereInput = {};
+    if (projectId) {
+      where.projectId = projectId;
+    } else if (workspaceId) {
+      const bid = brandKitId?.trim();
+      where.project = bid
+        ? { workspaceId, brandKitId: bid }
+        : { workspaceId };
+    }
+
     const recordings = await prisma.recording.findMany({
-      where: projectId ? { projectId } : undefined,
+      where: Object.keys(where).length ? where : undefined,
       orderBy: { createdAt: 'desc' },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            workspaceId: true,
+            brandKitId: true,
+            brandKit: { select: { id: true, name: true } },
+          },
+        },
+      },
     });
     return NextResponse.json(recordings);
   } catch (error) {

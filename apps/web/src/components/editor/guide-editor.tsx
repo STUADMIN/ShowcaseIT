@@ -10,6 +10,7 @@ import { StepPanel } from './step-panel';
 import { StepPreview } from './step-preview';
 import { EditorToolbar, type Tool } from './editor-toolbar';
 import { useApi, apiPatch, apiPost, apiDelete } from '@/hooks/use-api';
+import { useAuth } from '@/lib/auth/auth-context';
 import { FRAME_EXTRACTION_ERROR_HINT, isFrameExtractionPlaceholder } from '@/lib/frame-extraction-placeholder';
 
 interface GuideStep {
@@ -50,16 +51,46 @@ interface BlurRegion {
   intensity: number;
 }
 
+interface GuideProjectSummary {
+  id: string;
+  name: string;
+  workspaceId: string;
+  brandKitId: string | null;
+  brandKit?: { id: string; name: string } | null;
+}
+
 interface GuideData {
   id: string;
   title: string;
   description: string | null;
   style: string;
   steps: GuideStep[];
+  projectId: string;
+  brandKitId: string | null;
+  project?: GuideProjectSummary | null;
+  brandKit?: { id: string; name: string } | null;
+}
+
+interface WorkspaceProjectRow {
+  id: string;
+  name: string;
+  brandKitId: string | null;
+  brandKit?: { id: string; name: string } | null;
 }
 
 export function GuideEditor({ guideId }: { guideId: string }) {
-  const { data: guide, loading } = useApi<GuideData>({ url: `/api/guides/${guideId}` });
+  const { user } = useAuth();
+  const { data: guide, loading, refetch } = useApi<GuideData>({ url: `/api/guides/${guideId}` });
+  const guideWorkspaceId = guide?.project?.workspaceId;
+  const projectsUrl = guideWorkspaceId
+    ? `/api/projects?workspaceId=${encodeURIComponent(guideWorkspaceId)}`
+    : '';
+  const brandKitsUrl = guideWorkspaceId
+    ? `/api/brand-kits?workspaceId=${encodeURIComponent(guideWorkspaceId)}`
+    : '';
+  const { data: workspaceProjects } = useApi<WorkspaceProjectRow[]>({ url: projectsUrl });
+  const { data: workspaceBrandKits } = useApi<{ id: string; name: string }[]>({ url: brandKitsUrl });
+  const [assignBusy, setAssignBusy] = useState(false);
   const [steps, setSteps] = useState<GuideStep[]>([]);
   const [selectedStepId, setSelectedStepId] = useState<string>('');
   const [guideName, setGuideName] = useState('');
@@ -287,6 +318,80 @@ export function GuideEditor({ guideId }: { guideId: string }) {
             placeholder="Guide title..."
           />
           <p className="text-xs text-gray-500 mt-1">ID: {guideId}</p>
+          {guide?.project && user?.id && workspaceProjects && workspaceProjects.length > 0 ? (
+            <div className="mt-3 space-y-2 border-t border-gray-800 pt-3">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-gray-600">Brand &amp; project</p>
+              <p className="text-[10px] text-gray-600 leading-snug">
+                Guides follow the <strong className="text-gray-500">project&apos;s</strong> brand unless you set an
+                override below.
+              </p>
+              <div>
+                <label className="text-[10px] text-gray-500 block mb-0.5" htmlFor="si-guide-project">
+                  Project
+                </label>
+                <select
+                  id="si-guide-project"
+                  value={guide.projectId}
+                  disabled={assignBusy}
+                  onChange={async (e) => {
+                    const pid = e.target.value;
+                    if (!pid || pid === guide.projectId || !user.id) return;
+                    setAssignBusy(true);
+                    try {
+                      await apiPatch(`/api/guides/${guideId}`, { userId: user.id, projectId: pid });
+                      await refetch();
+                    } catch {
+                      /* keep UI; user can retry */
+                    } finally {
+                      setAssignBusy(false);
+                    }
+                  }}
+                  className="w-full rounded-md border border-gray-700 bg-gray-900 px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-brand-600 disabled:opacity-50"
+                >
+                  {workspaceProjects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.brandKit?.name ? `${p.brandKit.name} — ${p.name}` : p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {workspaceBrandKits && workspaceBrandKits.length > 0 ? (
+                <div>
+                  <label className="text-[10px] text-gray-500 block mb-0.5" htmlFor="si-guide-brand-override">
+                    Brand override
+                  </label>
+                  <select
+                    id="si-guide-brand-override"
+                    value={guide.brandKitId ?? ''}
+                    disabled={assignBusy}
+                    onChange={async (e) => {
+                      const v = e.target.value;
+                      const next = v === '' ? null : v;
+                      if ((next === null && guide.brandKitId === null) || next === guide.brandKitId) return;
+                      if (!user.id) return;
+                      setAssignBusy(true);
+                      try {
+                        await apiPatch(`/api/guides/${guideId}`, { userId: user.id, brandKitId: next });
+                        await refetch();
+                      } catch {
+                        /* ignore */
+                      } finally {
+                        setAssignBusy(false);
+                      }
+                    }}
+                    className="w-full rounded-md border border-gray-700 bg-gray-900 px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-brand-600 disabled:opacity-50"
+                  >
+                    <option value="">Use project brand</option>
+                    {workspaceBrandKits.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         <div className="flex-1 overflow-auto">
           <StepPanel steps={steps} selectedStepId={selectedStepId} onSelect={setSelectedStepId} onReorder={handleReorder} onDelete={handleDeleteStep} />

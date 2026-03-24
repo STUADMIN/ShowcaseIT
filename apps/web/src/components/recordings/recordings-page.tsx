@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
 import { ChevronLeft, ChevronRight, Mic, Sparkles, Trash2, Video } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { IconTile } from '@/components/ui/icon-tile';
-import { useApi, apiPost, apiDelete } from '@/hooks/use-api';
+import { useApi, apiPost, apiPatch, apiDelete } from '@/hooks/use-api';
+import { useAuth } from '@/lib/auth/auth-context';
 import { dispatchWorkspaceCelebrate } from '@/lib/ui/workspace-celebrate';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -12,6 +14,12 @@ import { RecordingVideoShareActions } from '@/components/recordings/recording-vi
 import { ListSearchInput } from '@/components/ui/list-search-input';
 import { matchesListSearch } from '@/lib/ui/matches-list-search';
 import { MarketingExportModal } from '@/components/recordings/marketing-export-modal';
+import { BRAND_GRADIENT_PRESETS } from '@/lib/brand/brand-color-value';
+
+/** Matches Brand Kit preset “Ocean deep” — used for inline alerts on this page. */
+const RECORDINGS_ALERT_GRADIENT =
+  BRAND_GRADIENT_PRESETS.find((p) => p.id === 'ocean-deep')?.value ??
+  'linear-gradient(319deg, #02143F 23.29%, #49898A 76.71%)';
 
 interface Recording {
   id: string;
@@ -23,9 +31,55 @@ interface Recording {
   projectId: string;
   userId: string;
   hasVoiceover?: boolean;
+  project?: {
+    id: string;
+    name: string;
+    workspaceId: string;
+    brandKitId: string | null;
+    brandKit?: { id: string; name: string } | null;
+  } | null;
+}
+
+interface WorkspaceProjectOption {
+  id: string;
+  name: string;
+  workspaceId: string;
+  brandKitId: string | null;
+  brandKit?: { id: string; name: string } | null;
 }
 
 const RECORDINGS_PAGE_SIZE = 20;
+
+function sameWorkspaceId(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (a == null || b == null) return false;
+  return String(a) === String(b);
+}
+
+function projectOptionLabel(p: WorkspaceProjectOption): string {
+  return p.brandKit?.name ? `${p.brandKit.name} — ${p.name}` : p.name;
+}
+
+/** Projects in `rec.project.workspaceId` the member can target, including the recording’s current project if missing from the list. */
+function buildRowProjects(
+  rec: Recording,
+  workspaceProjects: WorkspaceProjectOption[] | null | undefined
+): WorkspaceProjectOption[] {
+  const inWorkspace =
+    workspaceProjects?.filter((p) => sameWorkspaceId(p.workspaceId, rec.project?.workspaceId)) ?? [];
+  if (rec.project && !inWorkspace.some((p) => p.id === rec.projectId)) {
+    return [
+      {
+        id: rec.project.id,
+        name: rec.project.name,
+        workspaceId: rec.project.workspaceId,
+        brandKitId: rec.project.brandKitId,
+        brandKit: rec.project.brandKit ?? null,
+      },
+      ...inWorkspace,
+    ];
+  }
+  return inWorkspace;
+}
 
 function formatRecordingDuration(ms: number): string {
   const s = Math.floor(ms / 1000);
@@ -34,7 +88,25 @@ function formatRecordingDuration(ms: number): string {
 }
 
 export function RecordingsPage() {
-  const { data: recordings, loading, refetch } = useApi<Recording[]>({ url: '/api/recordings' });
+  const { user } = useAuth();
+  const { preferredWorkspaceId, activeBrandKitId, brandKits } = useWorkspaceBrand();
+  /** All projects in workspaces the user belongs to — filtered per row by each recording's workspace. */
+  const projectsUrl = user?.id
+    ? `/api/projects?userId=${encodeURIComponent(user.id)}`
+    : '';
+  const { data: workspaceProjects } = useApi<WorkspaceProjectOption[]>({ url: projectsUrl });
+  const [movingRecordingId, setMovingRecordingId] = useState<string | null>(null);
+  const [moveError, setMoveError] = useState<string | null>(null);
+  /** Unscoped when “All brands” — recordings tied to legacy/other projects remain listed. */
+  const recordingsUrl = useMemo(() => {
+    if (!activeBrandKitId || !preferredWorkspaceId) return '/api/recordings';
+    const qs = new URLSearchParams({
+      workspaceId: preferredWorkspaceId,
+      brandKitId: activeBrandKitId,
+    });
+    return `/api/recordings?${qs}`;
+  }, [preferredWorkspaceId, activeBrandKitId]);
+  const { data: recordings, loading, refetch } = useApi<Recording[]>({ url: recordingsUrl });
   const [generating, setGenerating] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -52,6 +124,8 @@ export function RecordingsPage() {
         formatRecordingDuration(rec.duration),
         new Date(rec.createdAt).toLocaleDateString(),
         new Date(rec.createdAt).toISOString().slice(0, 10),
+        rec.project?.name ?? '',
+        rec.project?.brandKit?.name ?? '',
       ].join(' ');
       return matchesListSearch(searchQuery, blob);
     });
@@ -67,6 +141,10 @@ export function RecordingsPage() {
   useEffect(() => {
     setPage((p) => Math.min(Math.max(1, p), totalPages));
   }, [totalPages, totalCount]);
+
+  useEffect(() => {
+    setMoveError(null);
+  }, [recordingsUrl, searchQuery]);
 
   const paginatedRecordings = useMemo(() => {
     if (!filteredRecordings.length) return [];
@@ -110,6 +188,20 @@ export function RecordingsPage() {
             <div>
               <h2 className="text-3xl font-bold">Recordings</h2>
               <p className="text-gray-400 mt-1">Manage your screen captures and recordings</p>
+              {activeBrandKitId ? (
+                <p className="text-sm text-brand-400/90 mt-2">
+                  Filter:{' '}
+                  <span className="font-medium text-brand-300">
+                    {brandKits?.find((k) => k.id === activeBrandKitId)?.name ?? 'this brand'}
+                  </span>
+                  . Choose <span className="text-gray-400">All brands</span> in the sidebar to see the full list.
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 mt-2">
+                  Showing <span className="text-gray-400">All brands</span> — everything in the queue. Pick a brand in
+                  the sidebar to narrow the list.
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap gap-2 justify-end">
               <Link
@@ -131,13 +223,15 @@ export function RecordingsPage() {
           </div>
 
           {!loading && recordings && recordings.length > 0 ? (
-            <ListSearchInput
-              id="recordings-search"
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search by title, date, status, duration…"
-              className="max-w-xl mb-6"
-            />
+            <div className="space-y-3 mb-6 max-w-3xl">
+              <ListSearchInput
+                id="recordings-search"
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search by title, date, status, duration…"
+                className="max-w-xl"
+              />
+            </div>
           ) : null}
 
           {loading ? (
@@ -176,13 +270,37 @@ export function RecordingsPage() {
             <div className="si-stagger-in space-y-3">
               {generateError ? (
                 <div
-                  className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+                  className="rounded-lg border border-white/15 px-4 py-3 text-sm text-center text-white shadow-lg shadow-black/20"
+                  style={{ background: RECORDINGS_ALERT_GRADIENT }}
                   role="alert"
                 >
                   {generateError}
                 </div>
               ) : null}
-              {paginatedRecordings.map((rec) => (
+              {moveError ? (
+                <div
+                  className="rounded-lg border border-white/15 px-4 py-3 text-sm text-center text-white flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 shadow-lg shadow-black/20"
+                  style={{ background: RECORDINGS_ALERT_GRADIENT }}
+                  role="alert"
+                >
+                  <span>{moveError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setMoveError(null)}
+                    className="text-xs font-medium text-white/85 hover:text-white underline underline-offset-2"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              ) : null}
+              {paginatedRecordings.map((rec) => {
+                const rowProjects = buildRowProjects(rec, workspaceProjects);
+                const showProjectRow =
+                  Boolean(user?.id) && rowProjects.length > 0 && Boolean(rec.project?.workspaceId);
+                const showSelect = rowProjects.length > 1;
+                const currentRowProject =
+                  rowProjects.find((p) => p.id === rec.projectId) ?? rowProjects[0] ?? null;
+                return (
                 <div
                   key={rec.id}
                   className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
@@ -202,6 +320,65 @@ export function RecordingsPage() {
                           </span>
                         ) : null}
                       </p>
+                      {showProjectRow ? (
+                        <div className="mt-2 flex flex-col gap-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {showSelect ? (
+                              <label className="text-[10px] text-gray-600 shrink-0" htmlFor={`rec-proj-${rec.id}`}>
+                                Brand
+                              </label>
+                            ) : (
+                              <span className="text-[10px] text-gray-600 shrink-0">Brand</span>
+                            )}
+                            {showSelect ? (
+                              <select
+                                id={`rec-proj-${rec.id}`}
+                                value={rec.projectId}
+                                disabled={movingRecordingId === rec.id}
+                                onChange={async (e) => {
+                                  const uid = user?.id;
+                                  const next = e.target.value.trim();
+                                  if (!uid || !next || next === rec.projectId) return;
+                                  const target = rowProjects.find((p) => p.id === next);
+                                  if (
+                                    !target ||
+                                    !sameWorkspaceId(target.workspaceId, rec.project?.workspaceId)
+                                  ) {
+                                    setMoveError(
+                                      "That project is not in this recording's workspace. Refresh the page and try again."
+                                    );
+                                    return;
+                                  }
+                                  setMoveError(null);
+                                  setMovingRecordingId(rec.id);
+                                  try {
+                                    await apiPatch(`/api/recordings/${rec.id}`, {
+                                      projectId: next,
+                                      userId: uid,
+                                    });
+                                    await refetch();
+                                  } catch (err) {
+                                    setMoveError(err instanceof Error ? err.message : 'Could not move recording');
+                                  } finally {
+                                    setMovingRecordingId(null);
+                                  }
+                                }}
+                                className="max-w-[min(100%,18rem)] rounded-md border border-gray-700 bg-gray-900 px-2 py-1 text-xs text-gray-200 outline-none focus:border-brand-600 disabled:opacity-50"
+                              >
+                                {rowProjects.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {projectOptionLabel(p)}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-xs text-gray-300 max-w-[min(100%,18rem)] truncate" title={currentRowProject ? projectOptionLabel(currentRowProject) : undefined}>
+                                {currentRowProject ? projectOptionLabel(currentRowProject) : rec.projectId}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                   <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end sm:flex-wrap">
@@ -254,7 +431,8 @@ export function RecordingsPage() {
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {totalCount > 0 ? (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-gray-800/80">
                   <p className="text-sm text-gray-500">

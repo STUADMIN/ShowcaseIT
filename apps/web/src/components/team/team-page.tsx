@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { AppShell } from '@/components/layout/app-shell';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useApi, apiPost, apiPatch, apiDelete } from '@/hooks/use-api';
-import { usePreferredWorkspaceId } from '@/hooks/use-preferred-workspace-id';
+import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
 
 interface TeamMember {
   id: string;
@@ -47,9 +47,13 @@ const roleBadgeColors: Record<string, string> = {
 
 export function TeamPage() {
   const { user } = useAuth();
-  const wsUrl = user?.id ? `/api/workspaces?userId=${encodeURIComponent(user.id)}` : '';
-  const { data: workspaces, loading: wsLoading } = useApi<WorkspaceSummary[]>({ url: wsUrl });
-  const [preferredWorkspaceId, setPreferredWorkspaceId] = usePreferredWorkspaceId(workspaces, user?.id);
+  const {
+    workspaces,
+    workspacesLoading: wsLoading,
+    preferredWorkspaceId,
+    setPreferredWorkspaceId,
+  } = useWorkspaceBrand();
+  const workspaceSummaries = workspaces as WorkspaceSummary[] | null;
   const [workspace, setWorkspace] = useState<WorkspaceData | null>(null);
   const [showInvite, setShowInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -116,7 +120,7 @@ export function TeamPage() {
             <div className="min-w-0">
               <h2 className="text-3xl font-bold">Team</h2>
               <p className="text-gray-400 mt-1">Manage your workspace and team members</p>
-              {workspaces && workspaces.length > 1 && (
+              {workspaceSummaries && workspaceSummaries.length > 1 && (
                 <div className="mt-3 max-w-xs">
                   <label className="text-xs text-gray-500 block mb-1">Workspace</label>
                   <select
@@ -124,7 +128,7 @@ export function TeamPage() {
                     onChange={(e) => setPreferredWorkspaceId(e.target.value)}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 outline-none focus:border-brand-600"
                   >
-                    {workspaces.map((w) => (
+                    {workspaceSummaries.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name}
                       </option>

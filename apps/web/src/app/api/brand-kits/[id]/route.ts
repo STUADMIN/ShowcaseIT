@@ -27,8 +27,12 @@ export async function PATCH(
   const { id } = await params;
   try {
     const body = await request.json();
-    const { guideCoverImageUrl: coverUrl, ...rest } = body as Record<string, unknown> & {
+    const { guideCoverImageUrl: coverUrl, videoOutroImageUrl: outroUrl, ...rest } = body as Record<
+      string,
+      unknown
+    > & {
       guideCoverImageUrl?: string | null;
+      videoOutroImageUrl?: string | null;
     };
 
     await prisma.brandKit.update({
@@ -49,6 +53,14 @@ export async function PATCH(
     if ('guideCoverImageUrl' in body) {
       await prisma.$executeRaw`
         UPDATE brand_kits SET guide_cover_image_url = ${coverUrl ?? null} WHERE id = ${id}
+      `;
+    }
+
+    if ('videoOutroImageUrl' in body) {
+      const sqlOutro =
+        outroUrl === '' || outroUrl === undefined || outroUrl === null ? null : outroUrl;
+      await prisma.$executeRaw`
+        UPDATE brand_kits SET video_outro_image_url = ${sqlOutro} WHERE id = ${id}
       `;
     }
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { LucideIcon } from 'lucide-react';
-import { Facebook, ImagePlus, Instagram, Linkedin, Twitter, Youtube } from 'lucide-react';
+import { Check, ChevronDown, Facebook, ImagePlus, Instagram, Linkedin, Twitter, Youtube } from 'lucide-react';
 import { IconTile } from '@/components/ui/icon-tile';
 import { AppShell } from '@/components/layout/app-shell';
 import { ColorPicker } from './color-picker';
@@ -20,6 +21,7 @@ import {
   type SocialPlatformAssetsMap,
   type SocialPlatformId,
 } from '@/lib/brand/social-platform-assets';
+import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
 
 const SOCIAL_ICONS: Record<SocialPlatformId, LucideIcon> = {
   youtube: Youtube,
@@ -61,6 +63,7 @@ interface BrandKitData {
   fontBody: string;
   logoUrl: string | null;
   guideCoverImageUrl: string | null;
+  videoOutroImageUrl?: string | null;
   exportBannerDocumentUrl?: string | null;
   exportBannerSocialUrl?: string | null;
   socialPlatformAssets?: unknown;
@@ -71,12 +74,14 @@ type BrandKitEditorState = Omit<
   BrandKitData,
   | 'logoUrl'
   | 'guideCoverImageUrl'
+  | 'videoOutroImageUrl'
   | 'exportBannerDocumentUrl'
   | 'exportBannerSocialUrl'
   | 'socialPlatformAssets'
 > & {
   logoUrl: string;
   guideCoverImageUrl: string;
+  videoOutroImageUrl: string;
   exportBannerDocumentUrl: string;
   exportBannerSocialUrl: string;
   socialPlatformAssets: SocialPlatformAssetsMap;
@@ -84,6 +89,44 @@ type BrandKitEditorState = Omit<
 
 const MAX_UPLOAD_MB = 2;
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
+const EMPTY_EDITOR: BrandKitEditorState = {
+  id: '',
+  name: 'New brand',
+  colorPrimary: '#2563EB',
+  colorSecondary: '#7C3AED',
+  colorAccent: '#F59E0B',
+  colorBackground: '#FFFFFF',
+  colorForeground: '#0F172A',
+  fontHeading: 'Inter',
+  fontBody: 'Inter',
+  logoUrl: '',
+  guideCoverImageUrl: '',
+  videoOutroImageUrl: '',
+  exportBannerDocumentUrl: '',
+  exportBannerSocialUrl: '',
+  socialPlatformAssets: {},
+};
+
+function editorStateFromBk(bk: BrandKitData): BrandKitEditorState {
+  return {
+    id: bk.id,
+    name: bk.name,
+    colorPrimary: bk.colorPrimary,
+    colorSecondary: bk.colorSecondary,
+    colorAccent: bk.colorAccent,
+    colorBackground: bk.colorBackground,
+    colorForeground: bk.colorForeground,
+    fontHeading: bk.fontHeading,
+    fontBody: bk.fontBody,
+    logoUrl: bk.logoUrl || '',
+    guideCoverImageUrl: bk.guideCoverImageUrl || '',
+    videoOutroImageUrl: bk.videoOutroImageUrl || '',
+    exportBannerDocumentUrl: bk.exportBannerDocumentUrl || '',
+    exportBannerSocialUrl: bk.exportBannerSocialUrl || '',
+    socialPlatformAssets: parseSocialPlatformAssets(bk.socialPlatformAssets),
+  };
+}
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} bytes`;
@@ -165,20 +208,20 @@ function BrandAssetDropZone(props: {
           disabled={disabled || uploading}
           onChange={(e) => onPickFiles(e.target.files)}
         />
-        <div className={`${aspectClass} flex flex-col items-center justify-center p-6`}>
+        <div
+          className={`${aspectClass} flex w-full flex-col items-center justify-center p-6 text-center`}
+        >
           {uploading ? (
             <p className="text-sm text-gray-400">Uploading…</p>
           ) : previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={previewUrl} alt="" className="max-h-full max-w-full object-contain" />
           ) : (
-            <>
-              <div className="mb-3">
-                <IconTile icon={ImagePlus} size="lg" variant="muted" />
-              </div>
+            <div className="flex w-full max-w-md flex-col items-center justify-center gap-3 px-2">
+              <IconTile icon={ImagePlus} size="lg" variant="muted" />
               <p className="text-sm text-gray-400">Click or drag to upload</p>
-              <p className="text-xs text-gray-600 mt-1">{hint}</p>
-            </>
+              <p className="text-xs text-gray-600 leading-relaxed">{hint}</p>
+            </div>
           )}
         </div>
       </label>
@@ -187,31 +230,30 @@ function BrandAssetDropZone(props: {
 }
 
 export function BrandKitPage() {
-  const { data: brandKits, loading, refetch } = useApi<BrandKitData[]>({ url: '/api/brand-kits' });
-  const [kit, setKit] = useState<BrandKitEditorState>({
-    id: '',
-    name: 'My Brand',
-    colorPrimary: '#2563EB',
-    colorSecondary: '#7C3AED',
-    colorAccent: '#F59E0B',
-    colorBackground: '#FFFFFF',
-    colorForeground: '#0F172A',
-    fontHeading: 'Inter',
-    fontBody: 'Inter',
-    logoUrl: '',
-    guideCoverImageUrl: '',
-    exportBannerDocumentUrl: '',
-    exportBannerSocialUrl: '',
-    socialPlatformAssets: {},
-  });
+  const { preferredWorkspaceId, activeBrandKitId, setActiveBrandKitId } = useWorkspaceBrand();
+  const kitsUrl = useMemo(
+    () =>
+      preferredWorkspaceId
+        ? `/api/brand-kits?workspaceId=${encodeURIComponent(preferredWorkspaceId)}`
+        : '',
+    [preferredWorkspaceId]
+  );
+  const { data: brandKits, loading, refetch } = useApi<BrandKitData[]>({ url: kitsUrl });
+  const [selectedKitId, setSelectedKitId] = useState<string | 'new' | null>(null);
+  const [kit, setKit] = useState<BrandKitEditorState>(() => ({ ...EMPTY_EDITOR }));
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingVideoOutro, setUploadingVideoOutro] = useState(false);
   const [uploadingExportDocBanner, setUploadingExportDocBanner] = useState(false);
   const [uploadingExportSocialBanner, setUploadingExportSocialBanner] = useState(false);
   /** Keys like `linkedin:logo` */
   const [socialUploading, setSocialUploading] = useState<Record<string, boolean>>({});
   const [brandBanner, setBrandBanner] = useState<{ tone: 'error' | 'warning'; message: string } | null>(null);
+  const [kitPickerOpen, setKitPickerOpen] = useState(false);
+  const kitPickerTriggerRef = useRef<HTMLDivElement>(null);
+  const kitPickerMenuRef = useRef<HTMLUListElement>(null);
+  const [kitMenuBox, setKitMenuBox] = useState<{ top: number; left: number; width: number } | null>(null);
 
   /** Load Google Fonts for dropdown previews (otherwise the browser falls back and “Inter” may not match). */
   useEffect(() => {
@@ -247,43 +289,100 @@ export function BrandKitPage() {
   }, []);
 
   useEffect(() => {
-    if (brandKits?.length) {
-      const bk = brandKits[0];
-      setKit({
-        id: bk.id,
-        name: bk.name,
-        colorPrimary: bk.colorPrimary,
-        colorSecondary: bk.colorSecondary,
-        colorAccent: bk.colorAccent,
-        colorBackground: bk.colorBackground,
-        colorForeground: bk.colorForeground,
-        fontHeading: bk.fontHeading,
-        fontBody: bk.fontBody,
-        logoUrl: bk.logoUrl || '',
-        guideCoverImageUrl: bk.guideCoverImageUrl || '',
-        exportBannerDocumentUrl: bk.exportBannerDocumentUrl || '',
-        exportBannerSocialUrl: bk.exportBannerSocialUrl || '',
-        socialPlatformAssets: parseSocialPlatformAssets(bk.socialPlatformAssets),
-      });
+    if (!brandKits) return;
+    if (brandKits.length === 0) {
+      setSelectedKitId('new');
+      setKit({ ...EMPTY_EDITOR });
+      return;
     }
-  }, [brandKits]);
+    setSelectedKitId((prev) => {
+      if (prev === 'new') return 'new';
+      if (prev && brandKits.some((k) => k.id === prev)) return prev;
+      if (activeBrandKitId && brandKits.some((k) => k.id === activeBrandKitId)) return activeBrandKitId;
+      return brandKits[0].id;
+    });
+  }, [brandKits, activeBrandKitId]);
+
+  useEffect(() => {
+    if (!brandKits?.length || selectedKitId === null || selectedKitId === 'new') return;
+    const bk = brandKits.find((k) => k.id === selectedKitId);
+    if (!bk) return;
+    setKit(editorStateFromBk(bk));
+  }, [brandKits, selectedKitId]);
+
+  useLayoutEffect(() => {
+    if (!kitPickerOpen) {
+      setKitMenuBox(null);
+      return;
+    }
+    const place = () => {
+      const r = kitPickerTriggerRef.current?.getBoundingClientRect();
+      if (r) {
+        setKitMenuBox({
+          top: r.bottom + 6,
+          left: r.left,
+          width: Math.max(r.width, 240),
+        });
+      }
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [kitPickerOpen]);
+
+  useEffect(() => {
+    if (!kitPickerOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (kitPickerTriggerRef.current?.contains(t)) return;
+      if (kitPickerMenuRef.current?.contains(t)) return;
+      setKitPickerOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setKitPickerOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [kitPickerOpen]);
+
+  const pickerButtonLabel =
+    selectedKitId === 'new' || selectedKitId === null
+      ? '+ New brand kit'
+      : brandKits?.find((k) => k.id === selectedKitId)?.name ?? kit.name;
 
   const handleSave = useCallback(async () => {
+    if (!preferredWorkspaceId) {
+      setBrandBanner({
+        tone: 'warning',
+        message: 'Choose a **workspace** in Settings first so we know where to save this brand kit.',
+      });
+      return;
+    }
     setSaving(true);
     try {
       if (kit.id) {
         await apiPatch(`/api/brand-kits/${kit.id}`, kit);
+        await refetch();
       } else {
-        await apiPost('/api/brand-kits', { ...kit, workspaceId: '' });
+        const created = await apiPost<BrandKitData>('/api/brand-kits', {
+          ...kit,
+          workspaceId: preferredWorkspaceId,
+        });
+        setSelectedKitId(created.id);
+        setActiveBrandKitId(created.id);
+        await refetch();
       }
-      refetch();
     } catch {}
     setSaving(false);
-  }, [kit, refetch]);
+  }, [kit, preferredWorkspaceId, refetch, setActiveBrandKitId]);
 
   const uploadAsset = useCallback(
     async (
-      kind: 'logo' | 'guideCover' | 'exportBannerDocument' | 'exportBannerSocial',
+      kind: 'logo' | 'guideCover' | 'videoOutro' | 'exportBannerDocument' | 'exportBannerSocial',
       file: File
     ) => {
       setBrandBanner(null);
@@ -304,9 +403,11 @@ export function BrandKitPage() {
           ? setUploadingLogo
           : kind === 'guideCover'
             ? setUploadingCover
-            : kind === 'exportBannerDocument'
-              ? setUploadingExportDocBanner
-              : setUploadingExportSocialBanner;
+            : kind === 'videoOutro'
+              ? setUploadingVideoOutro
+              : kind === 'exportBannerDocument'
+                ? setUploadingExportDocBanner
+                : setUploadingExportSocialBanner;
       setBusy(true);
       try {
         const fd = new FormData();
@@ -322,6 +423,7 @@ export function BrandKitPage() {
           ...prev,
           logoUrl: updated.logoUrl ?? prev.logoUrl,
           guideCoverImageUrl: updated.guideCoverImageUrl ?? prev.guideCoverImageUrl,
+          videoOutroImageUrl: updated.videoOutroImageUrl ?? prev.videoOutroImageUrl,
           exportBannerDocumentUrl: updated.exportBannerDocumentUrl ?? prev.exportBannerDocumentUrl,
           exportBannerSocialUrl: updated.exportBannerSocialUrl ?? prev.exportBannerSocialUrl,
           socialPlatformAssets:
@@ -406,7 +508,12 @@ export function BrandKitPage() {
 
   const clearAsset = useCallback(
     async (
-      field: 'logoUrl' | 'guideCoverImageUrl' | 'exportBannerDocumentUrl' | 'exportBannerSocialUrl'
+      field:
+        | 'logoUrl'
+        | 'guideCoverImageUrl'
+        | 'videoOutroImageUrl'
+        | 'exportBannerDocumentUrl'
+        | 'exportBannerSocialUrl'
     ) => {
       if (!kit.id) return;
       try {
@@ -440,6 +547,11 @@ export function BrandKitPage() {
     if (f) void uploadAsset('guideCover', f);
   };
 
+  const onVideoOutroFiles = (files: FileList | null) => {
+    const f = files?.[0];
+    if (f) void uploadAsset('videoOutro', f);
+  };
+
   const onExportDocBannerFiles = (files: FileList | null) => {
     const f = files?.[0];
     if (f) void uploadAsset('exportBannerDocument', f);
@@ -450,15 +562,138 @@ export function BrandKitPage() {
     if (f) void uploadAsset('exportBannerSocial', f);
   };
 
+  if (!preferredWorkspaceId) {
+    return (
+      <AppShell>
+        <div className="p-8 max-w-2xl mx-auto card text-center py-16">
+          <h2 className="text-xl font-semibold text-gray-200 mb-2">No workspace selected</h2>
+          <p className="text-gray-500 text-sm">
+            Open <span className="text-gray-400">Settings</span> and pick a workspace to manage brand kits.
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
         <div className="p-8 max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold">Brand Kit</h2>
-              <p className="text-gray-400 mt-1">Configure your brand identity for all guides</p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
+            <div className="min-w-0 space-y-3">
+              <div>
+                <h2 className="text-3xl font-bold">Brand Kit</h2>
+                <p className="text-gray-400 mt-1">Configure brand identity per kit; use the sidebar to filter guides and recordings</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span id="si-brand-kit-picker-label" className="text-xs text-gray-500 shrink-0">
+                  Editing kit
+                </span>
+                <div ref={kitPickerTriggerRef} className="relative min-w-[12rem] max-w-full flex-1 sm:flex-initial">
+                  <button
+                    type="button"
+                    id="si-brand-kit-picker"
+                    aria-haspopup="listbox"
+                    aria-expanded={kitPickerOpen}
+                    aria-labelledby="si-brand-kit-picker-label si-brand-kit-picker"
+                    disabled={loading}
+                    onClick={() => setKitPickerOpen((o) => !o)}
+                    className="inline-flex w-full min-w-[12rem] items-center justify-between gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-left text-sm text-gray-200 outline-none hover:border-gray-600 focus:border-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="truncate">{pickerButtonLabel}</span>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${kitPickerOpen ? 'rotate-180' : ''}`}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                  </button>
+                </div>
+              </div>
+              {kitPickerOpen &&
+                kitMenuBox &&
+                typeof document !== 'undefined' &&
+                createPortal(
+                  <ul
+                    ref={kitPickerMenuRef}
+                    role="listbox"
+                    aria-labelledby="si-brand-kit-picker-label"
+                    className="fixed z-[300] max-h-64 overflow-y-auto rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-xl"
+                    style={{
+                      top: kitMenuBox.top,
+                      left: kitMenuBox.left,
+                      width: kitMenuBox.width,
+                      maxWidth: 'min(calc(100vw - 1rem), 24rem)',
+                    }}
+                  >
+                    {(brandKits ?? []).map((k) => {
+                      const selected = selectedKitId === k.id;
+                      return (
+                        <li key={k.id} role="none">
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-800 ${selected ? 'text-brand-300' : 'text-gray-200'}`}
+                            onClick={() => {
+                              setSelectedKitId(k.id);
+                              setActiveBrandKitId(k.id);
+                              setKitPickerOpen(false);
+                            }}
+                          >
+                            {selected ? <Check className="h-4 w-4 shrink-0 text-brand-400" strokeWidth={2} /> : (
+                              <span className="inline-block w-4 shrink-0" aria-hidden />
+                            )}
+                            <span className="truncate">{k.name}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                    <li role="none">
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={selectedKitId === 'new' || selectedKitId === null}
+                        className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-800 ${selectedKitId === 'new' || selectedKitId === null ? 'text-brand-300' : 'text-gray-200'}`}
+                        onClick={() => {
+                          setSelectedKitId('new');
+                          setKit({ ...EMPTY_EDITOR });
+                          setKitPickerOpen(false);
+                        }}
+                      >
+                        {selectedKitId === 'new' || selectedKitId === null ? (
+                          <Check className="h-4 w-4 shrink-0 text-brand-400" strokeWidth={2} />
+                        ) : (
+                          <span className="inline-block w-4 shrink-0" aria-hidden />
+                        )}
+                        <span>+ New brand kit</span>
+                      </button>
+                    </li>
+                  </ul>,
+                  document.body
+                )}
+              <div className="max-w-md">
+                <label htmlFor="si-brand-kit-name" className="text-xs text-gray-500 block mb-1">
+                  Kit name
+                </label>
+                <input
+                  id="si-brand-kit-name"
+                  type="text"
+                  value={kit.name}
+                  onChange={(e) => setKit((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g. Acme marketing"
+                  autoComplete="off"
+                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-200 outline-none focus:border-brand-600"
+                />
+                <p className="text-[11px] text-gray-600 mt-1 leading-snug">
+                  Optional — if you save a new kit with no name, it is stored as &quot;My Brand&quot; (you can rename anytime).
+                </p>
+              </div>
+              <p className="text-xs text-gray-500 max-w-xl leading-relaxed">
+                {!(brandKits ?? []).length && !loading
+                  ? 'Then set colors and fonts below and click Save Brand Kit to create your first kit.'
+                  : 'Open the list to switch kits or start another new one. Saving writes the kit to your workspace.'}
+              </p>
             </div>
-            <button onClick={handleSave} disabled={saving} className="btn-primary disabled:opacity-50">
+            <button onClick={handleSave} disabled={saving} className="btn-primary disabled:opacity-50 shrink-0">
               {saving ? 'Saving...' : 'Save Brand Kit'}
             </button>
           </div>
@@ -626,6 +861,16 @@ export function BrandKitPage() {
                   uploading={uploadingCover}
                   onPickFiles={onCoverFiles}
                   onRemove={() => void clearAsset('guideCoverImageUrl')}
+                />
+                <BrandAssetDropZone
+                  inputId="brand-video-outro-upload"
+                  title="Video outro (end card)"
+                  hint={`Optional. Used only for Marketing export MP4s: fades in after the recording and stays on screen. Separate from the guide cover. PNG, JPG, or WebP up to ${MAX_UPLOAD_MB}MB. 16:9 recommended.`}
+                  previewUrl={kit.videoOutroImageUrl}
+                  aspectClass="aspect-video max-h-[280px]"
+                  uploading={uploadingVideoOutro}
+                  onPickFiles={onVideoOutroFiles}
+                  onRemove={() => void clearAsset('videoOutroImageUrl')}
                 />
               </div>
               <div className="lg:col-span-2 space-y-4">

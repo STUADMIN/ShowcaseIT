@@ -1,6 +1,6 @@
 # Marketing renders (recordings → branded / motion / AI video)
 
-ShowcaseIt can produce **marketing-style outputs** from a screen recording in several pipelines:
+ShowcaseIt can produce **marketing-style outputs** from a screen recording. The **Recordings → Marketing export** UI only creates **`branded_screen`** jobs; the worker can still **finish** older jobs for other modes if they are already queued.
 
 | Mode | Worker behavior today |
 |------|------------------------|
@@ -9,6 +9,15 @@ ShowcaseIt can produce **marketing-style outputs** from a screen recording in se
 | `branded_plus_motion` | Branded letterbox **+** the same click/step highlight pass. |
 | `full_stack` | Branded + highlights + a light **ffmpeg grade** (`eq` saturation/contrast/brightness). **Neural** “AI style” on full video via `ai-service` is still future work. |
 | `ai_enhanced` | Downloads a **finished** marketing MP4 (another job on the **same** recording) and runs the same light **ffmpeg grade**. Picks the newest ready job in modes `branded_screen`, `motion_walkthrough`, or `branded_plus_motion`, or set `options.baseMarketingJobId` to a specific ready job. Output object key: `ai-polish.mp4`. |
+
+### Brand Kit intro / outro (marketing MP4 only)
+
+These do **not** change the in-app recording; they wrap the **exported** marketing MP4 when the recording’s project has a Brand Kit:
+
+- **Intro:** If **Guide cover image** is set, the worker prepends that still (~2s): fade in from black, then a short crossfade into the letterboxed screen content.
+- **Outro:** If **Video outro (end card)** is set on the Brand Kit, the worker crossfades from the end of the screen content into that still and holds it on screen (~2.5s after the transition).
+
+If the trimmed core video is shorter than ~0.7s, bookends are skipped so ffmpeg `xfade` offsets stay valid.
 
 ## Data model
 
@@ -22,7 +31,7 @@ ShowcaseIt can produce **marketing-style outputs** from a screen recording in se
 ## API
 
 - `GET /api/recordings/[recordingId]/marketing-renders?userId=...` — list recent jobs.
-- `POST /api/recordings/[recordingId]/marketing-renders` — body `{ userId, mode, options? }` — creates a **`queued`** job for any supported mode. For **`ai_enhanced`**, the API returns **400** if there is no eligible **ready** base job (same recording) so you don’t enqueue a job that cannot run.
+- `POST /api/recordings/[recordingId]/marketing-renders` — body `{ userId, mode, options? }` — only **`mode: "branded_screen"`** is accepted when creating jobs (other modes return **400**). Existing queued rows for other modes may still be processed by the worker.
 - `GET /api/marketing-renders/[jobId]?userId=...` — poll status.
 - `POST /api/cron/marketing-renders` — header `Authorization: Bearer <CRON_SECRET>` — processes **one** queued job **only if not on Vercel** (or if `MARKETING_RENDER_VERCEL=1`). See below.
 
@@ -61,7 +70,9 @@ Production: run **`worker:marketing`** on a small VM, GitHub Action, or Railway 
 
 | Variable | Purpose |
 |----------|---------|
-| `MARKETING_RENDER_INLINE=1` | After `POST`, start the processor in the **background** inside the Next process (still OK on **local** dev). The HTTP response returns right away with `queued`; the client should poll like the worker path. Avoid on serverless unless you understand lifecycle limits. |
+| `MARKETING_RENDER_INLINE=1` | After `POST`, start the processor in the **background** inside the Next process. Use on a long-lived Node host without a separate worker. |
+| `MARKETING_RENDER_INLINE=0` | Disable inline processing even in `next dev` — use only `npm run worker:marketing`. |
+| *(unset in dev)* | **`next dev`:** inline processing is **on by default** so Marketing export works without env vars or a worker. **`next start` / Vercel:** off unless `MARKETING_RENDER_INLINE=1` or you run the worker. |
 | `MARKETING_RENDER_USE_STUB=1` | Force old “stub failed” behavior (tests). |
 | `MARKETING_RENDER_VERCEL=1` | Allow ffmpeg path on Vercel (discouraged). |
 | `MARKETING_RENDER_FFMPEG_TIMEOUT_MS` | Kill ffmpeg after this many ms (default **45 minutes**). Prevents infinite hangs. |
@@ -70,6 +81,7 @@ Production: run **`worker:marketing`** on a small VM, GitHub Action, or Railway 
 ## Implementation files
 
 - `src/lib/marketing-render/run-job.ts` — download, ffmpeg, Supabase upload, Prisma updates.
+- `src/lib/marketing-render/video-bookends.ts` — optional guide-cover intro + outro still (xfade) after the core encode.
 - `src/lib/marketing-render/stale-jobs.ts` — fail `processing` jobs that never finished (worker/cron).
 - `src/lib/marketing-render/click-highlights-vf.ts` — click / step-marker → ffmpeg `drawbox` chain.
 - `src/lib/marketing-render/process-job.ts` — cron / inline entry, stub toggle.

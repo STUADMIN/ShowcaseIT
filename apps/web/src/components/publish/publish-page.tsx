@@ -14,7 +14,7 @@ import { AppShell } from '@/components/layout/app-shell';
 import { IconTile } from '@/components/ui/icon-tile';
 import { useApi, apiPatch, apiPost } from '@/hooks/use-api';
 import { useAuth } from '@/lib/auth/auth-context';
-import { usePreferredWorkspaceId } from '@/hooks/use-preferred-workspace-id';
+import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
 import { loadConfluenceState, clearConfluenceState } from '@/lib/publish/confluence-local-storage';
 import type { ConfluenceIntegrationDto } from '@/lib/workspaces/confluence-integration';
 import { isConfluenceIntegrationEmpty } from '@/lib/workspaces/confluence-integration';
@@ -22,11 +22,6 @@ import {
   normalizeConfluenceConnectForm,
   normalizeConfluenceSpaceKey,
 } from '@/lib/publish/confluence-input-normalize';
-
-interface WorkspaceData {
-  id: string;
-  name: string;
-}
 
 interface Platform {
   id: string;
@@ -58,10 +53,7 @@ interface ConfluenceSettings {
 
 export function PublishPage() {
   const { user, loading: authLoading } = useAuth();
-  const wsUrl =
-    user?.id && !authLoading ? `/api/workspaces?userId=${encodeURIComponent(user.id)}` : '';
-  const { data: workspaces } = useApi<WorkspaceData[]>({ url: wsUrl });
-  const [preferredWorkspaceId] = usePreferredWorkspaceId(workspaces, user?.id);
+  const { preferredWorkspaceId } = useWorkspaceBrand();
 
   const confluenceUrl =
     user?.id && preferredWorkspaceId

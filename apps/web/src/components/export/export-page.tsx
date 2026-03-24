@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Code2, FileText, FileType, Globe } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { IconTile } from '@/components/ui/icon-tile';
 import { useApi } from '@/hooks/use-api';
+import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
 
 type ExportFormat = 'html' | 'embed' | 'pdf' | 'docx';
 
@@ -50,15 +51,28 @@ interface Guide {
 }
 
 export function ExportPage() {
+  const { preferredWorkspaceId, activeBrandKitId } = useWorkspaceBrand();
+  const guidesUrl = useMemo(() => {
+    if (!activeBrandKitId || !preferredWorkspaceId) return '/api/guides';
+    const qs = new URLSearchParams({
+      workspaceId: preferredWorkspaceId,
+      brandKitId: activeBrandKitId,
+    });
+    return `/api/guides?${qs}`;
+  }, [preferredWorkspaceId, activeBrandKitId]);
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat | null>(null);
   const [selectedGuideId, setSelectedGuideId] = useState('');
   const [exporting, setExporting] = useState(false);
   const [embedCode, setEmbedCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const previewRef = useRef<HTMLIFrameElement>(null);
-  const { data: guides } = useApi<Guide[]>({ url: '/api/guides' });
+  const { data: guides } = useApi<Guide[]>({ url: guidesUrl });
 
   const selectedGuide = guides?.find((g) => g.id === selectedGuideId);
+
+  useEffect(() => {
+    setSelectedGuideId('');
+  }, [guidesUrl]);
 
   const handleExport = async () => {
     if (!selectedFormat || !selectedGuideId) return;

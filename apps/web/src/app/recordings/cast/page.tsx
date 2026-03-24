@@ -8,11 +8,15 @@ import { AppShell } from '@/components/layout/app-shell';
 import { IconTile } from '@/components/ui/icon-tile';
 import { MobileCastReceiver } from '@/components/recordings/mobile-cast-receiver';
 import { dispatchWorkspaceCelebrate } from '@/lib/ui/workspace-celebrate';
+import { useAuth } from '@/lib/auth/auth-context';
+import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
 
 type Status = 'cast' | 'uploading' | 'generating' | 'upload-error' | 'generate-error' | 'done';
 
 export default function RecordFromPhonePage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { preferredWorkspaceId, activeBrandKitId, recordingProjectId } = useWorkspaceBrand();
   const [status, setStatus] = useState<Status>('cast');
   const [progress, setProgress] = useState('');
   const [savedRecordingId, setSavedRecordingId] = useState<string | null>(null);
@@ -46,6 +50,10 @@ export default function RecordFromPhonePage() {
           clickEvents: result.clickEvents,
           mouseEvents: [],
           hasVoiceover: result.hasVoiceover === true,
+          ...(user?.id ? { userId: user.id } : {}),
+          ...(preferredWorkspaceId ? { workspaceId: preferredWorkspaceId } : {}),
+          ...(activeBrandKitId ? { brandKitId: activeBrandKitId } : {}),
+          ...(recordingProjectId ? { projectId: recordingProjectId } : {}),
         })
       );
 

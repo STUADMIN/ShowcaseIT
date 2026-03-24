@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
+import { EnsureProjectError, ensureProjectForBrand } from '@/lib/projects/ensure-project-for-brand';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get('projectId');
   const workspaceId = searchParams.get('workspaceId');
+  const brandKitIdParam = searchParams.get('brandKitId');
   const forPublish = searchParams.get('forPublish') === '1';
   const publishForUserId = searchParams.get('publishForUserId');
 
@@ -52,6 +54,18 @@ export async function GET(request: NextRequest) {
       if (workspaceId) where.project = { workspaceId };
     }
 
+    if (!forPublish && workspaceId && brandKitIdParam?.trim()) {
+      const bid = brandKitIdParam.trim();
+      const brandWhere: Prisma.GuideWhereInput = {
+        OR: [
+          { brandKitId: bid },
+          { AND: [{ brandKitId: null }, { project: { brandKitId: bid } }] },
+        ],
+      };
+      where =
+        Object.keys(where).length > 0 ? { AND: [where, brandWhere] } : brandWhere;
+    }
+
     const guides = await prisma.guide.findMany({
       where,
       include: {
@@ -93,6 +107,29 @@ export async function POST(request: NextRequest) {
 
     let projectId = body.projectId as string | undefined;
     let userId = body.userId as string | undefined;
+    const workspaceIdForProject = body.workspaceId as string | undefined;
+    const brandKitIdForProject = body.brandKitIdForProject as string | undefined;
+
+    if (!projectId && workspaceIdForProject && userId) {
+      try {
+        const { projectId: ensured } = await ensureProjectForBrand(
+          workspaceIdForProject,
+          userId,
+          typeof brandKitIdForProject === 'string' && brandKitIdForProject.trim()
+            ? { brandKitId: brandKitIdForProject.trim() }
+            : undefined
+        );
+        projectId = ensured;
+      } catch (e) {
+        if (e instanceof EnsureProjectError) {
+          return NextResponse.json(
+            { error: e.message },
+            { status: e.code === 'FORBIDDEN' ? 403 : 404 }
+          );
+        }
+        throw e;
+      }
+    }
 
     /**
      * Prefer a project in a workspace the signed-in user belongs to so `userId` matches auth

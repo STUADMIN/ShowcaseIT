@@ -7,6 +7,8 @@ import { CircleAlert } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { IconTile } from '@/components/ui/icon-tile';
 import { ScreenRecorder } from '@/components/recordings/screen-recorder';
+import { useAuth } from '@/lib/auth/auth-context';
+import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
 
 type Status = 'recording' | 'uploading' | 'upload-error';
 
@@ -16,6 +18,8 @@ type Status = 'recording' | 'uploading' | 'upload-error';
  */
 export default function NewVideoRecordingPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { preferredWorkspaceId, activeBrandKitId, recordingProjectId } = useWorkspaceBrand();
   const [status, setStatus] = useState<Status>('recording');
   const [progress, setProgress] = useState('');
 
@@ -46,6 +50,10 @@ export default function NewVideoRecordingPage() {
           clickEvents: result.clickEvents,
           mouseEvents: [],
           hasVoiceover: result.hasVoiceover === true,
+          ...(user?.id ? { userId: user.id } : {}),
+          ...(preferredWorkspaceId ? { workspaceId: preferredWorkspaceId } : {}),
+          ...(activeBrandKitId ? { brandKitId: activeBrandKitId } : {}),
+          ...(recordingProjectId ? { projectId: recordingProjectId } : {}),
         })
       );
 

@@ -105,6 +105,8 @@ model BrandKit {
   logoUrl         String?  @map("logo_url")
   /** Standard guide list / marketing cover; UI prefers this over the first step screenshot when set. */
   guideCoverImageUrl String? @map("guide_cover_image_url")
+  /** Optional end card for marketing video export (fade in after the screen recording; separate from guide cover). */
+  videoOutroImageUrl String? @map("video_outro_image_url")
   /** Wide banner on HTML/PDF/Word exports (below guide cover when both are set). */
   exportBannerDocumentUrl String? @map("export_banner_document_url")
   /** Reserved for link previews / social (e.g. ~1200×627); stored in Brand Kit for future Publish flows. */

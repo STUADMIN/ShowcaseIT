@@ -4,10 +4,15 @@ import { prisma } from '@/lib/db/prisma';
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const workspaceId = searchParams.get('workspaceId');
+  const userId = searchParams.get('userId')?.trim();
 
   try {
     const projects = await prisma.project.findMany({
-      where: workspaceId ? { workspaceId } : undefined,
+      where: workspaceId
+        ? { workspaceId }
+        : userId
+          ? { workspace: { members: { some: { userId } } } }
+          : undefined,
       include: {
         _count: { select: { guides: true, recordings: true } },
         brandKit: true,

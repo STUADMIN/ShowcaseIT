@@ -39,19 +39,33 @@ async function markStubFailed(jobId: string): Promise<void> {
   });
 }
 
-/** Local dev: kick ffmpeg after POST without a separate worker (runs in background; POST still returns immediately). */
+/**
+ * After POST, kick ffmpeg inside the Next process (fire-and-forget; POST still returns immediately).
+ * - `MARKETING_RENDER_INLINE=1` — always on (useful on a self-hosted Node host without a worker).
+ * - `MARKETING_RENDER_INLINE=0` — always off (use a separate `npm run worker:marketing` even in dev).
+ * - Unset in **development** (e.g. `next dev`) — **on by default** so marketing export works locally without env vars.
+ * - Production / Vercel — off unless `MARKETING_RENDER_INLINE=1`.
+ */
 export function shouldRunInlineProcessor(): boolean {
-  return process.env.MARKETING_RENDER_INLINE === '1';
+  const explicit = process.env.MARKETING_RENDER_INLINE?.trim();
+  if (explicit === '1' || explicit === 'true') return true;
+  if (explicit === '0' || explicit === 'false') return false;
+  if (process.env.VERCEL === '1') return false;
+  return process.env.NODE_ENV === 'development';
 }
 
 export function describePipeline(mode: MarketingRenderMode): string[] {
   const steps: string[] = [];
   if (
     mode === 'branded_screen' ||
+    mode === 'motion_walkthrough' ||
     mode === 'branded_plus_motion' ||
     mode === 'full_stack'
   ) {
     steps.push('Branded ffmpeg pass (letterbox + Brand Kit pad color → H.264 MP4)');
+    steps.push(
+      'Optional Brand Kit bookends: guide cover intro + video outro still (xfade) when those assets are set'
+    );
   }
   if (
     mode === 'motion_walkthrough' ||
@@ -68,6 +82,7 @@ export function describePipeline(mode: MarketingRenderMode): string[] {
   }
   if (mode === 'ai_enhanced') {
     steps.unshift('Requires a base render or raw video as input');
+    steps.push('Optional Brand Kit bookends on the final MP4 when guide cover / video outro are set');
   }
   return steps;
 }
