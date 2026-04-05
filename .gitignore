@@ -19,6 +19,7 @@ venv/
 
 # Electron
 release/
+apps/desktop/.vercel-next-output/
 
 # OS
 .DS_Store
@@ -34,3 +35,5 @@ apps/web/scripts/docs/.report.json
 .vscode/
 !.vscode/settings.json
 !.vscode/extensions.json
+
+.vercel

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd ../.. && npm install",
+  "buildCommand": "cd ../.. && npm run build:web && rm -rf apps/desktop/.vercel-next-output && cp -R apps/web/.next apps/desktop/.vercel-next-output",
+  "outputDirectory": ".vercel-next-output",
+  "crons": [
+    {
+      "path": "/api/cron/weekly-digest",
+      "schedule": "0 9 * * 1"
+    }
+  ]
+}

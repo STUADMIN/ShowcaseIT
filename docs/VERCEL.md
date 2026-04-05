@@ -38,3 +38,9 @@ After schema changes, run migrations against the production DB (e.g. `npx prisma
 ## Project naming
 
 A project named `showcase-it-desktop` is fine **only if** its root directory is still the **monorepo root** for a web deployment. If it was created for Electron, create another Vercel project for the **web** app or fix Root Directory as above.
+
+### `showcase-it-desktop` with Root Directory `apps/desktop`
+
+If the Vercel project’s **Root Directory** is set to `apps/desktop` (common for a misnamed “desktop” project), the default `npm run build:web` fails because that script exists only on the **repository root**. This repo includes [`apps/desktop/vercel.json`](../apps/desktop/vercel.json), which runs `npm install` and `npm run build:web` from the monorepo root and copies `apps/web/.next` into `apps/desktop/.vercel-next-output` so the deploy matches what the root [`vercel.json`](../vercel.json) does.
+
+**Preferred long-term fix:** set the project’s **Root Directory** to the repo root (empty / `.`) and rely on the root `vercel.json` only—no copy step.
