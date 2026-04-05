@@ -3,8 +3,8 @@ import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db/prisma';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 import { orgKeyForProjectId } from '@/lib/db/org-key';
+import { getServerAuthUserId } from '@/lib/auth/supabase-server-user';
 import { EnsureProjectError, ensureProjectForBrand } from '@/lib/projects/ensure-project-for-brand';
-import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -52,16 +52,10 @@ export async function GET(request: NextRequest) {
       const publishWhere: Prisma.GuideWhereInput = { OR: orBranches };
       where = projectId ? { AND: [{ projectId }, publishWhere] } : publishWhere;
     } else {
-      const supabase = await createClient();
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
-
-      if (!authUser?.id) {
+      const authId = await getServerAuthUserId();
+      if (!authId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-
-      const authId = authUser.id;
       const memberships = await prisma.workspaceMember.findMany({
         where: { userId: authId },
         select: { workspaceId: true },

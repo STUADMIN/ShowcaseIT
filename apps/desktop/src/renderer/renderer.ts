@@ -83,28 +83,37 @@ function setPurposeInputsDisabled(disabled: boolean): void {
 }
 
 async function loadSources() {
-  statusMessage.textContent = 'Loading sources...';
-  const sources = await window.showcaseit.getSources();
-  sourcesGrid.innerHTML = '';
+  if (!window.showcaseit?.getSources) {
+    statusMessage.textContent = 'Desktop API unavailable — open this app from ShowcaseIt (Electron), not in a browser tab.';
+    return;
+  }
 
-  sources.forEach((source) => {
-    const item = document.createElement('div');
-    item.className = 'source-item';
-    item.innerHTML = `
+  statusMessage.textContent = 'Loading sources...';
+  try {
+    const sources = await window.showcaseit.getSources();
+    sourcesGrid.innerHTML = '';
+
+    sources.forEach((source) => {
+      const item = document.createElement('div');
+      item.className = 'source-item';
+      item.innerHTML = `
       <img src="${source.thumbnail}" alt="${source.name}" />
       <span>${source.name}</span>
     `;
-    item.addEventListener('click', () => {
-      document.querySelectorAll('.source-item').forEach((el) => el.classList.remove('selected'));
-      item.classList.add('selected');
-      selectedSourceId = source.id;
-      selectedSourceName = source.name;
-      statusMessage.textContent = `Selected: ${source.name}`;
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.source-item').forEach((el) => el.classList.remove('selected'));
+        item.classList.add('selected');
+        selectedSourceId = source.id;
+        selectedSourceName = source.name;
+        statusMessage.textContent = `Selected: ${source.name}`;
+      });
+      sourcesGrid.appendChild(item);
     });
-    sourcesGrid.appendChild(item);
-  });
 
-  statusMessage.textContent = `Found ${sources.length} source(s) — select one to record`;
+    statusMessage.textContent = `Found ${sources.length} source(s) — select one to record`;
+  } catch (err) {
+    statusMessage.textContent = `Could not load sources: ${err}`;
+  }
 }
 
 function showClickTargetRipple(clientX: number, clientY: number): void {
@@ -133,8 +142,13 @@ function formatTime(ms: number): string {
 
 async function startRecording() {
   if (!selectedSourceId) {
-    statusMessage.textContent = 'Please select a source first';
-    return;
+    if (sourcesGrid.childElementCount === 0) {
+      await loadSources();
+    }
+    if (!selectedSourceId) {
+      statusMessage.textContent = 'Select a screen or window above, then press Start Recording';
+      return;
+    }
   }
 
   try {
@@ -307,4 +321,4 @@ if (btnClose) {
 purposeRadios.forEach((r) => r.addEventListener('change', updatePurposeUI));
 updatePurposeUI();
 
-loadSources();
+statusMessage.textContent = 'Click ↻ to load screens and windows (avoids capture prompts on startup).';

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@/generated/prisma';
+import { getServerAuthUserId } from '@/lib/auth/supabase-server-user';
 import { prisma } from '@/lib/db/prisma';
 import { orgKeyForProjectId } from '@/lib/db/org-key';
 import { isRecordingAccessibleToUser } from '@/lib/recordings/recording-access';
-import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { extractFrames } from '@/lib/video/extract-frames';
 import { FRAME_EXTRACTION_PLACEHOLDER_DESCRIPTION } from '@/lib/frame-extraction-placeholder';
@@ -16,16 +16,10 @@ import {
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
-  const authSb = await createClient();
-  const {
-    data: { user: authUser },
-  } = await authSb.auth.getUser();
-
-  if (!authUser?.id) {
+  const authId = await getServerAuthUserId();
+  if (!authId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const authId = authUser.id;
 
   try {
     const body = await request.json();

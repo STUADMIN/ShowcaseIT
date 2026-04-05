@@ -1,5 +1,6 @@
 'use client';
 
+import { isAuthBypassEnabled } from '@/lib/auth/auth-bypass';
 import { useAuth } from '@/lib/auth/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -30,11 +31,13 @@ function GateSpinner({ message }: { message: string }) {
  * have not finished onboarding to `/onboarding`.
  */
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
+  const authBypass = isAuthBypassEnabled();
   const { user, loading, needsOnboarding, isSigningOut } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
+    if (authBypass) return;
     if (loading) return;
     if (isPublicPath(pathname)) return;
     if (!user?.id && !isSigningOut) {
@@ -47,7 +50,11 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
     if (needsOnboarding) {
       router.replace('/onboarding');
     }
-  }, [loading, user?.id, needsOnboarding, pathname, router, isSigningOut]);
+  }, [authBypass, loading, user?.id, needsOnboarding, pathname, router, isSigningOut]);
+
+  if (authBypass) {
+    return <>{children}</>;
+  }
 
   if (isPublicPath(pathname)) {
     return <>{children}</>;

@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@/generated/prisma';
+import { getServerAuthUserId } from '@/lib/auth/supabase-server-user';
 import { prisma } from '@/lib/db/prisma';
 import { orgKeyForProjectId } from '@/lib/db/org-key';
-import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authId = await getServerAuthUserId();
+  if (!authId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const authId = authUser.id;
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get('projectId');
   const workspaceId = searchParams.get('workspaceId');
@@ -110,16 +104,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authId = await getServerAuthUserId();
+  if (!authId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const authId = authUser.id;
 
   try {
     const body = await request.json();

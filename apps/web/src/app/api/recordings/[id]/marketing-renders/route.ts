@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@/generated/prisma';
+import { getServerAuthUserId } from '@/lib/auth/supabase-server-user';
 import { prisma } from '@/lib/db/prisma';
 import { isRecordingAccessibleToUser } from '@/lib/recordings/recording-access';
-import { createClient } from '@/lib/supabase/server';
 import {
   isMarketingRenderModeImplemented,
   MARKETING_RENDER_IMPLEMENTED_MODES,
@@ -27,17 +27,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: recordingId } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authUserId = await getServerAuthUserId();
+  if (!authUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const ok = await isRecordingAccessibleToUser(recordingId, authUser.id);
+    const ok = await isRecordingAccessibleToUser(recordingId, authUserId);
     if (!ok) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }
@@ -63,16 +59,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: recordingId } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authId = await getServerAuthUserId();
+  if (!authId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const authId = authUser.id;
 
   let body: PostBody = {};
   try {

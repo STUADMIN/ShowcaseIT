@@ -1,8 +1,13 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isAuthBypassEnabled } from '@/lib/auth/auth-bypass';
 import { getSupabasePublicEnv } from '@/lib/supabase/public-env';
 
 export async function middleware(request: NextRequest) {
+  if (isAuthBypassEnabled()) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
   const { url, key } = getSupabasePublicEnv();
 

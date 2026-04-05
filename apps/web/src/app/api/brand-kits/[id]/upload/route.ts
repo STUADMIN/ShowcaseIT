@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerAuthUserId } from '@/lib/auth/supabase-server-user';
 import { prisma } from '@/lib/db/prisma';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/server';
 import { findWorkspaceMembership } from '@/lib/workspaces/workspace-access';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 import {
@@ -19,12 +19,8 @@ export async function POST(
 ) {
   const { id: brandKitId } = await params;
   try {
-    const supabaseAuth = await createClient();
-    const {
-      data: { user: authUser },
-    } = await supabaseAuth.auth.getUser();
-
-    if (!authUser?.id) {
+    const authUserId = await getServerAuthUserId();
+    if (!authUserId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -36,7 +32,7 @@ export async function POST(
       return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
     }
 
-    const member = await findWorkspaceMembership(kit.workspaceId, authUser.id);
+    const member = await findWorkspaceMembership(kit.workspaceId, authUserId);
     if (!member) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

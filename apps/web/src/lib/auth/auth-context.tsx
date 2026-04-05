@@ -1,11 +1,14 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import type { AuthUser, AuthSession } from './config';
 import { mapSupabaseUser } from './config';
+import { getBypassAuthUser, isAuthBypassEnabled } from '@/lib/auth/auth-bypass';
 import { createClient } from '@/lib/supabase/client';
 import { getAuthRedirectOrigin } from '@/lib/auth/auth-redirect-origin';
 import { mfaLoginStepRequired, verifyTotpForLogin } from '@/lib/auth/mfa-helpers';
+import { friendlySupabaseAuthError } from '@/lib/auth/supabase-request-error';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type SignInResult =
   | { success: true; needsMfa: boolean }
@@ -69,7 +72,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const supabase = createClient();
+  const authBypass = useMemo(() => isAuthBypassEnabled(), []);
+  const supabase: SupabaseClient | null = useMemo(
+    () => (authBypass ? null : createClient()),
+    [authBypass]
+  );
 
   const loadNeedsOnboarding = useCallback(async (userId: string) => {
     setNeedsOnboarding(null);
@@ -93,6 +100,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session?.user?.id, loadNeedsOnboarding]);
 
   useEffect(() => {
+    if (authBypass) {
+      const mapped = getBypassAuthUser();
+      setSession({
+        user: mapped,
+        expires: new Date(Date.now() + 86400000 * 365).toISOString(),
+      });
+      void syncUserToDb(mapped.id, mapped.email, { full_name: mapped.name, name: mapped.name });
+      void loadNeedsOnboarding(mapped.id);
+      setLoading(false);
+      return;
+    }
+
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(async ({ data: { session: supaSession } }) => {
       if (supaSession?.user) {
         const mapped = mapSupabaseUser(supaSession.user);
@@ -136,12 +160,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase, loadNeedsOnboarding]);
+  }, [authBypass, supabase, loadNeedsOnboarding]);
 
   // Back/forward cache (bfcache) can restore a stale React tree while cookies still match reality.
   // Re-read the session so “Back” doesn’t show the wrong logged-in / logged-out state.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || authBypass || !supabase) return;
 
     const rehydrateFromCookies = () => {
       void supabase.auth.getSession().then(async ({ data: { session: supaSession } }) => {
@@ -171,28 +195,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('pageshow', onPageShow);
     return () => window.removeEventListener('pageshow', onPageShow);
-  }, [supabase, loadNeedsOnboarding]);
+  }, [authBypass, supabase, loadNeedsOnboarding]);
 
   const signIn = useCallback(async (email: string, password: string): Promise<SignInResult> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      return { success: false, error: error.message };
+    if (authBypass) return { success: true, needsMfa: false };
+    if (!supabase) return { success: false, error: 'Auth is not configured.' };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        return { success: false, error: friendlySupabaseAuthError(error.message) };
+      }
+      const needsMfa = await mfaLoginStepRequired(supabase);
+      return { success: true, needsMfa };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Something went wrong';
+      return { success: false, error: friendlySupabaseAuthError(msg) };
     }
-    const needsMfa = await mfaLoginStepRequired(supabase);
-    return { success: true, needsMfa };
-  }, [supabase]);
+  }, [authBypass, supabase]);
 
   const verifyMfaLogin = useCallback(
     async (code: string) => {
+      if (authBypass) return { success: true };
+      if (!supabase) return { success: false, error: 'Auth is not configured.' };
       const result = await verifyTotpForLogin(supabase, code);
       if (!result.ok) return { success: false, error: result.error };
       return { success: true };
     },
-    [supabase]
+    [authBypass, supabase]
   );
 
   const resetPasswordForEmail = useCallback(
     async (email: string) => {
+      if (authBypass) return { success: false, error: 'Password reset is disabled while auth bypass is on.' };
+      if (!supabase) return { success: false, error: 'Auth is not configured.' };
       const trimmed = email.trim().toLowerCase();
       if (!trimmed) {
         return { success: false, error: 'Enter your email address.' };
@@ -206,32 +241,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent('/auth/update-password')}`;
       const { error } = await supabase.auth.resetPasswordForEmail(trimmed, { redirectTo });
-      if (error) return { success: false, error: error.message };
+      if (error) return { success: false, error: friendlySupabaseAuthError(error.message) };
       return { success: true };
     },
-    [supabase]
+    [authBypass, supabase]
   );
 
   const signUp = useCallback(async (email: string, password: string, name?: string) => {
-    const origin = getAuthRedirectOrigin();
-    const emailRedirectTo = origin
-      ? `${origin}/auth/callback?next=${encodeURIComponent('/onboarding')}`
-      : undefined;
+    if (authBypass) return { success: false, error: 'Sign up is disabled while auth bypass is on.' };
+    if (!supabase) return { success: false, error: 'Auth is not configured.' };
+    try {
+      const origin = getAuthRedirectOrigin();
+      const emailRedirectTo = origin
+        ? `${origin}/auth/callback?next=${encodeURIComponent('/onboarding')}`
+        : undefined;
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: name || email.split('@')[0] },
-        ...(emailRedirectTo ? { emailRedirectTo } : {}),
-      },
-    });
-    if (error) return { success: false, error: error.message };
-    return { success: true };
-  }, [supabase]);
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: name || email.split('@')[0] },
+          ...(emailRedirectTo ? { emailRedirectTo } : {}),
+        },
+      });
+      if (error) return { success: false, error: friendlySupabaseAuthError(error.message) };
+      return { success: true };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Something went wrong';
+      return { success: false, error: friendlySupabaseAuthError(msg) };
+    }
+  }, [authBypass, supabase]);
 
   const resendSignupConfirmation = useCallback(
     async (email: string) => {
+      if (authBypass) return { success: false, error: 'Sign up is disabled while auth bypass is on.' };
+      if (!supabase) return { success: false, error: 'Auth is not configured.' };
       const trimmed = email.trim().toLowerCase();
       if (!trimmed) {
         return { success: false, error: 'Enter the email you used to register.' };
@@ -245,14 +289,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: trimmed,
         options: emailRedirectTo ? { emailRedirectTo } : {},
       });
-      if (error) return { success: false, error: error.message };
+      if (error) return { success: false, error: friendlySupabaseAuthError(error.message) };
       return { success: true };
     },
-    [supabase]
+    [authBypass, supabase]
   );
 
   const signOut = useCallback(
     async (options?: { retainShellUntilNavigate?: boolean }) => {
+      if (authBypass) return;
+      if (!supabase) return;
       const retainShell = options?.retainShellUntilNavigate === true;
       if (retainShell) setIsSigningOut(true);
       try {
@@ -264,11 +310,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw err;
       }
     },
-    [supabase]
+    [authBypass, supabase]
   );
 
   const changeSignInEmail = useCallback(
     async (newEmail: string) => {
+      if (authBypass) return { ok: false, error: 'Email change is disabled while auth bypass is on.' };
+      if (!supabase) return { ok: false, error: 'Auth is not configured.' };
       const trimmed = newEmail.trim().toLowerCase();
       if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
         return { ok: false, error: 'Enter a valid email address.' };
@@ -300,10 +348,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         emailRedirectTo ? { emailRedirectTo } : {}
       );
 
-      if (error) return { ok: false, error: error.message };
+      if (error) return { ok: false, error: friendlySupabaseAuthError(error.message) };
       return { ok: true };
     },
-    [supabase]
+    [authBypass, supabase]
   );
 
   const updateLocalUser = useCallback((partial: Partial<Pick<AuthUser, 'name' | 'image'>>) => {

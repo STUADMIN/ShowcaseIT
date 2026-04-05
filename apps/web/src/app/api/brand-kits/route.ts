@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerAuthUserId } from '@/lib/auth/supabase-server-user';
 import { prisma } from '@/lib/db/prisma';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 import { normalizeSocialPlatformAssetsForDb, parseSocialPlatformAssets } from '@/lib/brand/social-platform-assets';
-import { createClient } from '@/lib/supabase/server';
 import { findWorkspaceMembership } from '@/lib/workspaces/workspace-access';
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authUserId = await getServerAuthUserId();
+  if (!authUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -22,7 +18,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const member = await findWorkspaceMembership(workspaceId, authUser.id);
+    const member = await findWorkspaceMembership(workspaceId, authUserId);
     if (!member) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -39,12 +35,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authUserId = await getServerAuthUserId();
+  if (!authUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -61,7 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'workspaceId is required' }, { status: 400 });
     }
 
-    const member = await findWorkspaceMembership(ws, authUser.id);
+    const member = await findWorkspaceMembership(ws, authUserId);
     if (!member) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

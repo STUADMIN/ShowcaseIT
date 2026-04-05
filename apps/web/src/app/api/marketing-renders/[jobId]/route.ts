@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerAuthUserId } from '@/lib/auth/supabase-server-user';
 import { prisma } from '@/lib/db/prisma';
 import { isRecordingAccessibleToUser } from '@/lib/recordings/recording-access';
-import { createClient } from '@/lib/supabase/server';
 
 /**
  * GET — job status for polling. Caller must be a member of the job’s recording workspace.
@@ -11,12 +11,8 @@ export async function GET(
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   const { jobId } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authUserId = await getServerAuthUserId();
+  if (!authUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -28,7 +24,7 @@ export async function GET(
     if (!job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
-    const canAccess = await isRecordingAccessibleToUser(job.recordingId, authUser.id);
+    const canAccess = await isRecordingAccessibleToUser(job.recordingId, authUserId);
     if (!canAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

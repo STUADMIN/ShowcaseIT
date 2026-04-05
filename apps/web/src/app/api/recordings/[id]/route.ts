@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerAuthUserId } from '@/lib/auth/supabase-server-user';
 import { prisma } from '@/lib/db/prisma';
 import { orgKeyForProjectId } from '@/lib/db/org-key';
 import { findRecordingAccessibleToUser } from '@/lib/recordings/recording-access';
-import { createClient } from '@/lib/supabase/server';
 import { isUserMemberOfProjectWorkspace } from '@/lib/projects/verify-project-access';
 
 export async function GET(
@@ -10,17 +10,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authId = await getServerAuthUserId();
+  if (!authId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const recording = await findRecordingAccessibleToUser(id, authUser.id);
+    const recording = await findRecordingAccessibleToUser(id, authId);
     if (!recording) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }
@@ -35,16 +31,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authId = await getServerAuthUserId();
+  if (!authId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const authId = authUser.id;
 
   try {
     const body = (await request.json()) as {
@@ -129,17 +119,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authId = await getServerAuthUserId();
+  if (!authId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const existing = await findRecordingAccessibleToUser(id, authUser.id);
+    const existing = await findRecordingAccessibleToUser(id, authId);
     if (!existing) {
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }

@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerAuthUserId } from '@/lib/auth/supabase-server-user';
 import { prisma } from '@/lib/db/prisma';
 import { mergeGuideCoverImageUrl } from '@/lib/db/merge-brand-kit-cover';
 import { normalizeSocialPlatformAssetsForDb, parseSocialPlatformAssets } from '@/lib/brand/social-platform-assets';
-import { createClient } from '@/lib/supabase/server';
 import { findWorkspaceMembership } from '@/lib/workspaces/workspace-access';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authUserId = await getServerAuthUserId();
+  if (!authUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -24,7 +20,7 @@ export async function GET(
     if (!brandKit) {
       return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
     }
-    const member = await findWorkspaceMembership(brandKit.workspaceId, authUser.id);
+    const member = await findWorkspaceMembership(brandKit.workspaceId, authUserId);
     if (!member) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -39,12 +35,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authUserId = await getServerAuthUserId();
+  if (!authUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -57,7 +49,7 @@ export async function PATCH(
     if (!existing) {
       return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
     }
-    const member = await findWorkspaceMembership(existing.workspaceId, authUser.id);
+    const member = await findWorkspaceMembership(existing.workspaceId, authUserId);
     if (!member) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -139,12 +131,8 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authUserId = await getServerAuthUserId();
+  if (!authUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -157,7 +145,7 @@ export async function DELETE(
     if (!existing) {
       return NextResponse.json({ error: 'Brand kit not found' }, { status: 404 });
     }
-    const member = await findWorkspaceMembership(existing.workspaceId, authUser.id);
+    const member = await findWorkspaceMembership(existing.workspaceId, authUserId);
     if (!member) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

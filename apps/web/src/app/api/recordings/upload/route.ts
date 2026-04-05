@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerAuthUserId } from '@/lib/auth/supabase-server-user';
 import { prisma } from '@/lib/db/prisma';
 import { orgKeyForProjectId } from '@/lib/db/org-key';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/server';
 import { EnsureProjectError, ensureProjectForBrand } from '@/lib/projects/ensure-project-for-brand';
 import { isUserMemberOfProjectWorkspace } from '@/lib/projects/verify-project-access';
 
 export async function POST(request: NextRequest) {
-  const authSupabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await authSupabase.auth.getUser();
-
-  if (!authUser?.id) {
+  const authId = await getServerAuthUserId();
+  if (!authId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  const authId = authUser.id;
 
   try {
     const formData = await request.formData();
