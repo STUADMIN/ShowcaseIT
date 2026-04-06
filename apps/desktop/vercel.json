@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd ../.. && npm install",
-  "buildCommand": "cd ../.. && npm run build:web && rm -rf apps/desktop/.next && ln -sfn ../web/.next apps/desktop/.next",
+  "buildCommand": "cd ../.. && npm run build:web && rm -rf apps/desktop/.next && ln -sfn \"$(pwd)/apps/web/.next\" \"$(pwd)/apps/desktop/.next\"",
+  "outputDirectory": ".next",
   "crons": [
     {
       "path": "/api/cron/weekly-digest",
