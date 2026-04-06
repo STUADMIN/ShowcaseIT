@@ -22,7 +22,9 @@ If the Vercel project’s **Root Directory** is set to `apps/desktop` (or any fo
 
 ### `404: NOT_FOUND` on `*.vercel.app`
 
-Usually the deployment is **not** a valid Next.js app output: e.g. Root Directory was `apps/desktop` and only static build artifacts were uploaded. Set **Root Directory** to **`apps/web`** (or repo root as in option 2) and redeploy.
+Vercel only wires up the **Next.js** runtime when the project **Root Directory** is the folder that contains **`next.config`** and a **`package.json` with `next`** (i.e. **`apps/web`**). Putting a `.next` build output under **`apps/desktop`** (copy or symlink) is **not** enough: the deploy can show “Build completed” while every route returns **`404: NOT_FOUND`**.
+
+**Fix:** set **Root Directory** to **`apps/web`** (or the repo root per option 2). Do **not** paste duplicate keys into `vercel.json` in the dashboard editor — **JSON allows only one `buildCommand`**; duplicates are invalid or silently override and confuse debugging.
 
 ## Environment variables
 
