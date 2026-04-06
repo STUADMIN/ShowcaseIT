@@ -8,20 +8,21 @@ If the Vercel project’s **Root Directory** is set to `apps/desktop` (or any fo
 
 **Fix (pick one):**
 
-1. **Recommended — separate project for the website**  
-   - New Vercel project → import the same GitHub repo.  
-   - **Root Directory:** leave empty or `.` (repository root).  
-   - The root [`vercel.json`](../vercel.json) already sets `installCommand`, `buildCommand`, and `outputDirectory`.
+1. **Recommended — Root Directory `apps/web` (fixes Next.js routing on Vercel)**  
+   - **Settings → General → Root Directory** → `apps/web`.  
+   - Clear custom Install / Build / Output overrides in **Build & Development Settings** so Vercel uses [`apps/web/vercel.json`](../apps/web/vercel.json): install from monorepo root, then `npm run build` in the web app.  
+   - Framework should detect **Next.js** from `apps/web/package.json`.  
+   - Do **not** set Output Directory manually unless you know what you’re doing—Next deployments need Vercel’s Next builder, not a copied `.next` folder from another path.
 
-2. **Adjust an existing project**  
-   - **Settings → General → Root Directory** → clear it (must be the repo root, not `apps/desktop`).  
-   - **Build & Development Settings** should use:
-     - Install: `npm install` (or default)
-     - Build: `npm run build:web`
-     - Output: `apps/web/.next`
-     - Framework: can stay “Other” / Next if auto-detected from output.
+2. **Alternative — repository root**  
+   - **Root Directory:** empty or `.`.  
+   - The root [`vercel.json`](../vercel.json) sets `installCommand`, `buildCommand`, and `outputDirectory: apps/web/.next`.
 
-3. **Do not** point the **web** deploy at `apps/desktop`. That package is Electron (`electron-vite build`), not Next.js.
+3. **Do not** use **`apps/desktop`** as the Vercel root for the website. That package is Electron only. Pointing a project named `showcase-it-desktop` at `apps/desktop` leads to failed builds or **`404: NOT_FOUND`** (Vercel does not run Next.js routing when the app root is wrong).
+
+### `404: NOT_FOUND` on `*.vercel.app`
+
+Usually the deployment is **not** a valid Next.js app output: e.g. Root Directory was `apps/desktop` and only static build artifacts were uploaded. Set **Root Directory** to **`apps/web`** (or repo root as in option 2) and redeploy.
 
 ## Environment variables
 
@@ -37,10 +38,4 @@ After schema changes, run migrations against the production DB (e.g. `npx prisma
 
 ## Project naming
 
-A project named `showcase-it-desktop` is fine **only if** its root directory is still the **monorepo root** for a web deployment. If it was created for Electron, create another Vercel project for the **web** app or fix Root Directory as above.
-
-### `showcase-it-desktop` with Root Directory `apps/desktop`
-
-If the Vercel project’s **Root Directory** is set to `apps/desktop` (common for a misnamed “desktop” project), the default `npm run build:web` fails because that script exists only on the **repository root**. This repo includes [`apps/desktop/vercel.json`](../apps/desktop/vercel.json), which runs `npm install` and `npm run build:web` from the monorepo root and copies `apps/web/.next` into `apps/desktop/.vercel-next-output` so the deploy matches what the root [`vercel.json`](../vercel.json) does.
-
-**Preferred long-term fix:** set the project’s **Root Directory** to the repo root (empty / `.`) and rely on the root `vercel.json` only—no copy step.
+A Vercel project named `showcase-it-desktop` is only a label. For the **Next.js site**, set **Root Directory** to **`apps/web`** or the repo root—never `apps/desktop`.

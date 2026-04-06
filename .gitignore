@@ -19,7 +19,6 @@ venv/
 
 # Electron
 release/
-apps/desktop/.vercel-next-output/
 
 # OS
 .DS_Store
