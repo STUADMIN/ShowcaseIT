@@ -22,9 +22,20 @@ If the Vercel project’s **Root Directory** is set to `apps/desktop` (or any fo
 
 ### `404: NOT_FOUND` on `*.vercel.app`
 
-Vercel only wires up the **Next.js** runtime when the project **Root Directory** is **`apps/web`** (or the repo root with the root `vercel.json`). If you **must** keep Root Directory on **`apps/desktop`**, [`apps/desktop/vercel.json`](../apps/desktop/vercel.json) runs the real web build and copies `apps/web/.next` into `apps/desktop/.next` so the build **succeeds** — but the live site may still return **`404: NOT_FOUND`** because the platform may not treat that layout as a full Next deployment. **Prefer Root Directory `apps/web`.**
+**This cannot be fixed from Git alone** when the Vercel project’s **Root Directory** is `apps/desktop`. A green build that copies `apps/web/.next` into `apps/desktop` (see [`apps/desktop/vercel.json`](../apps/desktop/vercel.json)) still produces **`404: NOT_FOUND`** because Vercel’s **Next.js** integration expects the project root to be the app that contains **`next.config`** and **`next` in `package.json`** (see [Vercel monorepos](https://vercel.com/docs/monorepos)).
 
-Do **not** paste duplicate keys into `vercel.json` in the dashboard — **JSON allows only one `buildCommand`**.
+#### Checklist — `showcase-it-desktop` (or any project stuck on `apps/desktop`)
+
+1. Open **[Project → Settings → General](https://vercel.com/stuadmins-projects/showcase-it-desktop/settings/general)** (adjust team/project slug if yours differs).
+2. Set **Root Directory** to **`apps/web`** (exactly — no leading slash). **Save.**
+3. Open **Settings → General** → scroll to **Build & Development Settings**.
+4. Ensure **Framework Preset** is **Next.js** (or “Override” **Off** so it auto-detects).
+5. Turn **Override** **Off** for **Install Command**, **Build Command**, and **Output Directory** so [`apps/web/vercel.json`](../apps/web/vercel.json) applies (`cd ../.. && npm install`, then `npm run build`).
+6. **Deployments** → open the latest on `main` → **Redeploy** (or push a commit).
+
+**Alternative:** set **Root Directory** to **empty** (repo root) and use the root [`vercel.json`](../vercel.json) (`npm run build:web`, `outputDirectory: apps/web/.next`).
+
+Do **not** paste duplicate keys into dashboard JSON — **only one `buildCommand`** per file.
 
 ## Environment variables
 
