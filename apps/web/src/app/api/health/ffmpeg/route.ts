@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
-import { getResolvedFfmpegPath } from '@/lib/video/extract-frames';
+import { getResolvedFfmpegPath } from '@/lib/video/ffmpeg-resolve';
 
 const execFileAsync = promisify(execFile);
 

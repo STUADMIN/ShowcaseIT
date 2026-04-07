@@ -19,7 +19,7 @@ import {
 import { findReadyBaseMarketingVideoUrl } from '@/lib/marketing-render/base-marketing-source';
 import { failStaleMarketingProcessingJobs } from '@/lib/marketing-render/stale-jobs';
 import { applyMarketingVideoBookends } from '@/lib/marketing-render/video-bookends';
-import { getResolvedFfmpegPath } from '@/lib/video/extract-frames';
+import { getResolvedFfmpegPath } from '@/lib/video/ffmpeg-resolve';
 
 const execFileAsync = promisify(execFile);
 

@@ -5,7 +5,6 @@ import { prisma } from '@/lib/db/prisma';
 import { orgKeyForProjectId } from '@/lib/db/org-key';
 import { isRecordingAccessibleToUser } from '@/lib/recordings/recording-access';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
-import { extractFrames } from '@/lib/video/extract-frames';
 import { FRAME_EXTRACTION_PLACEHOLDER_DESCRIPTION } from '@/lib/frame-extraction-placeholder';
 import {
   type StepFrameMeta,
@@ -114,6 +113,7 @@ export async function POST(request: NextRequest) {
 
     let frames: Array<{ timestamp: number; imageBuffer: Buffer }>;
     try {
+      const { extractFrames } = await import('@/lib/video/extract-frames');
       frames = await extractFrames(videoBuffer, clickTimestamps, maxFrames, recordingDurationMs, {
         keepEveryMarker: hasMarkers,
       });

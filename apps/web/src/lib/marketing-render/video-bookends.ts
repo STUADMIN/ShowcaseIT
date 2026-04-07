@@ -5,7 +5,7 @@ import path from 'path';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import { createWriteStream } from 'fs';
-import { getResolvedFfmpegPath } from '@/lib/video/extract-frames';
+import { getResolvedFfmpegPath } from '@/lib/video/ffmpeg-resolve';
 
 const execFileAsync = promisify(execFile);
 

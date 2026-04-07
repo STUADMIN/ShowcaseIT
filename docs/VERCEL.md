@@ -1,6 +1,6 @@
 # Deploying the web app to Vercel
 
-The **Next.js app** lives in `apps/web`, but the repo is an **npm workspace monorepo**. Vercel must run installs and builds from the **repository root** so `npm run build:web` and `@showcaseit/shared` resolve correctly.
+The **Next.js app** lives in `apps/web`, but the repo is an **npm workspace monorepo**. Vercel must run installs from the **repository root** with a **scoped** `npm install --workspace=@showcaseit/web` (so `@showcaseit/shared` is installed, but `apps/desktop` is skipped), then build the web app.
 
 ## Common failure: `npm run build:web` exited with 1
 
@@ -10,7 +10,7 @@ If the Vercel project’s **Root Directory** is set to `apps/desktop` (or any fo
 
 1. **Recommended — Root Directory `apps/web` (fixes Next.js routing on Vercel)**  
    - **Settings → General → Root Directory** → `apps/web`.  
-   - Clear custom Install / Build / Output overrides in **Build & Development Settings** so Vercel uses [`apps/web/vercel.json`](../apps/web/vercel.json): install from monorepo root, then `npm run build` in the web app.  
+   - Clear custom Install / Build / Output overrides in **Build & Development Settings** so Vercel uses [`apps/web/vercel.json`](../apps/web/vercel.json): scoped install (`npm install --workspace=@showcaseit/web` from repo root, skipping `apps/desktop`), then `npm run build` in the web app.  
    - Framework should detect **Next.js** from `apps/web/package.json`.  
    - Do **not** set Output Directory manually unless you know what you’re doing—Next deployments need Vercel’s Next builder, not a copied `.next` folder from another path.
 
@@ -30,10 +30,10 @@ If the Vercel project’s **Root Directory** is set to `apps/desktop` (or any fo
 2. Set **Root Directory** to **`apps/web`** (exactly — no leading slash). **Save.**
 3. Open **Settings → General** → scroll to **Build & Development Settings**.
 4. Ensure **Framework Preset** is **Next.js** (or “Override” **Off** so it auto-detects).
-5. Turn **Override** **Off** for **Install Command**, **Build Command**, and **Output Directory** so [`apps/web/vercel.json`](../apps/web/vercel.json) applies (`cd ../.. && npm install`, then `npm run build`).
+5. Turn **Override** **Off** for **Install Command**, **Build Command**, and **Output Directory** so [`apps/web/vercel.json`](../apps/web/vercel.json) applies (`cd ../.. && npm install --workspace=@showcaseit/web`, then `npm run build`).
 6. **Deployments** → open the latest on `main` → **Redeploy** (or push a commit).
 
-**Alternative:** set **Root Directory** to **empty** (repo root) and use the root [`vercel.json`](../vercel.json) (`npm run build:web`, `outputDirectory: apps/web/.next`).
+**Alternative:** set **Root Directory** to **empty** (repo root) and use the root [`vercel.json`](../vercel.json) (`npm install --workspace=@showcaseit/web`, `npm run build -w @showcaseit/web`, `outputDirectory: apps/web/.next`).
 
 Do **not** paste duplicate keys into dashboard JSON — **only one `buildCommand`** per file.
 

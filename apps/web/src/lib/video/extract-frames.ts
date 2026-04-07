@@ -3,8 +3,8 @@ import { promisify } from 'util';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { fileURLToPath } from 'url';
 import { PNG } from 'pngjs';
+import { findFfmpeg, isWin } from '@/lib/video/ffmpeg-resolve';
 
 const execFileAsync = promisify(execFile);
 
@@ -13,74 +13,8 @@ interface ExtractedFrame {
   imageBuffer: Buffer;
 }
 
-const isWin = process.platform === 'win32';
-const FFMPEG_EXE = isWin ? 'ffmpeg.exe' : 'ffmpeg';
-
 /** Helps short / incomplete WebM from MediaRecorder mux correctly */
 const PROBE_ARGS = ['-probesize', '50M', '-analyzeduration', '50M'] as const;
-
-/**
- * Find ffmpeg-static binary without relying on require() (Next.js bundling / wrong cwd).
- * Walks upward from cwd and from this file's location until node_modules/ffmpeg-static is found.
- */
-function collectWalkRoots(): string[] {
-  const roots = new Set<string>();
-  const add = (p: string) => {
-    try {
-      roots.add(path.resolve(p));
-    } catch {
-      /* ignore */
-    }
-  };
-
-  add(process.cwd());
-  add(path.join(process.cwd(), 'apps', 'web'));
-
-  try {
-    const here = path.dirname(fileURLToPath(import.meta.url));
-    let dir = here;
-    for (let i = 0; i < 24; i++) {
-      add(dir);
-      const up = path.dirname(dir);
-      if (up === dir) break;
-      dir = up;
-    }
-  } catch {
-    /* ignore */
-  }
-
-  return [...roots];
-}
-
-function resolveFfmpegPath(): string | null {
-  for (const root of collectWalkRoots()) {
-    let dir = root;
-    for (let depth = 0; depth < 22; depth++) {
-      const candidate = path.join(dir, 'node_modules', 'ffmpeg-static', FFMPEG_EXE);
-      if (fs.existsSync(candidate)) return candidate;
-      const up = path.dirname(dir);
-      if (up === dir) break;
-      dir = up;
-    }
-  }
-  return null;
-}
-
-let cachedFfmpeg: string | null | undefined;
-
-function findFfmpeg(): string {
-  if (cachedFfmpeg === undefined) {
-    cachedFfmpeg = resolveFfmpegPath();
-  }
-  if (cachedFfmpeg) return cachedFfmpeg;
-
-  if (isWin) {
-    const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-    const linksPath = path.join(localAppData, 'Microsoft', 'WinGet', 'Links', 'ffmpeg.exe');
-    if (fs.existsSync(linksPath)) return linksPath;
-  }
-  return 'ffmpeg';
-}
 
 function parseDurationFromFfmpegStderr(stderr: string): number | null {
   const m = /Duration:\s*(\d+):(\d+):(\d+\.\d+)/.exec(stderr);
@@ -749,9 +683,4 @@ export async function extractFrames(
   } finally {
     await fs.promises.rm(tmpDir, { recursive: true, force: true });
   }
-}
-
-/** For diagnostics / health checks */
-export function getResolvedFfmpegPath(): string {
-  return findFfmpeg();
 }
