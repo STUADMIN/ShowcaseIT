@@ -17,7 +17,9 @@
     "build:desktop": "turbo build --filter=@showcaseit/desktop",
     "worker:marketing": "npm run worker:marketing -w @showcaseit/web",
     "docs:scan": "npm run docs:scan -w @showcaseit/web",
-    "docs:generate": "npm run docs:generate -w @showcaseit/web"
+    "docs:generate": "npm run docs:generate -w @showcaseit/web",
+    "guides:import": "npm run guides:import -w @showcaseit/web",
+    "hr:generate": "npm run hr:generate -w @showcaseit/web"
   },
   "devDependencies": {
     "prisma": "^6.19.2",

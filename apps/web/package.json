@@ -16,7 +16,9 @@
     "db:studio": "prisma studio",
     "worker:marketing": "node ./scripts/run-marketing-worker.cjs",
     "docs:scan": "tsx ./scripts/docs/docs-scan.ts",
-    "docs:generate": "tsx ./scripts/docs/docs-generate.ts"
+    "docs:generate": "tsx ./scripts/docs/docs-generate.ts",
+    "guides:import": "tsx ./scripts/docs/import-md-guides.ts",
+    "hr:generate": "tsx ./scripts/docs/hr-generate.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
