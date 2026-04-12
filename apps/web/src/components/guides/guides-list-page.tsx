@@ -12,6 +12,7 @@ import { solidBrandHex } from '@/lib/brand/brand-color-value';
 import { matchesListSearch } from '@/lib/ui/matches-list-search';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useWorkspaceBrand } from '@/components/layout/workspace-brand-context';
+import { BulkPublishModal } from '@/components/editor/publish-modal';
 
 /** 12 rows × 3 columns at the `lg` grid breakpoint (see grid below). */
 const GUIDES_PAGE_SIZE = 36;
@@ -28,6 +29,7 @@ type BrandKitPreview = {
 
 interface Guide {
   id: string;
+  projectId?: string;
   title: string;
   description: string | null;
   style: string;
@@ -38,6 +40,7 @@ interface Guide {
   steps?: { screenshotUrl: string | null; styledScreenshotUrl: string | null }[];
   brandKit?: BrandKitPreview | null;
   project?: { brandKit: BrandKitPreview | null } | null;
+  _publication?: { id: string; projectId: string; brandKitId: string | null } | null;
 }
 
 function guideCoverUrl(guide: Guide): string | null {
@@ -111,8 +114,17 @@ export function GuidesListPage() {
     (guides != null && !Array.isArray(guides) ? 'Unexpected response from server. Try refreshing.' : null);
   const router = useRouter();
   const [creating, setCreating] = useState(false);
+  const [bulkPublishOpen, setBulkPublishOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const projectsUrl = preferredWorkspaceId
+    ? `/api/projects?workspaceId=${encodeURIComponent(preferredWorkspaceId)}`
+    : '';
+  const brandKitsApiUrl = preferredWorkspaceId
+    ? `/api/brand-kits?workspaceId=${encodeURIComponent(preferredWorkspaceId)}`
+    : '';
+  const { data: workspaceProjects } = useApi<{ id: string; name: string; brandKitId: string | null; brandKit?: { id: string; name: string } | null }[]>({ url: projectsUrl });
+  const { data: allBrandKits } = useApi<{ id: string; name: string }[]>({ url: brandKitsApiUrl });
 
   const filteredGuides = useMemo(() => {
     if (!guideList.length) return [];
@@ -214,9 +226,19 @@ export function GuidesListPage() {
               )}
             </div>
             {guideList.length > 0 && (
-              <button onClick={handleCreateBlankGuide} disabled={creating} className="btn-primary">
-                {creating ? 'Creating...' : '+ New Guide'}
-              </button>
+              <div className="flex items-center gap-3">
+                {guideList.length > 0 && (workspaceProjects ?? []).length > 1 && (
+                  <button
+                    onClick={() => setBulkPublishOpen(true)}
+                    className="px-4 py-2 rounded-lg border border-blue-600/40 bg-blue-600/10 text-blue-400 text-sm font-medium hover:bg-blue-600/20 transition-colors"
+                  >
+                    Publish all to...
+                  </button>
+                )}
+                <button onClick={handleCreateBlankGuide} disabled={creating} className="btn-primary">
+                  {creating ? 'Creating...' : '+ New Guide'}
+                </button>
+              </div>
             )}
           </div>
 
@@ -291,6 +313,11 @@ export function GuidesListPage() {
                               Docs
                             </span>
                           )}
+                          {guide._publication && (
+                            <span className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-600/15 text-blue-400 border border-blue-600/20">
+                              Published
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm text-gray-500 mt-1">{guide.description || 'No description'}</p>
                         <div className="flex items-center justify-between mt-4 text-xs text-gray-600">
@@ -337,6 +364,22 @@ export function GuidesListPage() {
             </div>
           )}
         </div>
+        {(() => {
+          const ownGuide = guideList.find((g) => !g._publication);
+          const pid = ownGuide?.projectId
+            ?? (activeBrandKitId ? (workspaceProjects ?? []).find((p) => p.brandKitId === activeBrandKitId)?.id : undefined)
+            ?? (workspaceProjects ?? [])[0]?.id
+            ?? '';
+          return pid ? (
+            <BulkPublishModal
+              open={bulkPublishOpen}
+              sourceProjectId={pid}
+              onClose={() => { setBulkPublishOpen(false); refetch(); }}
+              projects={workspaceProjects ?? []}
+              brandKits={allBrandKits ?? []}
+            />
+          ) : null;
+        })()}
     </AppShell>
   );
 }

@@ -57,6 +57,7 @@ export async function PATCH(
       brandKitId?: string | null;
       projectId?: string;
       published?: boolean;
+      noBranding?: boolean;
     };
 
     const existing = await prisma.guide.findUnique({
@@ -99,6 +100,7 @@ export async function PATCH(
     if (body.description !== undefined) data.description = body.description;
     if (body.style !== undefined) data.style = body.style;
     if (body.published !== undefined) data.published = body.published;
+    if (body.noBranding !== undefined) data.noBranding = body.noBranding;
     if (changingProject) {
       data.project = { connect: { id: nextProjectId } };
       data.orgKey = await orgKeyForProjectId(nextProjectId);

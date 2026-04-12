@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   ArrowRight,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Circle,
@@ -85,31 +86,48 @@ export function EditorToolbar({
     window.open(`/api/guides/${guideId}/export?format=html&mode=standalone&scope=all`, '_blank');
   };
 
-  const handleExport = async () => {
-    if (!guideId) return;
-    const res = await fetch(`/api/guides/${guideId}/export?format=html&mode=download&scope=all`);
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'guide.html';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
-  const handleExportFiltered = async () => {
+  useEffect(() => {
+    if (!exportOpen) return;
+    const close = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [exportOpen]);
+
+  const exportFormats = [
+    { id: 'html', label: 'HTML', ext: 'html' },
+    { id: 'docx', label: 'Word (.docx)', ext: 'docx' },
+    { id: 'pdf', label: 'PDF', ext: 'pdf' },
+  ] as const;
+
+  const handleExportFormat = useCallback(async (format: string, ext: string, scope: 'all' | 'exportable' = 'all') => {
     if (!guideId) return;
-    const res = await fetch(`/api/guides/${guideId}/export?format=html&mode=download&scope=exportable`);
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'guide-all-steps.html';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+    setExporting(true);
+    setExportOpen(false);
+    try {
+      const mode = format === 'html' ? 'download' : '';
+      const params = new URLSearchParams({ format, scope });
+      if (mode) params.set('mode', mode);
+      const res = await fetch(`/api/guides/${guideId}/export?${params}`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `guide.${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }, [guideId]);
 
   const canStepNav = focusMode && stepCount > 1;
 
@@ -195,21 +213,44 @@ export function EditorToolbar({
         >
           Preview
         </button>
-        <button
-          onClick={handleExport}
-          className="btn-primary text-sm py-1.5 px-3"
-          title="Download HTML including every step"
-        >
-          Export
-        </button>
-        <button
-          type="button"
-          onClick={handleExportFiltered}
-          className="text-xs text-gray-500 hover:text-gray-300 py-1.5 px-2"
-          title="Download HTML only for steps that have “Include in HTML export” checked in the sidebar"
-        >
-          Export (filtered)
-        </button>
+        <div className="relative" ref={exportMenuRef}>
+          <button
+            onClick={() => setExportOpen((v) => !v)}
+            disabled={exporting}
+            className="btn-primary text-sm py-1.5 px-3 inline-flex items-center gap-1.5 disabled:opacity-60"
+            title="Download guide"
+          >
+            {exporting ? 'Exporting\u2026' : 'Export'}
+            <ChevronDown className="w-3.5 h-3.5" strokeWidth={2} aria-hidden />
+          </button>
+          {exportOpen && (
+            <div className="absolute right-0 top-full mt-1 w-56 rounded-xl border border-gray-700 bg-gray-900 shadow-xl z-50 py-1 overflow-hidden">
+              <p className="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">All steps</p>
+              {exportFormats.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => void handleExportFormat(f.id, f.ext, 'all')}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-800 hover:text-white transition-colors"
+                >
+                  {f.label}
+                </button>
+              ))}
+              <div className="border-t border-gray-800 my-1" />
+              <p className="px-3 pt-1.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">Filtered steps only</p>
+              {exportFormats.map((f) => (
+                <button
+                  key={f.id + '-filtered'}
+                  type="button"
+                  onClick={() => void handleExportFormat(f.id, f.ext, 'exportable')}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -2,10 +2,10 @@
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { Camera, ImageUp } from 'lucide-react';
+import { Camera, Film, ImageUp } from 'lucide-react';
 import { IconTile } from '@/components/ui/icon-tile';
 import { TextAnnotationModal } from './text-annotation-modal';
-import { ScreenCaptureModal } from './screen-capture-modal';
+import { RecordingFramePickerModal } from './recording-frame-picker-modal';
 import { computeArrowParts } from '@/lib/editor/arrow-geometry';
 import { cropImageToPngBlob } from '@/lib/editor/crop-image';
 import {
@@ -76,6 +76,12 @@ interface StepPreviewProps {
   activeTool?: string;
   /** Wider layout when editor is in focus mode */
   expandedCanvas?: boolean;
+  /** Video URL from the guide's linked recording (null when no recording). */
+  recordingVideoUrl?: string | null;
+  /** Start a persistent capture session (managed by parent GuideEditor). */
+  onStartCaptureSession?: () => void;
+  /** True while a capture session is active (disables competing buttons). */
+  captureSessionActive?: boolean;
 }
 
 const RECT_ANNOTATION_TOOLS = ['highlight', 'circle', 'box', 'callout'] as const;
@@ -111,16 +117,11 @@ type TextDialogState =
   | { kind: 'callout'; rect: { x: number; y: number; width: number; height: number } }
   | { kind: 'text'; pos: { x: number; y: number } };
 
-/** Prefix for “stopped sharing too early” — used to auto-clear when the step already has a screenshot. */
-const SHARE_ENDED_ERROR_PREFIX = 'Screen share ended before saving.';
-
-export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: StepPreviewProps) {
+export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, recordingVideoUrl, onStartCaptureSession, captureSessionActive }: StepPreviewProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [captureStream, setCaptureStream] = useState<MediaStream | null>(null);
-  /** When true, ignore `ended` on display-capture tracks (we stopped them after a successful save/cancel). */
-  const shareEndedSilenceRef = useRef(false);
+  const [showFramePicker, setShowFramePicker] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stepRef = useRef(step);
@@ -131,31 +132,6 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
   useEffect(() => {
     setUploadError(null);
   }, [step.id]);
-
-  /** Share-ended warning is irrelevant if this step already has an image (e.g. user cancelled a “replace” capture). */
-  useEffect(() => {
-    if (!uploadError?.startsWith(SHARE_ENDED_ERROR_PREFIX)) return;
-    if (step.screenshotUrl) {
-      setUploadError(null);
-    }
-  }, [step.screenshotUrl, uploadError]);
-
-  /** Stop display-capture tracks and close the modal (single place so we don’t leave the mic/camera indicator on). */
-  const endCaptureStream = useCallback(() => {
-    shareEndedSilenceRef.current = true;
-    setCaptureStream((current) => {
-      if (current) {
-        current.getTracks().forEach((t) => {
-          try {
-            t.stop();
-          } catch {
-            /* ignore */
-          }
-        });
-      }
-      return null;
-    });
-  }, []);
 
   const uploadImageBlob = useCallback(
     async (blob: Blob, filename: string): Promise<boolean> => {
@@ -206,53 +182,12 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
     await uploadImageBlob(file, file.name);
   };
 
-  const startScreenCapture = useCallback(async () => {
-    setUploadError(null);
-    shareEndedSilenceRef.current = false;
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: 30 },
-        audio: false,
-      });
-      stream.getVideoTracks()[0]?.addEventListener('ended', () => {
-        setCaptureStream((current) => {
-          if (current !== stream) return current;
-          if (!shareEndedSilenceRef.current) {
-            window.setTimeout(() => {
-              if (shareEndedSilenceRef.current) return;
-              const hadImage = Boolean(stepRef.current.screenshotUrl?.trim());
-              if (hadImage) return;
-              setUploadError(
-                `${SHARE_ENDED_ERROR_PREFIX} In the browser, choose what to share and click Share, then return to this tab. When the preview shows your screen, click Use this screenshot — only after that should you stop sharing (otherwise no image is uploaded).`
-              );
-            }, 0);
-          }
-          return null;
-        });
-      });
-      setCaptureStream(stream);
-      window.setTimeout(() => {
-        try {
-          window.focus();
-        } catch {
-          /* ignore */
-        }
-      }, 100);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'NotAllowedError') {
-        setUploadError('Screen capture was cancelled.');
-      } else {
-        setUploadError('Could not start screen capture. Try another browser or check permissions.');
-      }
-    }
-  }, []);
-
-  const handleCaptureFrameBlob = useCallback(
+  const handleRecordingFrameBlob = useCallback(
     async (blob: Blob) => {
-      const ok = await uploadImageBlob(blob, 'screen-capture.png');
-      if (ok) endCaptureStream();
+      const ok = await uploadImageBlob(blob, 'recording-frame.png');
+      if (ok) setShowFramePicker(false);
     },
-    [uploadImageBlob, endCaptureStream]
+    [uploadImageBlob]
   );
 
   const moveSessionRef = useRef<MoveSession | null>(null);
@@ -1439,19 +1374,10 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
             <IconTile icon={ImageUp} size="xl" variant="muted" />
             <p className="text-lg font-medium text-gray-300">No screenshot</p>
             <p className="text-sm mt-1 text-center max-w-md text-gray-500">
-              <strong className="text-gray-400 font-medium">One screenshot per step:</strong> upload a file, or use{' '}
-              <strong className="text-gray-400">Take screenshot</strong> to open the browser picker, choose a screen or window, then
-              grab a <strong className="text-gray-400">single</strong> image for <strong className="text-gray-400">this</strong> step
-              only (not a recording). After you click Share, <strong className="text-gray-400">return to this tab</strong>, confirm the
-              preview, then click <strong className="text-gray-400">Use this screenshot</strong> — stopping share before that skips the
-              upload.
-            </p>
-            <p className="text-xs text-center max-w-md text-gray-600">
-              Need many steps from one session? Use{' '}
-              <Link href="/recordings/new" className="text-brand-400/90 hover:text-brand-300 underline-offset-2 hover:underline">
-                New recording
-              </Link>{' '}
-              or the desktop app.
+              Upload a file, or use <strong className="text-gray-400">Take screenshot</strong> to share another browser
+              tab, window, or screen. A capture bar appears at the bottom — switch to the shared app, navigate to what
+              you want, come back here, and click <strong className="text-gray-400">Capture</strong>. Each capture saves
+              to this step and creates the next one automatically.
             </p>
             <input
               ref={fileInputRef}
@@ -1463,7 +1389,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-2 w-full max-w-lg">
               <button
                 type="button"
-                disabled={uploading || !!captureStream}
+                disabled={uploading || captureSessionActive}
                 onClick={() => fileInputRef.current?.click()}
                 className="px-4 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-medium"
               >
@@ -1471,13 +1397,24 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
               </button>
               <button
                 type="button"
-                disabled={uploading || !!captureStream}
-                onClick={() => void startScreenCapture()}
+                disabled={uploading || captureSessionActive}
+                onClick={() => onStartCaptureSession?.()}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-gray-600 bg-gray-800/80 text-gray-200 hover:bg-gray-800 hover:border-gray-500 disabled:opacity-50 text-sm font-medium"
               >
                 <Camera className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
                 Take screenshot
               </button>
+              {recordingVideoUrl ? (
+                <button
+                  type="button"
+                  disabled={uploading || captureSessionActive}
+                  onClick={() => setShowFramePicker(true)}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-gray-600 bg-gray-800/80 text-gray-200 hover:bg-gray-800 hover:border-gray-500 disabled:opacity-50 text-sm font-medium"
+                >
+                  <Film className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
+                  Grab from recording
+                </button>
+              ) : null}
             </div>
             {uploadError && <p className="text-xs text-red-400 text-center max-w-sm">{uploadError}</p>}
           </div>
@@ -1495,7 +1432,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
           />
           <button
             type="button"
-            disabled={uploading || !!captureStream}
+            disabled={uploading || captureSessionActive}
             onClick={() => fileInputRef.current?.click()}
             className="text-sm text-brand-400 hover:text-brand-300 disabled:opacity-50"
           >
@@ -1503,13 +1440,24 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
           </button>
           <button
             type="button"
-            disabled={uploading || !!captureStream}
-            onClick={() => void startScreenCapture()}
+            disabled={uploading || captureSessionActive}
+            onClick={() => onStartCaptureSession?.()}
             className="text-sm text-gray-400 hover:text-brand-300 disabled:opacity-50 inline-flex items-center gap-1.5"
           >
             <Camera className="w-3.5 h-3.5" strokeWidth={2} aria-hidden />
             New screenshot
           </button>
+          {recordingVideoUrl ? (
+            <button
+              type="button"
+              disabled={uploading || captureSessionActive}
+              onClick={() => setShowFramePicker(true)}
+              className="text-sm text-gray-400 hover:text-brand-300 disabled:opacity-50 inline-flex items-center gap-1.5"
+            >
+              <Film className="w-3.5 h-3.5" strokeWidth={2} aria-hidden />
+              Grab from recording
+            </button>
+          ) : null}
           {step.screenshotOriginalUrl ? (
             <button
               type="button"
@@ -1531,13 +1479,12 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas }: Step
         </p>
       )}
 
-      {captureStream ? (
-        <ScreenCaptureModal
-          stream={captureStream}
+      {showFramePicker && recordingVideoUrl ? (
+        <RecordingFramePickerModal
+          videoUrl={recordingVideoUrl}
           uploading={uploading}
-          onCancel={() => !uploading && endCaptureStream()}
-          onCaptured={(blob) => void handleCaptureFrameBlob(blob)}
-          onCaptureFailed={(msg) => setUploadError(msg)}
+          onCancel={() => !uploading && setShowFramePicker(false)}
+          onCaptured={(blob) => void handleRecordingFrameBlob(blob)}
         />
       ) : null}
 

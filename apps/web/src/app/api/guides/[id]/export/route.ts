@@ -22,6 +22,7 @@ export async function GET(
     const socialRaw = searchParams.get('social');
     const exportSocialPlatform: SocialPlatformId | null =
       socialRaw && isSocialPlatformId(socialRaw) ? socialRaw : null;
+    const publicationId = searchParams.get('publicationId');
 
     const guide = await prisma.guide.findUnique({
       where: { id },
@@ -36,11 +37,25 @@ export async function GET(
       return NextResponse.json({ error: 'Guide not found' }, { status: 404 });
     }
 
-    const rawBrandKit = guide.brandKit ?? guide.project?.brandKit ?? null;
+    let pubBrandKit = null;
+    if (publicationId) {
+      const pub = await prisma.guidePublication.findUnique({
+        where: { id: publicationId },
+        include: { brandKit: true, project: { include: { brandKit: true } } },
+      });
+      if (pub) {
+        pubBrandKit = pub.brandKit ?? pub.project?.brandKit ?? null;
+      }
+    }
+
+    const noBranding = guide.noBranding === true;
+    const rawBrandKit = noBranding
+      ? null
+      : (pubBrandKit ?? guide.brandKit ?? guide.project?.brandKit ?? null);
     if (rawBrandKit) {
       await mergeGuideCoverImageUrl([rawBrandKit]);
     }
-    const mappedBrandKit = rawBrandKit ? mapPrismaBrandKit(rawBrandKit) : null;
+    const mappedBrandKit = noBranding ? null : (rawBrandKit ? mapPrismaBrandKit(rawBrandKit) : null);
 
     const stepsForExport =
       scope === 'all'
@@ -61,11 +76,12 @@ export async function GET(
 
       const html = generateHtmlExport({
         guide: exportGuide,
-        brandKit,
+        brandKit: noBranding ? undefined : brandKit,
         embedMode: isSnippet ? 'iframe' : 'standalone',
         includeAnimations: false,
         includeDocumentShell: !isSnippet,
         linkPreviewPlatform: exportSocialPlatform,
+        noBranding,
       });
 
       if (mode === 'download') {
@@ -94,7 +110,8 @@ export async function GET(
         title: guide.title,
         description: guide.description,
         steps: exportSteps,
-        brand: mappedBrandKit,
+        brand: noBranding ? null : mappedBrandKit,
+        noBranding,
       });
       return new NextResponse(Buffer.from(buffer), {
         headers: {
@@ -109,8 +126,9 @@ export async function GET(
         title: guide.title,
         description: guide.description,
         steps: exportSteps,
-        brand: mappedBrandKit,
-        exportSocialPlatform,
+        brand: noBranding ? null : mappedBrandKit,
+        exportSocialPlatform: noBranding ? null : exportSocialPlatform,
+        noBranding,
       });
       return new NextResponse(Buffer.from(bytes), {
         headers: {

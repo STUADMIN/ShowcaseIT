@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 
 interface ScreenCaptureModalProps {
@@ -27,9 +28,14 @@ export function ScreenCaptureModal({
   onCaptureFailed,
 }: ScreenCaptureModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [mounted, setMounted] = useState(false);
   const [previewReady, setPreviewReady] = useState(false);
   /** Some browsers/OS combos never fire dimensions; still allow Save after a short wait. */
   const [saveUnlocked, setSaveUnlocked] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setPreviewReady(false);
@@ -144,8 +150,8 @@ export function ScreenCaptureModal({
 
   const saveEnabled = previewReady || saveUnlocked;
 
-  return (
-    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
+  const modal = (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
       <button
         type="button"
         className="absolute inset-0 bg-gray-950/85 backdrop-blur-sm"
@@ -158,10 +164,11 @@ export function ScreenCaptureModal({
       >
         <h3 className="text-lg font-semibold text-gray-100 mb-2">Screenshot for this step</h3>
         <p className="text-sm text-gray-400 mb-4">
-          The browser will ask which screen, window, or tab to share — that becomes a <strong className="text-gray-300">single</strong>{' '}
-          still image for <strong className="text-gray-300">this step only</strong> (not a video). After you click{' '}
-          <strong className="text-gray-300">Share</strong>, <strong className="text-gray-300">come back to this tab</strong>, check the
-          preview below, then click <strong className="text-gray-300">Use this screenshot</strong>. For many auto-generated steps, use{' '}
+          Pick <strong className="text-gray-300">another browser tab</strong>, a <strong className="text-gray-300">window</strong>, or{' '}
+          <strong className="text-gray-300">Entire screen</strong> — not this ShowcaseIT tab (same-tab capture is often blank). That
+          becomes one <strong className="text-gray-300">still image</strong> for <strong className="text-gray-300">this step</strong>{' '}
+          only. After <strong className="text-gray-300">Share</strong>, <strong className="text-gray-300">return here</strong>, confirm
+          the preview, then click <strong className="text-gray-300">Use this screenshot</strong>. For many auto-generated steps, use{' '}
           <Link href="/recordings/new" className="text-brand-400 hover:text-brand-300 underline-offset-2 hover:underline">
             New recording
           </Link>
@@ -200,4 +207,7 @@ export function ScreenCaptureModal({
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(modal, document.body);
 }

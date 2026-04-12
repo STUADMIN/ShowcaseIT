@@ -18,7 +18,8 @@
     "docs:scan": "tsx ./scripts/docs/docs-scan.ts",
     "docs:generate": "tsx ./scripts/docs/docs-generate.ts",
     "guides:import": "tsx ./scripts/docs/import-md-guides.ts",
-    "hr:generate": "tsx ./scripts/docs/hr-generate.ts"
+    "hr:generate": "tsx ./scripts/docs/hr-generate.ts",
+    "hr:scenarios": "node ./scripts/docs/generate-hr-scenarios.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",

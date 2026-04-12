@@ -6,7 +6,7 @@
  * Each function is idempotent — it checks for existing data before inserting.
  */
 
-import type { SetupContext } from './hr-manifest';
+import type { SetupContext } from './hr-manifest-types';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */

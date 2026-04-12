@@ -1,0 +1,2715 @@
+{
+  "generatedAt": "2026-04-12T10:57:20.834Z",
+  "baseUrl": "http://localhost:3001",
+  "entries": [
+    {
+      "entryId": "org-admin--1-1",
+      "title": "1.1 Logging In",
+      "description": "Authenticate as an organisation admin and open the admin dashboard.\n\nOutcome: Signed in; land on Admin Dashboard.\n\nProcedure (manual): Open http://localhost:3001/?org=platform-demo | Enter Email address | Enter Password | Click Sign in\n\nForm fields: Email (e.g. helen.richardson@platform-demo.com); Password (e.g. Demo123!)\n\nTest / recording data: EXISTING: URL ?org=platform-demo | Email helen.richardson@platform-demo.com | Password Demo123!\n\nReplace URL for production. Source: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--1-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Sign in page — Organisation Admin for platform-demo",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--1-1/step-1.png"
+        },
+        {
+          "label": "Admin Dashboard — Organisation Admin home",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--1-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--1-2",
+      "title": "1.2 Understanding the Navigation",
+      "description": "Reach all admin modules from the sidebar.\n\nOutcome: User knows menu items: Dashboard, Users, Directory, Org Chart, Calendar, Tasks, Reports, Performance, Announcements, Tickets, Knowledge Centre, Partnerships, Settings, Health & Safety, Activity Log.\n\nProcedure (manual): Use left sidebar to open each area as needed\n\nTest / recording data: EXISTING: No input — seeded menus include Dashboard, Users, Directory, Org Chart, Calendar, Tasks, Reports, Performance, Announcements, Tickets, Knowledge Centre, Partnerships, Settings, Health & Safety, Activity Log.\n\nInformational. Source: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--1-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Left sidebar — all primary navigation items available to Organisation Admins",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--1-2/step-1.png"
+        },
+        {
+          "label": "Sidebar continued — Settings, Health & Safety, Activity Log at the bottom",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--1-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--1-3",
+      "title": "1.3 Switching Admin / Employee View",
+      "description": "Preview the product as an employee without losing admin access.\n\nOutcome: View toggles between Admin and Employee.\n\nProcedure (manual): Top bar: locate Admin / Employee toggle | Click Employee or Admin\n\nTest / recording data: EXISTING: No input — use Admin/Employee toggle only.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--1-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Switch to Employee view — see the system from an employee's perspective",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--1-3/step-1.png"
+        },
+        {
+          "label": "Employee view — self-service dashboard with personal tasks and leave",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--1-3/step-2.png"
+        },
+        {
+          "label": "Switch back to Admin view — return to the full administration view",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--1-3/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--2-1",
+      "title": "2.1 Dashboard Components",
+      "description": "See org-wide activity and risks at a glance.\n\nOutcome: Read activity feed, movements, task summary, celebrations, training gaps, quick links.\n\nProcedure (manual): After login remain on Dashboard | Scroll to review widgets\n\nTest / recording data: EXISTING: No input — dashboard widgets populated from demo org (e.g. movements, tasks, celebrations).\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--2-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Admin Dashboard — activity feed and key metrics snapshot",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--2-1/step-1.png"
+        },
+        {
+          "label": "Upcoming movements — new starters, leavers, and role changes",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--2-1/step-2.png"
+        },
+        {
+          "label": "Task summary — overdue and upcoming items requiring attention",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--2-1/step-3.png"
+        },
+        {
+          "label": "Celebrations — birthdays and work anniversaries across the organisation",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--2-1/step-4.png"
+        },
+        {
+          "label": "Training gaps — compliance issues highlighted for action",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--2-1/step-5.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--2-2",
+      "title": "2.2 Using Quick Actions",
+      "description": "Jump to common work from the dashboard.\n\nOutcome: New user flow, task list, or employee profile opens.\n\nProcedure (manual): Click Add new user OR View all tasks OR click a celebration card\n\nForm fields: N/A until destination screen\n\nTest / recording data: EXISTING: Quick actions — Add new user opens create flow; View all tasks → Tasks; celebration cards may include e.g. Jonathan Hartley (MD).\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--2-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Quick action links — Add new user, View all tasks, and other shortcuts",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--2-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--3-1",
+      "title": "3.1 Viewing the User List",
+      "description": "Find and open employee records.\n\nOutcome: Filtered or searched list of employees.\n\nProcedure (manual): Sidebar: Users | Use search bar | Apply filters: department, division, status, access level | Click employee name\n\nForm fields: Search text; filter selections\n\nTest / recording data: EXISTING: Users → search Taylor → Ben Taylor (Logistics Coordinator, Operations) OR search helen → Helen Richardson.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--3-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "User list — all employees with name, email, department, job title, and status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-1/step-1.png"
+        },
+        {
+          "label": "Search users — filter by name, email, department, or job title",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--3-2",
+      "title": "3.2 Creating a New User",
+      "description": "Add an employee record and optionally invite them.\n\nOutcome: User created; system may prompt to send invitation email.\n\nProcedure (manual): Users | Add User | Complete fields | Save | Follow invitation prompt if shown\n\nForm fields: Required: First name; Last name; Email address (work); Country (e.g. United Kingdom); Access level (Organisation Admin, Manager, or UK Employee). Optional: Department; Division; Job title; Employee number; Date of birth; Gender; Marital status; Phone numbers; Address\n\nTest / recording data: NEW: First name ManualTest | Last name RecordHire | Email manualtest.hire.UNIQUE@example.com (replace UNIQUE; must not match any user in Users) | Country United Kingdom | Access UK Employee | Optional: Department Operations | Job Title QA Recording | Employee Number MT-UNIQUE | Save then invite if prompted.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--3-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "User list — all employees with name, email, department, job title, and status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-2/step-1.png"
+        },
+        {
+          "label": "Search users — filter by name, email, department, or job title",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-2/step-2.png"
+        },
+        {
+          "label": "Add new user — open hire wizard",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-2/step-3.png"
+        },
+        {
+          "label": "New hire wizard — Personal (step 1)",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-2/step-4.png"
+        },
+        {
+          "label": "Create Employee — user record saved (or validation message)",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-2/step-5.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--3-3",
+      "title": "3.3 Editing a User Profile",
+      "description": "Maintain accurate HR, pay, leave, and compliance data.\n\nOutcome: Profile saved for that employee.\n\nProcedure (manual): Users | Click employee | Tabs: Personal, Employment, Pay, Leave, Documents, Emergency contacts, Notes, Training, Health & Safety | Edit on a section | Save\n\nForm fields: Tab-specific fields as shown in UI\n\nTest / recording data: EXISTING: Users → Ben Taylor (ben.taylor@platform-demo.com) → Personal tab → Edit → change Mobile to +44 7700 899001 (example) → Save.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--3-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "User list — click any employee name to open their profile",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-3/step-1.png"
+        },
+        {
+          "label": "Open employee profile — click to view full details",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-3/step-2.png"
+        },
+        {
+          "label": "User profile — Personal tab with name, contact details, and address",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-3/step-3.png"
+        },
+        {
+          "label": "Employment tab — job title, department, division, reports to, start date",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-3/step-4.png"
+        },
+        {
+          "label": "Pay tab — salary, pay group, pay schedule, currency",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-3/step-5.png"
+        },
+        {
+          "label": "Leave tab — leave balances, policy assignments, and time-off history",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-3/step-6.png"
+        },
+        {
+          "label": "Documents tab — uploaded files and attachments for this employee",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-3/step-7.png"
+        },
+        {
+          "label": "Emergency contacts tab — next-of-kin details",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-3/step-8.png"
+        },
+        {
+          "label": "Notes tab — internal admin notes about this employee",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-3/step-9.png"
+        },
+        {
+          "label": "Training tab — training records and compliance status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-3/step-10.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--3-4",
+      "title": "3.4 Inviting a User",
+      "description": "Send password-setup email.\n\nOutcome: Invitation email with secure link sent.\n\nProcedure (manual): Users | Open user profile | Click Send Invitation (when shown)\n\nForm fields: Uses profile email; no separate form in guide\n\nTest / recording data: EXISTING: Open the NEW user from 3.2 if invite available OR any user showing Send Invitation | Send Invitation.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--3-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Users — open profile for invitation",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-4/step-1.png"
+        },
+        {
+          "label": "User profile — Send Invitation when available",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-4/step-2.png"
+        },
+        {
+          "label": "Invitation sent — checklist for secure password setup email",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-4/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--3-5",
+      "title": "3.5 Suspending or Removing a User",
+      "description": "Block access or start leaver process.\n\nOutcome: Suspended and/or offboarding started with checklist.\n\nProcedure (manual): Open user profile | Suspend and/or Offboard | When prompted: enter leaving date and termination reason\n\nForm fields: Leaving date; termination reason (offboarding)\n\nTest / recording data: NEW (destructive): Only on disposable user: create ManualTest Leaver with unique email via 3.2 then Offboard | Leaving date +30 days from today | Reason End of fixed-term contract (test). Do not offboard real demo employees.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--3-5]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Users — disposable test employee only",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-5/step-1.png"
+        },
+        {
+          "label": "Profile — Offboard / Suspend (do not use on real employees)",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-5/step-2.png"
+        },
+        {
+          "label": "Offboarding wizard — leaving date and reason (complete only in sandbox)",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--3-5/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--4-1",
+      "title": "4.1 Using the Directory",
+      "description": "Look up colleagues and open profiles.\n\nOutcome: Profile view for selected person.\n\nProcedure (manual): Directory | Browse or search | Click person\n\nForm fields: Search/browse only\n\nTest / recording data: EXISTING: Directory → search Johansson → Sarah Johansson (Operations Manager) OR browse Operations.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--4-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Company Directory — searchable list of all employees with name, job title, department, and contact details",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--4-1/step-1.png"
+        },
+        {
+          "label": "Directory search — find employees by name, department, or job title",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--4-1/step-2.png"
+        },
+        {
+          "label": "Click any person to view their profile",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--4-1/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--4-2",
+      "title": "4.2 Viewing the Org Chart",
+      "description": "See reporting lines visually.\n\nOutcome: Expanded/collapsed hierarchy.\n\nProcedure (manual): Org Chart (or Directory > Org Chart) | Click nodes to expand/collapse | Use zoom controls\n\nTest / recording data: EXISTING: Org Chart → expand Jonathan Hartley (Managing Director) to see hierarchy.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--4-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Employee profile — accessed from the directory view",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--4-2/step-1.png"
+        },
+        {
+          "label": "Org Chart — visual reporting hierarchy of the organisation",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--4-2/step-2.png"
+        },
+        {
+          "label": "Org Chart — click nodes to expand or collapse teams, use zoom controls to navigate",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--4-2/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--5-1",
+      "title": "5.1 Company Calendar",
+      "description": "See leave, holidays, and milestones org-wide.\n\nOutcome: Calendar with entry details on demand.\n\nProcedure (manual): Calendar | Month/week toggle | Filter by department, team, or individual | Click entry for details\n\nForm fields: Filter selections\n\nTest / recording data: EXISTING: Calendar → filter Human Resources | Click leave for Priya Sharma (pending block 21–24 Apr 2026 in seed) if shown.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--5-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Company Calendar — leave requests, public holidays, birthdays, and work anniversaries",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--5-1/step-1.png"
+        },
+        {
+          "label": "Calendar view — approved, pending, and rejected leave for all employees",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--5-1/step-2.png"
+        },
+        {
+          "label": "Calendar entries — click any entry to see details about the leave or event",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--5-1/step-3.png"
+        },
+        {
+          "label": "Calendar controls — toggle month/week view, filter by department, team, or individual",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--5-1/step-4.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--6-1",
+      "title": "6.1 Viewing Tasks",
+      "description": "Monitor work across the organisation.\n\nOutcome: Filtered task list.\n\nProcedure (manual): Tasks | Filter by status (Open, In Progress, Completed), priority, category, assignee\n\nForm fields: Filter selections\n\nTest / recording data: EXISTING: Tasks → filter Category Onboarding or Assignee Sophie Turner (seeded tasks present).\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--6-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Task list — all organisational tasks with title, category, priority, status, due date, and assignees",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--6-1/step-1.png"
+        },
+        {
+          "label": "Task filters — filter by status, priority, category, or assignee",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--6-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--6-2",
+      "title": "6.2 Creating a New Task",
+      "description": "Assign tracked work with ownership and deadline.\n\nOutcome: New task in list; optional onboarding user link.\n\nProcedure (manual): Tasks | Create Task | Fill form | Optionally link onboarding user | Save\n\nForm fields: Title; Category: Onboarding, Compliance, Training, or Administrative; Priority: Low, Medium, High, Urgent; Due date; Assignees (one or more); optional onboarding user link\n\nTest / recording data: NEW: Title [ManualTest] Recording workflow task | Category Administrative | Priority Medium | Due date +14 days | Assignees Ben Taylor | Save.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--6-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Task list — all organisational tasks with title, category, priority, status, due date, and assignees",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--6-2/step-1.png"
+        },
+        {
+          "label": "Task filters — filter by status, priority, category, or assignee",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--6-2/step-2.png"
+        },
+        {
+          "label": "Create Task — new organisational task",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--6-2/step-3.png"
+        },
+        {
+          "label": "Task form — title, category, priority, due date, assignees",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--6-2/step-4.png"
+        },
+        {
+          "label": "Task saved — appears in task list",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--6-2/step-5.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--6-3",
+      "title": "6.3 Updating Task Status",
+      "description": "Reflect progress and communicate.\n\nOutcome: Updated status and comments.\n\nProcedure (manual): Open task | Status dropdown: Open, In Progress, Completed | Add comments\n\nForm fields: Status; comment text\n\nTest / recording data: EXISTING: Open any task with status Open → set In Progress → add comment Recording test update.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--6-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Task list — click any task to open it and change status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--6-3/step-1.png"
+        },
+        {
+          "label": "Task detail — change status (Open, In Progress, Completed), add comments to track progress",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--6-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--7-1",
+      "title": "7.1 Viewing Leave Requests",
+      "description": "See who is off and per-person history.\n\nOutcome: Calendar overview and/or user Leave tab.\n\nProcedure (manual): Calendar and/or Users | user | Leave tab\n\nTest / recording data: EXISTING: Calendar overview OR Users → Priya Sharma → Leave tab (balances + history).\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--7-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Calendar — visual overview of all leave across the organisation",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--7-1/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--7-2",
+      "title": "7.2 Approving or Rejecting Leave",
+      "description": "Apply policy to time off.\n\nOutcome: Request approved or rejected; employee notified.\n\nProcedure (manual): Open Pending request | Review dates, type, duration | Approve OR Reject | If Reject: provide reason\n\nForm fields: Rejection reason when rejecting\n\nTest / recording data: EXISTING: Open PENDING annual leave for Priya Sharma 2026-04-21–2026-04-24 (seed) → Approve OR Reject with reason Recording test rejection.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--7-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Users list — click an employee to see their individual leave history",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--7-2/step-1.png"
+        },
+        {
+          "label": "Employee leave tab — balances, pending requests, and history with Approve/Reject actions",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--7-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--7-3",
+      "title": "7.3 Configuring Leave Policies",
+      "description": "Define accrual, carryover, approval.\n\nOutcome: Policies and workflows updated.\n\nProcedure (manual): Settings > Time & Leave | Manage Holidays, Leave policies, Approval workflows | Per policy: accrual type/frequency/days, carryover, caps, Bradford Factor (sick)\n\nForm fields: Policy-specific fields per screen\n\nTest / recording data: EXISTING: Settings → Time & Leave — reference seeded policies (Annual Leave, Sick Leave, etc.); adjust only in sandbox.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--7-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Settings — navigate to Time & Leave configuration",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--7-3/step-1.png"
+        },
+        {
+          "label": "Time & Leave settings — holidays, leave policies, approval workflows",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--7-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--7-4",
+      "title": "7.4 Managing Working Patterns",
+      "description": "Align leave calculations with working weeks.\n\nOutcome: Patterns defined and assignable.\n\nProcedure (manual): Settings > Time & Leave | Define patterns | Assign to employees\n\nForm fields: Pattern definition; employee assignment (per UI)\n\nTest / recording data: EXISTING: Settings → Time & Leave — working patterns from seed; assign only in sandbox.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--7-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Time & Leave — manage public holidays, leave policies, and approval workflows",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--7-4/step-1.png"
+        },
+        {
+          "label": "Leave policy settings — accrual type, frequency, carryover rules, and balance caps",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--7-4/step-2.png"
+        },
+        {
+          "label": "Working patterns — define which days are working days for accurate leave calculations",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--7-4/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--8-1",
+      "title": "8.1 Performance Overview",
+      "description": "See cycles, templates, 360 status.\n\nOutcome: Overview of active work.\n\nProcedure (manual): Performance | Review Active review cycles, Review templates, 360 feedback requests\n\nTest / recording data: EXISTING: Performance — active cycles/templates from seed (e.g. review instances for demo employees).\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--8-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Performance hub — active review cycles, templates, and 360 feedback requests",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--8-1/step-1.png"
+        },
+        {
+          "label": "Active review cycles — progress tracking and completion status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--8-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--8-2",
+      "title": "8.2 Managing Review Cycles",
+      "description": "Drill into cycle progress.\n\nOutcome: Opened review instance.\n\nProcedure (manual): Performance | Select cycle | View instances and completion % | Open a review\n\nForm fields: N/A unless editing inside review\n\nTest / recording data: EXISTING: Open cycle e.g. H1 2026 Performance Review if listed → drill into any in-progress instance.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--8-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Review cycle detail — all review instances with status and completion percentage",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--8-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--8-3",
+      "title": "8.3 Creating a New Review Cycle",
+      "description": "Launch review period for applicable pairs.\n\nOutcome: New cycle with instances.\n\nProcedure (manual): Performance | Create Cycle | Select template | Cycle name, start date, end date | Launch\n\nForm fields: Template; cycle name; start date; end date\n\nTest / recording data: NEW: Create Cycle | Name [ManualTest] Recording cycle UNIQUE | Pick existing template | Start/End dates (future window) | Launch — use sandbox if cycles are restricted.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--8-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Performance page — click Create Cycle to start a new review",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--8-3/step-1.png"
+        },
+        {
+          "label": "Create Cycle — select template, set name, start and end dates",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--8-3/step-2.png"
+        },
+        {
+          "label": "New review cycle form — template selection, cycle name, and date range",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--8-3/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--8-4",
+      "title": "8.4 Managing Review Templates",
+      "description": "Shape review forms.\n\nOutcome: Template saved with question types.\n\nProcedure (manual): Performance | Templates | Create/edit | Sections/questions: Text, Scale 1-5, Multiple choice, Two-axis graph\n\nForm fields: Template name; section/question content and types\n\nTest / recording data: EXISTING: Performance → Templates — edit copy of existing template or create draft (sandbox).\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--8-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Performance page — navigate to Templates",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--8-4/step-1.png"
+        },
+        {
+          "label": "Review templates — text, scale 1-5, multiple choice, and two-axis graph question types",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--8-4/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--8-5",
+      "title": "8.5 360 Feedback",
+      "description": "Monitor peer feedback collection.\n\nOutcome: Visibility of reviewers and completion.\n\nProcedure (manual): Performance | 360 Feedback Requests | Inspect subject, reviewers, template\n\nForm fields: N/A for monitoring\n\nTest / recording data: EXISTING: Performance → 360 Feedback Requests — list from seed.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--8-5]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "360 Feedback — requests with subject, reviewers, template, and completion status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--8-5/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--9-1",
+      "title": "9.1 Viewing Announcements",
+      "description": "Review communications.\n\nOutcome: List including pinned items.\n\nProcedure (manual): Announcements | View published, draft, scheduled\n\nTest / recording data: EXISTING: Announcements — seeded published/draft items visible.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--9-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Announcements — published, draft, and scheduled announcements with pinned items at top",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--9-1/step-1.png"
+        },
+        {
+          "label": "Announcement list — title, priority, audience, and publication status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--9-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--9-2",
+      "title": "9.2 Creating an Announcement",
+      "description": "Broadcast to audience.\n\nOutcome: Published or draft announcement.\n\nProcedure (manual): Announcements | Create Announcement | Publish or save draft\n\nForm fields: Title; Body (rich text); Priority (normal or high); Audience (all or filtered by team/division/country); Pin toggle\n\nTest / recording data: NEW: Title [ManualTest] Scheduled maintenance notice | Body Short plain notice for recording | Priority normal | Audience All employees | Pin No | Publish or Draft.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--9-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Create Announcement — new company-wide message",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--9-2/step-1.png"
+        },
+        {
+          "label": "Announcement form — title, rich text body, priority, audience, and pin toggle",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--9-2/step-2.png"
+        },
+        {
+          "label": "Audience targeting — all employees or filtered by team, division, or country",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--9-2/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--9-3",
+      "title": "9.3 Editing or Removing Announcements",
+      "description": "Keep communications current.\n\nOutcome: Updated, unpublished, or deleted.\n\nProcedure (manual): Open announcement | Edit | Unpublish or delete as needed\n\nForm fields: Same as create where applicable\n\nTest / recording data: EXISTING: Open announcement you created in 9.2 → edit body → save; or unpublish test draft.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--9-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Announcements — click any existing announcement to edit content, audience, or priority",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--9-3/step-1.png"
+        },
+        {
+          "label": "Edit announcement — update content, unpublish, or delete announcements no longer relevant",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--9-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--10-1",
+      "title": "10.1 Ticket Inbox Overview",
+      "description": "Triage employee support.\n\nOutcome: Filtered ticket queue.\n\nProcedure (manual): Tickets | Filter by status, category, assignee\n\nForm fields: Filters only\n\nTest / recording data: EXISTING: Tickets → filter Category IT Support | Row Unable to access VPN from home (Emma Fletcher) if enrich seed run.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--10-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Ticket inbox — all support tickets raised by employees with subject, requester, status, priority, and category",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--10-1/step-1.png"
+        },
+        {
+          "label": "Ticket filters — sort by status, category, or assignee",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--10-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--10-2",
+      "title": "10.2 Responding to a Ticket",
+      "description": "Progress or resolve employee issues.\n\nOutcome: Thread updated; assignment/priority/status/escalation may change.\n\nProcedure (manual): Open ticket | Read thread | Type reply | Send | Optionally Assign, Change status, Change priority, Escalate to partner admin\n\nForm fields: Reply text; status/priority/assignee; escalation if applicable\n\nTest / recording data: EXISTING: Open ticket Unable to access VPN from home OR first open ticket | Reply Thanks — recording test | Send | optional status In Progress.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--10-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Ticket conversation — read messages, reply, assign, change status, and escalate",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--10-2/step-1.png"
+        },
+        {
+          "label": "Reply box — type response, change status and priority, or assign to another admin",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--10-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--10-3",
+      "title": "10.3 Managing Ticket Categories",
+      "description": "Control categories for raised tickets.\n\nOutcome: Updated category list.\n\nProcedure (manual): Settings > Integrations & Data | Ticket Categories | Add, edit, remove\n\nForm fields: Category fields per UI\n\nTest / recording data: NEW (sandbox preferred): Settings → Integrations & Data → Ticket Categories → Add [ManualTest] Recording category UNIQUE — or edit label of disposable category.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--10-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Settings — navigate to Integrations & Data for ticket categories",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--10-3/step-1.png"
+        },
+        {
+          "label": "Ticket Categories — add, edit, or remove categories employees select when raising tickets",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--10-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--10-4",
+      "title": "10.4 Creating Ticket (Admin Inbox) — UI verified",
+      "description": "Create ticket from org admin tickets area.\n\nOutcome: New ticket created.\n\nProcedure (manual): Tickets | Open New Ticket modal | Fill fields | Create Ticket\n\nForm fields: Subject (required); Category (optional None); Priority (Low, Medium, High, Urgent); Description (required). Buttons: Cancel; Create Ticket / Creating…\n\nTest / recording data: NEW: Tickets → New Ticket | Subject [ManualTest] Admin recording ticket | Category IT Support or None | Priority Low | Description Smoke test body | Create Ticket.\n\nVerified apps/admin-web tickets page. Modal title New Ticket.\n\n[hr-doc:org-admin--10-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Ticket inbox — filter and triage employee support requests",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--10-4/step-1.png"
+        },
+        {
+          "label": "New Ticket — open modal from admin tickets",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--10-4/step-2.png"
+        },
+        {
+          "label": "New Ticket modal — subject, category, priority, description",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--10-4/step-3.png"
+        },
+        {
+          "label": "Ticket created — returns to inbox or detail",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--10-4/step-4.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--11-1",
+      "title": "11.1 Managing Articles",
+      "description": "Curate knowledge base.\n\nOutcome: View published and draft by category.\n\nProcedure (manual): Knowledge Centre | Browse by category\n\nTest / recording data: EXISTING: Knowledge Centre — articles by category from seed-demo-enrich (e.g. IT Help, HR Policies).\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--11-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Knowledge Centre — all published and draft articles organised by category",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--11-1/step-1.png"
+        },
+        {
+          "label": "Article list — title, category, and publication status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--11-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--11-2",
+      "title": "11.2 Creating a New Article",
+      "description": "Publish self-service guidance.\n\nOutcome: Article saved Published or Draft.\n\nProcedure (manual): Knowledge Centre | Create Article | Save\n\nForm fields: Title; Category; Content (rich text); Published or Draft\n\nTest / recording data: NEW: Create Article | Title [ManualTest] MFA reset steps | Category IT Help | Content Short bullet list | Draft | Save.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--11-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Create Article — new knowledge base entry",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--11-2/step-1.png"
+        },
+        {
+          "label": "Article form — title, category, rich text content, and Published/Draft toggle",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--11-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--11-3",
+      "title": "11.3 Editing and Organising Articles",
+      "description": "Keep articles accurate.\n\nOutcome: Updated article.\n\nProcedure (manual): Open article | Edit content, category, status | Save per UI\n\nForm fields: Per edit form\n\nTest / recording data: EXISTING: Open any article → add (Recording) suffix to title → Save; or edit11.2 draft.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--11-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Knowledge Centre — click any article to edit content, category, or status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--11-3/step-1.png"
+        },
+        {
+          "label": "Edit article — update content and use categories to organise by topic",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--11-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--12-1",
+      "title": "12.1 Reports Hub",
+      "description": "Access reporting entry points.\n\nOutcome: Saved, favourites, ad-hoc areas visible.\n\nProcedure (manual): Reports | Saved reports / Favourites / Ad-hoc reports\n\nTest / recording data: EXISTING: Reports — saved/favourites/ad-hoc areas as seeded.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--12-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Reports hub — saved reports, favourites, and ad-hoc query builder",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--12-1/step-1.png"
+        },
+        {
+          "label": "Report types — custom reports, headcount, additions & terminations, turnover, Bradford Factor",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--12-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--12-2",
+      "title": "12.2 Available Report Types (reference)",
+      "description": "Know built-in analytics routes.\n\nOutcome: User navigates to correct report.\n\nProcedure (manual): Main Reports /reports | Headcount /headcount | Additions & Terminations /additions-terminations | Turnover /turnover | Bradford Factor /bradford-factor\n\nTest / recording data: EXISTING: Paths /reports /headcount /additions-terminations /turnover /bradford-factor — navigate read-only.\n\nPaths from 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--12-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Set date range and filters — department, division, country — then view charts and data tables",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--12-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--12-3",
+      "title": "12.3 Running a Report",
+      "description": "Produce dataset for period and cohort.\n\nOutcome: On-screen results; optional export.\n\nProcedure (manual): Open report | Set date range and filters | Export where available\n\nForm fields: Date range; department, division, country, etc.; export format\n\nTest / recording data: EXISTING: Run report with Date range 2026-01-01 to 2026-12-31 | Department Human Resources | Export if available.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--12-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Set date range and filters — department, division, country — then view charts and data tables",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--12-3/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--12-4",
+      "title": "12.4 Headcount Report",
+      "description": "Analyse headcount trends.\n\nOutcome: Chart/table; export.\n\nProcedure (manual): Reports | Headcount | Breakdowns | Export\n\nForm fields: Breakdown dimensions; export options\n\nTest / recording data: EXISTING: Headcount | Monthly chart | Breakdown Department Human Resources.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--12-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Headcount report — monthly totals over time with breakdowns by department and division",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--12-4/step-1.png"
+        },
+        {
+          "label": "Headcount chart — use breakdowns to see trends by department or other dimensions",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--12-4/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--12-5",
+      "title": "12.5 Bradford Factor",
+      "description": "Monitor short-term sickness patterns.\n\nOutcome: Filtered Bradford table.\n\nProcedure (manual): Bradford Factor | Filter by policy and period\n\nForm fields: Policy type; date period\n\nTest / recording data: EXISTING: Bradford Factor | filter period covering seeded sickness data.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--12-5]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Reports — navigate to Bradford Factor",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--12-5/step-1.png"
+        },
+        {
+          "label": "Bradford Factor — absence risk scoring based on sickness patterns for each employee",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--12-5/step-2.png"
+        },
+        {
+          "label": "Bradford scores — higher values indicate frequent short-term absences, filter by policy and period",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--12-5/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--13-1",
+      "title": "13.1 Accessing Settings",
+      "description": "Open configuration hub.\n\nOutcome: Settings category grid.\n\nProcedure (manual): Settings\n\nTest / recording data: EXISTING: Settings grid — no data entry required to open.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--13-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Settings home — grid of configuration categories",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-1/step-1.png"
+        },
+        {
+          "label": "Settings categories — Organisation, People & Access, Pay & Benefits, Time & Leave, and more",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--13-2",
+      "title": "13.2 Settings Categories (reference)",
+      "description": "Map configuration areas.\n\nOutcome: N/A informational.\n\nProcedure (manual): Read guide table: Organisation; People & Access; Pay & Benefits; Time & Leave; Hiring & Lifecycle; Learning & Development; Health & Safety; Integrations & Data; Account & Billing\n\nTest / recording data: EXISTING: Reference table only — Organisation, People & Access, etc.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--13-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Settings home — grid of configuration categories",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-2/step-1.png"
+        },
+        {
+          "label": "Settings categories — Organisation, People & Access, Pay & Benefits, Time & Leave, and more",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--13-3",
+      "title": "13.3 Configuring Departments",
+      "description": "Maintain department list.\n\nOutcome: Departments added/renamed/deactivated.\n\nProcedure (manual): Settings > Organisation > Departments | Add Department or open existing | Rename or deactivate\n\nForm fields: Department name; active flag if applicable\n\nTest / recording data: NEW (sandbox): Organisation → Departments → Add Department [ManualTest] Dept UNIQUE — or rename disposable dept only.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--13-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Organisation settings — departments, divisions, seniority levels, job titles",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-3/step-1.png"
+        },
+        {
+          "label": "Departments — Management, Human Resources, Finance, Sales, Operations. Add or edit departments.",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--13-4",
+      "title": "13.4 Managing Access Levels",
+      "description": "Control capabilities per level.\n\nOutcome: Updated permission matrix.\n\nProcedure (manual): Settings > People & Access > Access Levels | Configure Organisation Admin, Manager, UK Employee\n\nForm fields: Per-level permission toggles per UI\n\nTest / recording data: EXISTING: People & Access → Access Levels — review Organisation Admin / Manager / UK Employee (read-only unless sandbox).\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--13-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Settings — navigate to People & Access",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-4/step-1.png"
+        },
+        {
+          "label": "Access Levels — Organisation Admin (full access), Manager (team management), UK Employee (self-service)",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-4/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--13-5",
+      "title": "13.5 Configuring Onboarding Task Lists",
+      "description": "Define default new-starter tasks.\n\nOutcome: Checklist items for new hires.\n\nProcedure (manual): Settings > Hiring & Lifecycle > Onboarding | Add/reorder items\n\nForm fields: Per item: Title; Description; Lead time (days before/after start); Priority; Assignee role\n\nTest / recording data: EXISTING: Hiring & Lifecycle → Onboarding — checklist items from seed (titles, lead times). Add disposable item in sandbox only.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--13-5]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Settings — navigate to Hiring & Lifecycle",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-5/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--13-6",
+      "title": "13.6 Configuring Offboarding Task Lists",
+      "description": "Standardise leaver activities.\n\nOutcome: Tasks when offboarding starts.\n\nProcedure (manual): Settings > Hiring & Lifecycle > Offboarding | Define checklist items\n\nForm fields: Per item per UI\n\nTest / recording data: EXISTING: Hiring & Lifecycle → Offboarding — seeded lists; edit only in sandbox.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--13-6]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Onboarding checklists — task items with title, description, lead time, priority, and assignee role",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-6/step-1.png"
+        },
+        {
+          "label": "Offboarding checklists — define leaving process checklist items triggered on offboarding",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-6/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--13-7",
+      "title": "13.7 General Settings",
+      "description": "Org-wide display and defaults.\n\nOutcome: Locale and self-service behaviour updated.\n\nProcedure (manual): Settings > Account & Billing > General Settings | Save\n\nForm fields: Date format; Number format; Timezone; Default country; Display name format; Industry; Employee self-service options (photo upload, file upload, expanded gender options)\n\nTest / recording data: EXISTING: Account & Billing → General Settings — verify date format/timezone; change only in sandbox (org-wide impact).\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--13-7]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Settings — navigate to Account & Billing",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-7/step-1.png"
+        },
+        {
+          "label": "General Settings — date format, number format, timezone, default country, display name format",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-7/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--13-8",
+      "title": "13.8 Roles (Organisational Roles)",
+      "description": "Group people for routing and visibility.\n\nOutcome: Role memberships updated.\n\nProcedure (manual): Settings > People & Access > Roles | Assign employees\n\nForm fields: Role selections; employee assignments\n\nTest / recording data: EXISTING: People & Access → Roles → e.g. HR Team — assign Sophie Turner if not already (verify in UI).\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--13-8]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "More settings — industry, employee self-service options (photo upload, expanded gender options)",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-8/step-1.png"
+        },
+        {
+          "label": "Settings — navigate to Roles",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-8/step-2.png"
+        },
+        {
+          "label": "Organisational Roles — HR Team, Finance Team, H&S Officer, Fire Warden, First Aider, IT Support",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--13-8/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--14-1",
+      "title": "14.1 Activity Log",
+      "description": "Audit trail for compliance.\n\nOutcome: Filtered audit trail.\n\nProcedure (manual): Activity Log | Filter by date, user, action type\n\nForm fields: Filter criteria\n\nTest / recording data: EXISTING: Activity Log | Filter user Helen Richardson | Date last 7 days.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--14-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Activity Log — chronological record of all system actions (user CRUD, leave, settings, logins)",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--14-1/step-1.png"
+        },
+        {
+          "label": "Audit entries — filter by date range, user, or action type for compliance",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--14-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--14-2",
+      "title": "14.2 Access History",
+      "description": "Review access-level changes.\n\nOutcome: Historical log.\n\nProcedure (manual): Access History (Audit & Logs area)\n\nForm fields: Filters if present\n\nTest / recording data: EXISTING: Access History — browse recent entries from seed activity.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--14-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Access History — log of access level changes across the organisation",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--14-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "org-admin--14-3",
+      "title": "14.3 Import History",
+      "description": "Verify bulk loads.\n\nOutcome: Past import results.\n\nProcedure (manual): Import History (Audit & Logs area)\n\nTest / recording data: EXISTING: Import History — empty or past runs per env.\n\nSource: 01-organisation-admin-guide.md\n\n[hr-doc:org-admin--14-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Import History — past bulk data imports and their results",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/org-admin--14-3/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--1-1",
+      "title": "1.1 Logging In",
+      "description": "Open manager (employee) shell.\n\nOutcome: Employee Dashboard at /me/dashboard.\n\nProcedure (manual): http://localhost:3001/?org=platform-demo | Email | Password | Sign in\n\nForm fields: e.g. david.kowalski@platform-demo.com; Demo123!\n\nTest / recording data: EXISTING: ?org=platform-demo | david.kowalski@platform-demo.com | Demo123!\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--1-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Sign in page — Manager",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--1-1/step-1.png"
+        },
+        {
+          "label": "Manager Dashboard — signed in",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--1-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--1-2",
+      "title": "1.2 Manager Navigation",
+      "description": "Use allowed menu items.\n\nOutcome: Correct area opens.\n\nProcedure (manual): Sidebar: Dashboard, My Profile, Directory, Org Chart, Calendar, Tasks, Performance, Raise a Ticket, Knowledge Centre, Partnerships, Settings\n\nTest / recording data: EXISTING: Sidebar — Dashboard, My Profile, Directory, Org Chart, Calendar, Tasks, Performance, Raise a Ticket, Knowledge Centre, Partnerships, Settings.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--1-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Employee Dashboard — landing page for managers at /me/dashboard",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--1-2/step-1.png"
+        },
+        {
+          "label": "Manager sidebar — Dashboard, My Profile, Directory, Org Chart, Calendar, Tasks, Performance, Tickets, Knowledge Centre",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--1-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--1-3",
+      "title": "1.3 Key Difference from Employees",
+      "description": "Set expectations for manager capabilities.\n\nOutcome: N/A informational.\n\nProcedure (manual): Read guide note on team profiles, leave approval, performance, team calendar\n\nTest / recording data: EXISTING: Informational — manager sees team approvals and /me/team routes.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--1-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Manager features — team visibility, leave approval, and performance review completion",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--1-3/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--2-1",
+      "title": "2.1 Dashboard Overview",
+      "description": "Personal and team snapshot.\n\nOutcome: Events, team activity, pending approvals, celebrations, quick actions.\n\nProcedure (manual): Land on Dashboard /me/dashboard\n\nTest / recording data: EXISTING: /me/dashboard — pending items may include Nathan Williams leave May 2026.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--2-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Manager Dashboard — upcoming events, team activity, and pending approvals",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--2-1/step-1.png"
+        },
+        {
+          "label": "Pending leave approvals — click any request to review and approve or reject",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--2-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--2-2",
+      "title": "2.2 Acting on Dashboard Items",
+      "description": "Act on notifications.\n\nOutcome: Leave flow, profile, or task opens.\n\nProcedure (manual): Click pending leave | team member name | task notification\n\nForm fields: N/A until destination\n\nTest / recording data: EXISTING: Click pending leave for Nathan Williams OR Emma Fletcher profile OR task link.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--2-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Celebrations — birthdays and work anniversaries in your team",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--2-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--3-1",
+      "title": "3.1 Viewing Team Members",
+      "description": "Find direct reports.\n\nOutcome: Profile opened.\n\nProcedure (manual): Directory | Find reports (guide examples: Emma Fletcher, Nathan Williams, Aisha Patel) | Click member\n\nTest / recording data: EXISTING: Directory → Emma Fletcher (Account Executive) | Nathan Williams | Aisha Patel — direct reports of David Kowalski.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--3-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Directory — search or browse to find your direct reports",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--3-1/step-1.png"
+        },
+        {
+          "label": "Search for team member — Emma Fletcher, Account Executive",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--3-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--3-2",
+      "title": "3.2 Viewing Team Member Profile",
+      "description": "Read HR context for reports.\n\nOutcome: Personal, employment, leave, performance per permissions.\n\nProcedure (manual): Directory or /me/team/[userId]\n\nTest / recording data: EXISTING: Open /me/team/[userId] for Emma Fletcher or from Directory.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--3-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Team member profile — personal details, employment, leave, and performance",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--3-2/step-1.png"
+        },
+        {
+          "label": "Team member profile — view personal details, employment info, and leave balances",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--3-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--3-3",
+      "title": "3.3 Org Chart",
+      "description": "See hierarchy.\n\nOutcome: Expanded tree.\n\nProcedure (manual): Org Chart | Find self | Expand nodes\n\nTest / recording data: EXISTING: Org Chart — locate David Kowalski → expand to see sales team.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--3-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Org Chart — find yourself to see your direct reports visually",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--3-3/step-1.png"
+        },
+        {
+          "label": "Org Chart — expand nodes to see the reporting hierarchy below each person",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--3-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--4-1",
+      "title": "4.1 Viewing Pending Leave",
+      "description": "Find requests needing approval.\n\nOutcome: Request identified.\n\nProcedure (manual): Dashboard and/or Calendar\n\nTest / recording data: EXISTING: Dashboard pending OR Calendar — Nathan Williams PENDING 18–20 May 2026 (seed).\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--4-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Dashboard — check for pending leave notifications requiring your action",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--4-1/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--4-2",
+      "title": "4.2 Approving Leave",
+      "description": "Grant time off.\n\nOutcome: Employee notified; approved.\n\nProcedure (manual): Open pending request | Review name, leave type, dates, balance | Approve\n\nTest / recording data: EXISTING: Approve Nathan Williams annual leave 18–20 May 2026 (if still pending).\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--4-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Calendar — visual overview of team leave with pending requests highlighted",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--4-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--4-3",
+      "title": "4.3 Rejecting Leave",
+      "description": "Decline with context.\n\nOutcome: Employee notified with reason.\n\nProcedure (manual): Open request | Reject | Provide reason\n\nForm fields: Reason (required per guide)\n\nTest / recording data: EXISTING: Reject a disposable test request OR use second pending with reason Coverage conflict (recording test).\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--4-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Team calendar — approved, pending, and rejected leave for your direct reports",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--4-3/step-1.png"
+        },
+        {
+          "label": "Leave entries — click a pending request to review dates, type, duration, and balance",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--4-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--4-4",
+      "title": "4.4 Team Calendar",
+      "description": "Avoid clashes.\n\nOutcome: Team leave and UK bank holidays visible.\n\nProcedure (manual): Calendar\n\nTest / recording data: EXISTING: Calendar — team leave + UK bank holidays from seed.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--4-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Approve or Reject — review details then click Approve to grant or Reject with a reason",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--4-4/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--5-1",
+      "title": "5.1 Accessing Performance Reviews",
+      "description": "Open reviews and 360.\n\nOutcome: Lists visible.\n\nProcedure (manual): Performance\n\nTest / recording data: EXISTING: Performance — own review + team reviews for Emma/Nathan/Aisha if cycles active.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--5-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Performance — your own review, team reviews, and 360 feedback requests",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--5-1/step-1.png"
+        },
+        {
+          "label": "Performance hub — reviews where you are the subject and where you review direct reports",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--5-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--5-2",
+      "title": "5.2 Completing Review for Direct Report",
+      "description": "Submit manager assessment.\n\nOutcome: Manager section submitted; sign if required after both submit.\n\nProcedure (manual): Open team review | Answer Text, Scale 1-5, Multiple choice | Submit | Sign if required\n\nForm fields: All required answers; optional scale comments\n\nTest / recording data: EXISTING: Open manager review for Emma Fletcher — fill required questions — Submit.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--5-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Team reviews — click any review instance where you are the manager",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--5-2/step-1.png"
+        },
+        {
+          "label": "Review form — text questions, scale 1-5 ratings, and multiple choice for each section",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--5-2/step-2.png"
+        },
+        {
+          "label": "Manager assessment — write performance comments, select ratings, and submit",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--5-2/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--5-3",
+      "title": "5.3 Completed Review Report",
+      "description": "Read final record.\n\nOutcome: Report view with both sides.\n\nProcedure (manual): Open completed review | Report view\n\nTest / recording data: EXISTING: Completed review Report view if any completed instance exists.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--5-3]",
+      "recordingId": null,
+      "steps": []
+    },
+    {
+      "entryId": "manager--5-4",
+      "title": "5.4 360 Feedback",
+      "description": "Submit peer feedback.\n\nOutcome: Request complete.\n\nProcedure (manual): Open 360 request | Answer | Submit\n\nForm fields: Template questions\n\nTest / recording data: EXISTING: 360 request — complete if listed.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--5-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Performance — check 360 Feedback requests",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--5-4/step-1.png"
+        },
+        {
+          "label": "360 Feedback — answer questions about the colleague you are reviewing, then submit",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--5-4/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--6-1",
+      "title": "6.1 Viewing Tasks",
+      "description": "See owned and delegated work.\n\nOutcome: Filtered list.\n\nProcedure (manual): Tasks | Filter status, priority, category\n\nForm fields: Filters\n\nTest / recording data: EXISTING: Tasks — filter tasks assigned to David Kowalski.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--6-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tasks — tasks assigned to you and tasks you have delegated",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--6-1/step-1.png"
+        },
+        {
+          "label": "Task list — filter by status, priority, or category",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--6-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--6-2",
+      "title": "6.2 Updating a Task",
+      "description": "Progress work.\n\nOutcome: Status and comments updated.\n\nProcedure (manual): Open task | Status Open, In Progress, Completed | Comments\n\nForm fields: Status; comments\n\nTest / recording data: EXISTING: Open task → In Progress → comment Recording test.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--6-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tasks — tasks assigned to you and tasks you have delegated",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--6-2/step-1.png"
+        },
+        {
+          "label": "Task list — filter by status, priority, or category",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--6-2/step-2.png"
+        },
+        {
+          "label": "Create Task — delegate to a direct report",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--6-2/step-3.png"
+        },
+        {
+          "label": "Task saved — visible to assignee",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--6-2/step-4.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--6-3",
+      "title": "6.3 Creating a Task",
+      "description": "Delegate work.\n\nOutcome: New task.\n\nProcedure (manual): Create Task | Fill title, category, priority, due date, assignees | Save\n\nForm fields: Same categories as org admin task creation\n\nTest / recording data: NEW: Create Task | Title [ManualTest] Manager delegation | Category Administrative | Priority Low | Due +7 days | Assignee Emma Fletcher | Save.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--6-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tasks — create a new task",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--6-3/step-1.png"
+        },
+        {
+          "label": "Create Task — set title, category, priority, due date, and assignees",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--6-3/step-2.png"
+        },
+        {
+          "label": "New task form — fill in details and click Save to create",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--6-3/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--7-1",
+      "title": "7.1 Raising a Ticket",
+      "description": "Get HR/admin help.\n\nOutcome: Ticket created.\n\nProcedure (manual): Raise a Ticket (sidebar) | Click Raise a Ticket button (opens modal Raise a Ticket) | Fill | Create\n\nForm fields: Subject (required); Category (optional None); Priority Low/Medium/High/Urgent; Route to Team (optional Select a team…); Description (required). Buttons: Cancel; Create / Creating…\n\nTest / recording data: NEW: Raise a Ticket | Subject [ManualTest] Manager recording | Category General | Priority Medium | Route to Team HR Team (if listed) | Description Need policy clarification for recording | Create.\n\nUI verified me/tickets/page.tsx. Guide says New Ticket/Submit — app uses Raise a Ticket and Create.\n\n[hr-doc:manager--7-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Raise a Ticket — submit support requests to HR or admin",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-1/step-1.png"
+        },
+        {
+          "label": "New Ticket — fill in subject, category, and message",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-1/step-2.png"
+        },
+        {
+          "label": "New ticket form — subject, category, and detailed description",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-1/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--7-2",
+      "title": "7.2 Ticket Conversations",
+      "description": "Continue thread.\n\nOutcome: Updated conversation.\n\nProcedure (manual): Raise a Ticket | Open ticket | Read | Reply | Send\n\nForm fields: Reply text\n\nTest / recording data: EXISTING: Raise a Ticket → open your test ticket from 7.1 → reply Thanks resolved for recording | Send.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--7-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Raise a Ticket — your support requests",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-2/step-1.png"
+        },
+        {
+          "label": "Raise a Ticket — open modal",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-2/step-2.png"
+        },
+        {
+          "label": "Ticket form — subject, category, priority, description",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-2/step-3.png"
+        },
+        {
+          "label": "Ticket submitted — appears in your list",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-2/step-4.png"
+        },
+        {
+          "label": "Open ticket — conversation thread",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-2/step-5.png"
+        },
+        {
+          "label": "Reply to ticket — add message and Send",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-2/step-6.png"
+        },
+        {
+          "label": "Reply sent — thread updated",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-2/step-7.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--7-3",
+      "title": "7.3 Knowledge Centre",
+      "description": "Self-service reading.\n\nOutcome: Article opened.\n\nProcedure (manual): Knowledge Centre | Browse/search\n\nForm fields: Search query\n\nTest / recording data: EXISTING: Knowledge Centre — search policy or browse IT Help articles from enrich.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--7-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Knowledge Centre — browse published articles by category",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-3/step-1.png"
+        },
+        {
+          "label": "Knowledge Centre — search for topics or browse categories",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--7-4",
+      "title": "7.4 My Profile",
+      "description": "Review/update allowed fields.\n\nOutcome: Profile updated if editable.\n\nProcedure (manual): My Profile | Edit allowed | Save\n\nForm fields: Editable fields only\n\nTest / recording data: EXISTING: My Profile — David Kowalski — view balances; edit allowed self-service fields only.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--7-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "My Profile — your personal HR profile and information",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-4/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--7-5",
+      "title": "7.5 Account Settings",
+      "description": "Personal preferences.\n\nOutcome: Settings saved.\n\nProcedure (manual): Settings (bottom of sidebar)\n\nForm fields: Profile fields; birthday visibility; notifications\n\nTest / recording data: EXISTING: Settings — birthday visibility / notifications — toggle and save if permitted.\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--7-5]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Your profile — personal info, employment history, leave balances, and more",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-5/step-1.png"
+        },
+        {
+          "label": "Account settings — profile fields, birthday visibility, and notification preferences",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-5/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "manager--7-6",
+      "title": "7.6 Partnerships",
+      "description": "View partner catalogue.\n\nOutcome: Informational browse.\n\nProcedure (manual): Partnerships\n\nTest / recording data: EXISTING: Partnerships — browse catalog (read-only).\n\nSource: 02-manager-guide.md\n\n[hr-doc:manager--7-6]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Knowledge Centre — browse published articles by category",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-6/step-1.png"
+        },
+        {
+          "label": "Knowledge Centre — search for topics or browse categories",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/manager--7-6/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--1-1",
+      "title": "1.1 Accepting Invitation",
+      "description": "Activate account.\n\nOutcome: Password set; redirect to platform.\n\nProcedure (manual): Email | Set Password link | Create password | Confirm\n\nForm fields: Password meeting minimum rules shown in UI\n\nTest / recording data: EXISTING: Invitation flow — use disposable invite only; email from invite | Set password per policy | Confirm.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--1-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Employee Dashboard — your home screen after signing in",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--1-1/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--1-2",
+      "title": "1.2 Logging In",
+      "description": "Access self-service.\n\nOutcome: Employee Dashboard.\n\nProcedure (manual): URL ?org=platform-demo | Email | Password | Sign in\n\nForm fields: e.g. ben.taylor@platform-demo.com; Demo123!\n\nTest / recording data: EXISTING: ben.taylor@platform-demo.com | Demo123! | ?org=platform-demo\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--1-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Sign in page — Employee",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--1-2/step-1.png"
+        },
+        {
+          "label": "Employee Dashboard — signed in",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--1-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--1-3",
+      "title": "1.3 Reset Password",
+      "description": "Regain access.\n\nOutcome: New password set.\n\nProcedure (manual): Forgot password? | Email | Reset link | New password\n\nForm fields: Email; new password\n\nTest / recording data: EXISTING: Forgot password? | ben.taylor@platform-demo.com | use reset email (test mailbox).\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--1-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Notification preferences — control which notifications you receive",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--1-3/step-1.png"
+        },
+        {
+          "label": "Password management — use the Forgot password flow from the login page to reset",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--1-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--2-1",
+      "title": "2.1 Dashboard Overview",
+      "description": "Home snapshot.\n\nOutcome: Events, actions, celebrations, announcements, links.\n\nProcedure (manual): /me/dashboard\n\nTest / recording data: EXISTING: /me/dashboard — Ben Taylor events, tasks, announcements.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--2-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Employee Dashboard — upcoming events, pending actions, and announcements",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--2-1/step-1.png"
+        },
+        {
+          "label": "Pending actions — tasks assigned to you and performance reviews to complete",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--2-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--2-2",
+      "title": "2.2 Acting on Dashboard",
+      "description": "Deep-link to work.\n\nOutcome: Target screen opens.\n\nProcedure (manual): Click task | announcement | celebration | upcoming leave\n\nTest / recording data: EXISTING: Click task, announcement, celebration, or leave tile as shown.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--2-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Celebrations — birthdays and work anniversaries in your team",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--2-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--3-1",
+      "title": "3.1 Viewing Profile",
+      "description": "See HR record.\n\nOutcome: Read personal, contact, employment, emergency, leave, training.\n\nProcedure (manual): My Profile\n\nTest / recording data: EXISTING: My Profile — Ben Taylor DEMO0019 Operations Logistics Coordinator reports Sarah Johansson.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--3-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "My Profile — personal information, contact details, employment, and leave balances",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--3-1/step-1.png"
+        },
+        {
+          "label": "Contact details — phone numbers, email, and home address",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--3-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--3-2",
+      "title": "3.2 Updating Profile",
+      "description": "Keep contact data current.\n\nOutcome: Saved changes.\n\nProcedure (manual): My Profile | Edit section | Save\n\nForm fields: Editable fields; job/salary admin-only per guide\n\nTest / recording data: EXISTING: Edit allowed field e.g. Mobile +44 7700 888888 → Save (if self-service enabled).\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--3-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Employment details — job title, department, division, start date, and reports to",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--3-2/step-1.png"
+        },
+        {
+          "label": "Edit — click Edit on any section to update fields (if self-service editing is enabled)",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--3-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--3-3",
+      "title": "3.3 Photo Upload",
+      "description": "Personalise directory.\n\nOutcome: Avatar updated.\n\nProcedure (manual): My Profile | Avatar | Select file\n\nForm fields: Image file if enabled\n\nTest / recording data: EXISTING: Avatar upload — small PNG if enabled by org.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--3-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Employment details — job title, department, division, start date, and reports to",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--3-3/step-1.png"
+        },
+        {
+          "label": "Edit — click Edit on any section to update fields (if self-service editing is enabled)",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--3-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--4-1",
+      "title": "4.1 Leave Balance",
+      "description": "Know entitlement.\n\nOutcome: Balances visible.\n\nProcedure (manual): My Profile | Leave section\n\nTest / recording data: EXISTING: My Profile → Leave — Annual Leave balance from seed policies.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--4-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "My Profile — scroll to the Leave section to check balances",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-1/step-1.png"
+        },
+        {
+          "label": "Leave balances — annual leave, sick leave, and other types with days used and remaining",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--4-2",
+      "title": "4.2 Submitting Leave",
+      "description": "Request time off.\n\nOutcome: Pending request to manager.\n\nProcedure (manual): Dashboard or Calendar | Request Leave or Book Time Off | Leave type | Start/end dates | Optional note | Submit\n\nForm fields: Leave type; dates; note\n\nTest / recording data: NEW: Request Leave | Type Annual Leave | Start/End pick next available2 working days not conflicting seeded leave | Note Recording test request | Submit.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--4-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "My Profile — scroll to the Leave section to check balances",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-2/step-1.png"
+        },
+        {
+          "label": "Leave balances — annual leave, sick leave, and other types with days used and remaining",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-2/step-2.png"
+        },
+        {
+          "label": "Request Leave — booking form",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-2/step-3.png"
+        },
+        {
+          "label": "Choose leave type and dates — add optional note",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-2/step-4.png"
+        },
+        {
+          "label": "Leave request submitted — pending manager approval",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-2/step-5.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--4-3",
+      "title": "4.3 Leave Request Status",
+      "description": "Track approval.\n\nOutcome: Colour-coded calendar and profile history.\n\nProcedure (manual): Calendar (green approved; yellow/orange pending; red rejected per guide) OR Profile Leave tab\n\nTest / recording data: EXISTING: Calendar — green/yellow/red for own requests | Profile Leave tab.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--4-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Calendar — view your leave requests colour-coded by status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-3/step-1.png"
+        },
+        {
+          "label": "Calendar — green (approved), yellow (pending), red (rejected) leave entries",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--4-4",
+      "title": "4.4 Cancelling Leave",
+      "description": "Withdraw request.\n\nOutcome: Manager/system notified.\n\nProcedure (manual): Open request | Cancel Request if shown\n\nTest / recording data: EXISTING: Cancel only if UI allows on your own pending request from 4.2.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--4-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Calendar — view your leave requests colour-coded by status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-4/step-1.png"
+        },
+        {
+          "label": "Calendar — green (approved), yellow (pending), red (rejected) leave entries",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--4-4/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--5-1",
+      "title": "5.1 Calendar Overview",
+      "description": "Plan around team and holidays.\n\nOutcome: Month/week view.\n\nProcedure (manual): Calendar | Month/week toggle\n\nTest / recording data: EXISTING: Calendar month/week — own + team leave + holidays.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--5-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Calendar — your leave, team leave, public holidays, birthdays, and anniversaries",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--5-1/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--5-2",
+      "title": "5.2 Navigating Calendar",
+      "description": "Move in time / inspect days.\n\nOutcome: Detail view.\n\nProcedure (manual): Arrows | Click date | Click leave entry\n\nTest / recording data: EXISTING: Navigate arrows | click date with leave.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--5-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Month view — switch between month and week views using the toggle",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--5-2/step-1.png"
+        },
+        {
+          "label": "Calendar entries — click any date to see all events, click a leave entry for details",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--5-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--6-1",
+      "title": "6.1 Directory",
+      "description": "Find colleagues.\n\nOutcome: Basic profile.\n\nProcedure (manual): Directory | Search | Click person\n\nForm fields: Search\n\nTest / recording data: EXISTING: Directory — search Richardson → Helen Richardson.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--6-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Directory — browse all employees by name, department, or job title",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--6-1/step-1.png"
+        },
+        {
+          "label": "Directory search — find colleagues by name, department, or job title",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--6-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--6-2",
+      "title": "6.2 Org Chart",
+      "description": "See structure.\n\nOutcome: Expanded view.\n\nProcedure (manual): Org Chart | Find self | Expand nodes\n\nTest / recording data: EXISTING: Org Chart — find Ben Taylor under Operations.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--6-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Org Chart — visual hierarchy showing your manager and colleagues",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--6-2/step-1.png"
+        },
+        {
+          "label": "Org Chart — click nodes to expand or collapse teams",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--6-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--7-1",
+      "title": "7.1 Tasks",
+      "description": "See assignments.\n\nOutcome: Task list.\n\nProcedure (manual): Tasks\n\nTest / recording data: EXISTING: Tasks — tasks assigned to Ben Taylor from onboarding/compliance seed.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--7-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tasks — all tasks assigned to you with title, category, priority, due date, and status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--7-1/step-1.png"
+        },
+        {
+          "label": "Task list — Onboarding, Compliance, Training, and Administrative categories",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--7-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--7-2",
+      "title": "7.2 Updating Task",
+      "description": "Report progress.\n\nOutcome: Updated task.\n\nProcedure (manual): Open task | Status | Comment\n\nForm fields: Status; comment\n\nTest / recording data: EXISTING: Open task → Completed or In Progress + comment.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--7-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Task detail — update status (Open, In Progress, Completed) and add comments",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--7-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--7-3",
+      "title": "7.3 Task Categories (reference)",
+      "description": "Understand task types.\n\nOutcome: N/A informational.\n\nProcedure (manual): Read Onboarding, Compliance, Training, Administrative table in guide\n\nTest / recording data: EXISTING: Reference categories Onboarding, Compliance, Training, Administrative — seeded examples.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--7-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tasks — all tasks assigned to you with title, category, priority, due date, and status",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--7-3/step-1.png"
+        },
+        {
+          "label": "Task list — Onboarding, Compliance, Training, and Administrative categories",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--7-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--8-1",
+      "title": "8.1 Performance Access",
+      "description": "Open reviews/360.\n\nOutcome: Lists shown.\n\nProcedure (manual): Performance\n\nTest / recording data: EXISTING: Performance — self-assessment instance if cycle active for Ben Taylor.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--8-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Performance — your active reviews and 360 feedback requests",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--8-1/step-1.png"
+        },
+        {
+          "label": "Your reviews — active self-assessments and completed review reports",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--8-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--8-2",
+      "title": "8.2 Self-Assessment",
+      "description": "Submit employee side of review.\n\nOutcome: Submitted; sign after manager if asked.\n\nProcedure (manual): Open active review | Answer questions | Submit | Sign if required\n\nForm fields: Required answers\n\nTest / recording data: EXISTING: Complete self-assessment questions → Submit → Sign if prompted.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--8-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Self-assessment form — text responses, scale 1-5 ratings, and multiple choice questions",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--8-2/step-1.png"
+        },
+        {
+          "label": "Write about achievements, challenges, and goals — then submit when complete",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--8-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--8-3",
+      "title": "8.3 Completed Reviews",
+      "description": "Read outcomes.\n\nOutcome: Report view.\n\nProcedure (manual): Open completed review | Report\n\nTest / recording data: EXISTING: Completed review → Report.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--8-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Performance — check for 360 Feedback requests",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--8-3/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--8-4",
+      "title": "8.4 360 Feedback",
+      "description": "Help peer review.\n\nOutcome: Submitted feedback.\n\nProcedure (manual): Open request | Answer | Submit\n\nForm fields: Template answers\n\nTest / recording data: EXISTING: 360 feedback form if assigned.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--8-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "360 Feedback — answer questions about a colleague honestly and constructively",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--8-4/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--9-1",
+      "title": "9.1 When to Raise a Ticket",
+      "description": "Guidance on using helpdesk.\n\nOutcome: N/A informational.\n\nProcedure (manual): Read guide scenarios (pay, IT, policies, etc.)\n\nTest / recording data: EXISTING: Informational — when to raise ticket.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--9-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Raise a Ticket — all your submitted tickets and their statuses",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--9-1/step-1.png"
+        },
+        {
+          "label": "Ticket list — Open, In Progress, Resolved, and Closed tickets",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--9-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--9-2",
+      "title": "9.2 Creating Ticket",
+      "description": "Request support.\n\nOutcome: Ticket created.\n\nProcedure (manual): Raise a Ticket | Raise a Ticket button | Modal Raise a Ticket | Create\n\nForm fields: Same as Manager 7.1 (Subject, Category, Priority, Route to Team, Description; Create)\n\nTest / recording data: NEW: Raise a Ticket | Subject [ManualTest] Employee recording | Category IT Support | Priority Low | Route to Team optional | Description Need VPN help for recording | Create.\n\nUI verified me/tickets/page.tsx\n\n[hr-doc:employee--9-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Raise a Ticket — support queue",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--9-2/step-1.png"
+        },
+        {
+          "label": "Raise a Ticket — modal",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--9-2/step-2.png"
+        },
+        {
+          "label": "Ticket created",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--9-2/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--9-3",
+      "title": "9.3 Tracking Tickets",
+      "description": "Monitor status.\n\nOutcome: Thread view.\n\nProcedure (manual): Raise a Ticket | List | Open ticket\n\nTest / recording data: EXISTING: List shows Open/In Progress/Resolved/Closed — open ticket from 9.2.\n\nStatuses in guide: Open, In Progress, Resolved, Closed\n\n[hr-doc:employee--9-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Raise a Ticket — all your submitted tickets and their statuses",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--9-3/step-1.png"
+        },
+        {
+          "label": "Ticket list — Open, In Progress, Resolved, and Closed tickets",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--9-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--9-4",
+      "title": "9.4 Replying to Ticket",
+      "description": "Add information.\n\nOutcome: Thread updated.\n\nProcedure (manual): Open ticket | Type reply | Send\n\nForm fields: Message body\n\nTest / recording data: EXISTING: Reply Additional info for recording test | Send.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--9-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tickets — click any ticket to view the conversation thread",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--9-4/step-1.png"
+        },
+        {
+          "label": "Ticket conversation — read admin responses and reply with additional information",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--9-4/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--10-1",
+      "title": "10.1 Browsing Knowledge Centre",
+      "description": "Find articles.\n\nOutcome: List/search results.\n\nProcedure (manual): Knowledge Centre | Category/search\n\nForm fields: Search\n\nTest / recording data: EXISTING: Knowledge Centre — search GDPR or policy.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--10-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Knowledge Centre — browse articles by category",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--10-1/step-1.png"
+        },
+        {
+          "label": "Article categories — HR Policies, IT Help, Benefits, and more",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--10-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--10-2",
+      "title": "10.2 Reading Article",
+      "description": "Consume content.\n\nOutcome: Full article.\n\nProcedure (manual): Click article title\n\nTest / recording data: EXISTING: Open published article from enrich seed.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--10-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Search articles — find articles on specific topics",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--10-2/step-1.png"
+        },
+        {
+          "label": "Article view — full content with company policies, step-by-step guides, and FAQ answers",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--10-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--11-1",
+      "title": "11.1 Onboarding Tasks",
+      "description": "Complete induction.\n\nOutcome: Checklist progress.\n\nProcedure (manual): Onboarding if in sidebar OR Tasks\n\nTest / recording data: EXISTING: Onboarding in sidebar or Tasks — checklist from seed for new starters.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--11-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tasks — check for onboarding checklist items if you are a new starter",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--11-1/step-1.png"
+        },
+        {
+          "label": "Onboarding tasks — read policies, complete training, set up profile, meet your team",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--11-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--11-2",
+      "title": "11.2 Completing Onboarding Items",
+      "description": "Close starter tasks.\n\nOutcome: Items completed.\n\nProcedure (manual): Open each task | Follow instructions | Mark Completed\n\nForm fields: Per task\n\nTest / recording data: EXISTING: Complete onboarding task → mark Completed.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--11-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Onboarding task detail — follow instructions and mark as Completed when finished",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--11-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--12-1",
+      "title": "12.1 Account Settings",
+      "description": "Personal prefs.\n\nOutcome: Saved.\n\nProcedure (manual): Settings\n\nForm fields: Profile details; birthday visibility; notifications\n\nTest / recording data: EXISTING: Settings — notifications / birthday visibility.\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--12-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Account settings — profile details, birthday visibility, and notification preferences",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--12-1/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "employee--12-2",
+      "title": "12.2 Changing Password",
+      "description": "Rotate credentials.\n\nOutcome: New password.\n\nProcedure (manual): Log out | Forgot password? | Email flow\n\nForm fields: Email; new password\n\nTest / recording data: EXISTING: Log out → Forgot password flow with ben.taylor email (test only).\n\nSource: 03-employee-guide.md\n\n[hr-doc:employee--12-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Notification preferences — control which notifications you receive",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--12-2/step-1.png"
+        },
+        {
+          "label": "Password management — use the Forgot password flow from the login page to reset",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/employee--12-2/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--1-1",
+      "title": "1.1 Logging In",
+      "description": "Open partner admin console.\n\nOutcome: Redirect to Admin Console /admin-console.\n\nProcedure (manual): http://localhost:3001 | Email | Password | Sign in\n\nForm fields: e.g. partner.admin@meridian-hr.com; Demo123!\n\nTest / recording data: EXISTING: http://localhost:3001 (or prod partner URL) | partner.admin@meridian-hr.com | Demo123!\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--1-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Partner Admin Console — sign in",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--1-1/step-1.png"
+        },
+        {
+          "label": "Admin Console — signed in as partner",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--1-1/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--1-2",
+      "title": "1.2 Admin Console Navigation",
+      "description": "Reach console areas.\n\nOutcome: Correct section.\n\nProcedure (manual): Sidebar: Dashboard, Customer Tenants, Partnerships, Escalated Tickets\n\nTest / recording data: EXISTING: Admin Console sidebar — Dashboard, Customer Tenants, Partnerships, Escalated Tickets.\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--1-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Admin Console sidebar — Dashboard, Customer Tenants, Partnerships, Escalated Tickets",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--1-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--1-3",
+      "title": "1.3 Switching to Organisation",
+      "description": "Work inside tenant as admin.\n\nOutcome: Org admin dashboard for customer.\n\nProcedure (manual): Tenant detail | Login to Organisation | Use features | Admin Console link to return\n\nTest / recording data: EXISTING: Tenant platform-demo detail | Login to Organisation (if Tenant Assignment present).\n\nRequires Tenant Assignment per guide\n\n[hr-doc:partner-admin--1-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Customer tenant stats — total tenants, total end users, and partner-managed count",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--1-3/step-1.png"
+        },
+        {
+          "label": "Tenant table — organisation name, user count, billing plan, status, and creation date",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--1-3/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--1-4",
+      "title": "1.4 Console Switching",
+      "description": "Move between consoles if multiple roles.\n\nOutcome: Context switch.\n\nProcedure (manual): Footer/sidebar: Admin Console; Super Admin if allowed; Organisation Admin if linked\n\nTest / recording data: EXISTING: Console switcher links as role permits.\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--1-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Admin Console Dashboard — overview of customer tenants with key metrics",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--1-4/step-1.png"
+        },
+        {
+          "label": "Admin Console sidebar — Dashboard, Customer Tenants, Partnerships, Escalated Tickets",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--1-4/step-2.png"
+        },
+        {
+          "label": "Customer tenant stats — total tenants, total end users, and partner-managed count",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--1-4/step-3.png"
+        },
+        {
+          "label": "Tenant table — organisation name, user count, billing plan, status, and creation date",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--1-4/step-4.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--2-1",
+      "title": "2.1 Dashboard Overview",
+      "description": "Tenant portfolio metrics.\n\nOutcome: Stats and tenant table.\n\nProcedure (manual): Dashboard\n\nTest / recording data: EXISTING: Dashboard — tenant Platform Demo slug platform-demo user count from seed.\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--2-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tenant overview — customer tenants, total end users, partner-managed count",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-1/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--2-2",
+      "title": "2.2 Creating New Tenant",
+      "description": "Onboard customer org.\n\nOutcome: Tenant detail page for new org.\n\nProcedure (manual): New Tenant | Fill | Create Tenant\n\nForm fields: Organisation name; Slug; Partner managed checkbox; Billing: email, contact name, address, city, state, postal code, country, VAT; Plan: Starter, Professional, Enterprise\n\nTest / recording data: NEW: New Tenant | Organisation name ManualTest Org UNIQUE | Slug manualtest-unique-UNIQUE | Partner managed checked | Billing email billing.UNIQUE@example.com | Contact Recording Bot | Address line 1 Test Street 1 | City London | Postal SW1A 1AA | Country United Kingdom | VAT GB999999999 | Plan Professional | Create Tenant.\n\nButton Create Tenant on admin-console/tenants/new per codebase\n\n[hr-doc:partner-admin--2-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Customer Tenants — New Tenant",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-2/step-1.png"
+        },
+        {
+          "label": "New Tenant — organisation form",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-2/step-2.png"
+        },
+        {
+          "label": "Organisation name, slug, billing, and plan",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-2/step-3.png"
+        },
+        {
+          "label": "Tenant created — detail or list refresh",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-2/step-4.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--2-3",
+      "title": "2.3 Viewing Tenant Details",
+      "description": "Inspect tenant.\n\nOutcome: Header, billing, admins visible.\n\nProcedure (manual): Click tenant row\n\nTest / recording data: EXISTING: Click tenant Platform Demo row OR tenant from 2.2.\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--2-3]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tenant detail — header with name, slug, badge, user count, and creation date",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-3/step-1.png"
+        },
+        {
+          "label": "Billing Details section — editable contact and address fields with Save Billing button",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-3/step-2.png"
+        },
+        {
+          "label": "Admins section — Organisation Admins and Partner Admins with access to this tenant",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-3/step-3.png"
+        },
+        {
+          "label": "Add Admin — select role (Org Admin or Partner Admin), enter name and email, Create & Invite",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-3/step-4.png"
+        },
+        {
+          "label": "Login to Organisation — switch into the customer org to use full Organisation Admin features",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-3/step-5.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--2-4",
+      "title": "2.4 Updating Billing",
+      "description": "Keep billing master correct.\n\nOutcome: Saved billing.\n\nProcedure (manual): Tenant detail | Billing Details | Edit | Save Billing\n\nForm fields: Billing fields in section\n\nTest / recording data: EXISTING: Tenant from 2.2 → Billing Details → change City to Testville | Save Billing.\n\nButton Save Billing verified tenants/[id]/page.tsx\n\n[hr-doc:partner-admin--2-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tenant detail — header with name, slug, badge, user count, and creation date",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-4/step-1.png"
+        },
+        {
+          "label": "Billing Details section — editable contact and address fields with Save Billing button",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-4/step-2.png"
+        },
+        {
+          "label": "Admins section — Organisation Admins and Partner Admins with access to this tenant",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-4/step-3.png"
+        },
+        {
+          "label": "Add Admin — select role (Org Admin or Partner Admin), enter name and email, Create & Invite",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-4/step-4.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--2-5",
+      "title": "2.5 Adding Admin to Tenant",
+      "description": "Invite org or partner admin.\n\nOutcome: User created/linked; invite sent.\n\nProcedure (manual): Tenant detail | Admins | Add Admin | Create & Invite\n\nForm fields: Role: Organisation Admin or Partner Admin; First name; Last name; Email\n\nTest / recording data: NEW on disposable tenant: Add Admin | Organisation Admin | First ManualTest | Last AdminInvite | Email manualtest.tenantadmin.UNIQUE@example.com | Create & Invite.\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--2-5]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Tenant detail — header with name, slug, badge, user count, and creation date",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-5/step-1.png"
+        },
+        {
+          "label": "Billing Details section — editable contact and address fields with Save Billing button",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-5/step-2.png"
+        },
+        {
+          "label": "Admins section — Organisation Admins and Partner Admins with access to this tenant",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-5/step-3.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--2-6",
+      "title": "2.6 Login to Customer Organisation",
+      "description": "Full org admin in tenant.\n\nOutcome: Switched session.\n\nProcedure (manual): Tenant detail | Login to Organisation\n\nTest / recording data: EXISTING: platform-demo tenant | Login to Organisation with assignment.\n\nRequires assignment per guide\n\n[hr-doc:partner-admin--2-6]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Login to Organisation — switch into the customer org to use full Organisation Admin features",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--2-6/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--3-1",
+      "title": "3.1 Escalated Inbox",
+      "description": "Work partner-level tickets.\n\nOutcome: Queue visible.\n\nProcedure (manual): Escalated Tickets\n\nTest / recording data: EXISTING: Escalated Tickets — ticket [Demo] SSO configuration for new client portal if HR doc setup run OR any PARTNER escalation.\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--3-1]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Escalated Tickets inbox — ticket number, subject, creator, organisation, status, priority",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--3-1/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--3-2",
+      "title": "3.2 Filtering Tickets",
+      "description": "Find cases.\n\nOutcome: Filtered list.\n\nProcedure (manual): Search bar | Status Open, In Progress, Resolved, Closed | Priority Low, Medium, High, Urgent\n\nForm fields: Search text; filters\n\nTest / recording data: EXISTING: Search SSO or access | Status Open | Priority High.\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--3-2]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Search and filter — find tickets by subject, filter by status and priority",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--3-2/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--3-3",
+      "title": "3.3 Responding to Ticket",
+      "description": "Reply or internal note.\n\nOutcome: Message posted.\n\nProcedure (manual): Open ticket | Type reply | Public reply OR Internal note | Send\n\nForm fields: Message body; visibility mode\n\nTest / recording data: EXISTING: Open escalated ticket | Public reply Partner recording test complete | Send.\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--3-3]",
+      "recordingId": null,
+      "steps": []
+    },
+    {
+      "entryId": "partner-admin--3-4",
+      "title": "3.4 Status and Priority",
+      "description": "Reflect handling.\n\nOutcome: Updated ticket.\n\nProcedure (manual): Status dropdown | Priority dropdown\n\nForm fields: Status; priority\n\nTest / recording data: EXISTING: Status In Progress | Priority Medium dropdowns.\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--3-4]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Ticket conversation — full history, reply box, public reply vs internal note toggle",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--3-4/step-1.png"
+        },
+        {
+          "label": "Reply options — type response, toggle Public reply or Internal note, then Send",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--3-4/step-2.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--3-5",
+      "title": "3.5 Escalate to Platform",
+      "description": "Hand to platform support.\n\nOutcome: Escalated per guide.\n\nProcedure (manual): Open ticket | Escalate to Platform\n\nForm fields: Confirm if UI prompts\n\nTest / recording data: EXISTING: Escalate to Platform — only if UI shown and policy allows (sandbox).\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--3-5]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Status and Priority — change via dropdowns (Open, In Progress, Resolved, Closed / Low to Urgent)",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--3-5/step-1.png"
+        }
+      ]
+    },
+    {
+      "entryId": "partner-admin--3-6",
+      "title": "3.6 De-escalating Ticket",
+      "description": "Return to lower tier.\n\nOutcome: Ticket at partner or org level.\n\nProcedure (manual): Return to Partner OR Return to Org Admin (per options shown)\n\nTest / recording data: EXISTING: Return to Org Admin or Return to Partner per ticket state.\n\nSource: 04-partner-admin-guide.md\n\n[hr-doc:partner-admin--3-6]",
+      "recordingId": null,
+      "steps": [
+        {
+          "label": "Escalate to Platform — for issues beyond partner capabilities. Return to Partner/Org Admin to de-escalate.",
+          "screenshotUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/screenshots/hr-docs/partner-admin--3-6/step-1.png"
+        }
+      ]
+    }
+  ],
+  "__videoUrls": {
+    "org-admin--1-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--1-1/video.webm",
+      "durationMs": 6749,
+      "videoSize": 469200
+    },
+    "org-admin--1-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--1-2/video.webm",
+      "durationMs": 4463,
+      "videoSize": 1585769
+    },
+    "org-admin--1-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--1-3/video.webm",
+      "durationMs": 13875,
+      "videoSize": 2428297
+    },
+    "org-admin--2-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--2-1/video.webm",
+      "durationMs": 10019,
+      "videoSize": 1882704
+    },
+    "org-admin--2-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--2-2/video.webm",
+      "durationMs": 3390,
+      "videoSize": 1498441
+    },
+    "org-admin--3-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--3-1/video.webm",
+      "durationMs": 72707,
+      "videoSize": 5315835
+    },
+    "org-admin--3-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--3-2/video.webm",
+      "durationMs": 101000,
+      "videoSize": 7182354
+    },
+    "org-admin--3-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--3-3/video.webm",
+      "durationMs": 97576,
+      "videoSize": 6222772
+    },
+    "org-admin--3-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--3-4/video.webm",
+      "durationMs": 58602,
+      "videoSize": 4471568
+    },
+    "org-admin--3-5": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--3-5/video.webm",
+      "durationMs": 45411,
+      "videoSize": 3716397
+    },
+    "org-admin--4-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--4-1/video.webm",
+      "durationMs": 84206,
+      "videoSize": 4117176
+    },
+    "org-admin--4-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--4-2/video.webm",
+      "durationMs": 10455,
+      "videoSize": 2048579
+    },
+    "org-admin--5-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--5-1/video.webm",
+      "durationMs": 9456,
+      "videoSize": 2137906
+    },
+    "org-admin--6-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--6-1/video.webm",
+      "durationMs": 7850,
+      "videoSize": 1981512
+    },
+    "org-admin--6-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--6-2/video.webm",
+      "durationMs": 156135,
+      "videoSize": 8023961
+    },
+    "org-admin--6-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--6-3/video.webm",
+      "durationMs": 20373,
+      "videoSize": 3093031
+    },
+    "org-admin--7-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--7-1/video.webm",
+      "durationMs": 5255,
+      "videoSize": 1782217
+    },
+    "org-admin--7-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--7-2/video.webm",
+      "durationMs": 13982,
+      "videoSize": 2362950
+    },
+    "org-admin--7-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--7-3/video.webm",
+      "durationMs": 10916,
+      "videoSize": 2184326
+    },
+    "org-admin--7-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--7-4/video.webm",
+      "durationMs": 6378,
+      "videoSize": 1683322
+    },
+    "org-admin--8-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--8-1/video.webm",
+      "durationMs": 7414,
+      "videoSize": 1969713
+    },
+    "org-admin--8-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--8-2/video.webm",
+      "durationMs": 16703,
+      "videoSize": 2474886
+    },
+    "org-admin--8-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--8-3/video.webm",
+      "durationMs": 11103,
+      "videoSize": 2409374
+    },
+    "org-admin--8-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--8-4/video.webm",
+      "durationMs": 22040,
+      "videoSize": 2994165
+    },
+    "org-admin--8-5": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--8-5/video.webm",
+      "durationMs": 18238,
+      "videoSize": 2237178
+    },
+    "org-admin--9-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--9-1/video.webm",
+      "durationMs": 7396,
+      "videoSize": 1974833
+    },
+    "org-admin--9-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--9-2/video.webm",
+      "durationMs": 21608,
+      "videoSize": 2426820
+    },
+    "org-admin--9-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--9-3/video.webm",
+      "durationMs": 22050,
+      "videoSize": 3088764
+    },
+    "org-admin--10-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--10-1/video.webm",
+      "durationMs": 7560,
+      "videoSize": 1939872
+    },
+    "org-admin--10-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--10-2/video.webm",
+      "durationMs": 20208,
+      "videoSize": 2412903
+    },
+    "org-admin--10-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--10-3/video.webm",
+      "durationMs": 9761,
+      "videoSize": 1887429
+    },
+    "org-admin--10-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--10-4/video.webm",
+      "durationMs": 218108,
+      "videoSize": 15413334
+    },
+    "org-admin--11-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--11-1/video.webm",
+      "durationMs": 7143,
+      "videoSize": 1947980
+    },
+    "org-admin--11-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--11-2/video.webm",
+      "durationMs": 21351,
+      "videoSize": 2536527
+    },
+    "org-admin--11-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--11-3/video.webm",
+      "durationMs": 21803,
+      "videoSize": 3357683
+    },
+    "org-admin--12-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--12-1/video.webm",
+      "durationMs": 7015,
+      "videoSize": 1743823
+    },
+    "org-admin--12-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--12-2/video.webm",
+      "durationMs": 3566,
+      "videoSize": 1630953
+    },
+    "org-admin--12-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--12-3/video.webm",
+      "durationMs": 3426,
+      "videoSize": 1496799
+    },
+    "org-admin--12-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--12-4/video.webm",
+      "durationMs": 18831,
+      "videoSize": 2363189
+    },
+    "org-admin--12-5": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--12-5/video.webm",
+      "durationMs": 21429,
+      "videoSize": 2479606
+    },
+    "org-admin--13-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--13-1/video.webm",
+      "durationMs": 8234,
+      "videoSize": 1825010
+    },
+    "org-admin--13-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--13-2/video.webm",
+      "durationMs": 7948,
+      "videoSize": 1772643
+    },
+    "org-admin--13-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--13-3/video.webm",
+      "durationMs": 30845,
+      "videoSize": 3066891
+    },
+    "org-admin--13-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--13-4/video.webm",
+      "durationMs": 33646,
+      "videoSize": 2958181
+    },
+    "org-admin--13-5": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--13-5/video.webm",
+      "durationMs": 14964,
+      "videoSize": 2453951
+    },
+    "org-admin--13-6": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--13-6/video.webm",
+      "durationMs": 19946,
+      "videoSize": 2553822
+    },
+    "org-admin--13-7": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--13-7/video.webm",
+      "durationMs": 36709,
+      "videoSize": 3141434
+    },
+    "org-admin--13-8": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--13-8/video.webm",
+      "durationMs": 13862,
+      "videoSize": 2309986
+    },
+    "org-admin--14-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--14-1/video.webm",
+      "durationMs": 14211,
+      "videoSize": 2209104
+    },
+    "org-admin--14-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--14-2/video.webm",
+      "durationMs": 16122,
+      "videoSize": 2240823
+    },
+    "org-admin--14-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/org-admin--14-3/video.webm",
+      "durationMs": 15276,
+      "videoSize": 2197421
+    },
+    "manager--1-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--1-1/video.webm",
+      "durationMs": 6419,
+      "videoSize": 549045
+    },
+    "manager--1-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--1-2/video.webm",
+      "durationMs": 4010,
+      "videoSize": 1546654
+    },
+    "manager--1-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--1-3/video.webm",
+      "durationMs": 4488,
+      "videoSize": 1551485
+    },
+    "manager--2-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--2-1/video.webm",
+      "durationMs": 4693,
+      "videoSize": 1575253
+    },
+    "manager--2-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--2-2/video.webm",
+      "durationMs": 3848,
+      "videoSize": 1537004
+    },
+    "manager--3-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--3-1/video.webm",
+      "durationMs": 71813,
+      "videoSize": 3447973
+    },
+    "manager--3-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--3-2/video.webm",
+      "durationMs": 10236,
+      "videoSize": 1990349
+    },
+    "manager--3-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--3-3/video.webm",
+      "durationMs": 6322,
+      "videoSize": 1503374
+    },
+    "manager--4-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--4-1/video.webm",
+      "durationMs": 2832,
+      "videoSize": 1383406
+    },
+    "manager--4-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--4-2/video.webm",
+      "durationMs": 5467,
+      "videoSize": 1662708
+    },
+    "manager--4-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--4-3/video.webm",
+      "durationMs": 4701,
+      "videoSize": 1556733
+    },
+    "manager--4-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--4-4/video.webm",
+      "durationMs": 3602,
+      "videoSize": 1491486
+    },
+    "manager--5-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--5-1/video.webm",
+      "durationMs": 6643,
+      "videoSize": 1612954
+    },
+    "manager--5-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--5-2/video.webm",
+      "durationMs": 12027,
+      "videoSize": 2084069
+    },
+    "manager--5-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--5-3/video.webm",
+      "durationMs": 6285,
+      "videoSize": 1568495
+    },
+    "manager--5-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--5-4/video.webm",
+      "durationMs": 19522,
+      "videoSize": 2629326
+    },
+    "manager--6-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--6-1/video.webm",
+      "durationMs": 19134,
+      "videoSize": 1760659
+    },
+    "manager--6-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--6-2/video.webm",
+      "durationMs": 132888,
+      "videoSize": 5131995
+    },
+    "manager--6-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--6-3/video.webm",
+      "durationMs": 17335,
+      "videoSize": 2040315
+    },
+    "manager--7-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--7-1/video.webm",
+      "durationMs": 21490,
+      "videoSize": 2927747
+    },
+    "manager--7-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--7-2/video.webm",
+      "durationMs": 353088,
+      "videoSize": 15085054
+    },
+    "manager--7-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--7-3/video.webm",
+      "durationMs": 6506,
+      "videoSize": 1737642
+    },
+    "manager--7-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--7-4/video.webm",
+      "durationMs": 5763,
+      "videoSize": 1618590
+    },
+    "manager--7-5": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--7-5/video.webm",
+      "durationMs": 7404,
+      "videoSize": 1684798
+    },
+    "manager--7-6": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/manager--7-6/video.webm",
+      "durationMs": 8721,
+      "videoSize": 2097546
+    },
+    "employee--1-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--1-1/video.webm",
+      "durationMs": 4443,
+      "videoSize": 1630342
+    },
+    "employee--1-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--1-2/video.webm",
+      "durationMs": 7196,
+      "videoSize": 562269
+    },
+    "employee--1-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--1-3/video.webm",
+      "durationMs": 11908,
+      "videoSize": 2023256
+    },
+    "employee--2-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--2-1/video.webm",
+      "durationMs": 9779,
+      "videoSize": 1939992
+    },
+    "employee--2-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--2-2/video.webm",
+      "durationMs": 4551,
+      "videoSize": 1601462
+    },
+    "employee--3-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--3-1/video.webm",
+      "durationMs": 14440,
+      "videoSize": 1416850
+    },
+    "employee--3-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--3-2/video.webm",
+      "durationMs": 12159,
+      "videoSize": 1934253
+    },
+    "employee--3-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--3-3/video.webm",
+      "durationMs": 6940,
+      "videoSize": 1755560
+    },
+    "employee--4-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--4-1/video.webm",
+      "durationMs": 15490,
+      "videoSize": 2226649
+    },
+    "employee--4-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--4-2/video.webm",
+      "durationMs": 42484,
+      "videoSize": 4410573
+    },
+    "employee--4-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--4-3/video.webm",
+      "durationMs": 8382,
+      "videoSize": 2017201
+    },
+    "employee--4-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--4-4/video.webm",
+      "durationMs": 8196,
+      "videoSize": 1919035
+    },
+    "employee--5-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--5-1/video.webm",
+      "durationMs": 7480,
+      "videoSize": 1847163
+    },
+    "employee--5-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--5-2/video.webm",
+      "durationMs": 6336,
+      "videoSize": 1680027
+    },
+    "employee--6-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--6-1/video.webm",
+      "durationMs": 72904,
+      "videoSize": 4060726
+    },
+    "employee--6-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--6-2/video.webm",
+      "durationMs": 7420,
+      "videoSize": 1494166
+    },
+    "employee--7-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--7-1/video.webm",
+      "durationMs": 8411,
+      "videoSize": 1769733
+    },
+    "employee--7-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--7-2/video.webm",
+      "durationMs": 10112,
+      "videoSize": 1898733
+    },
+    "employee--7-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--7-3/video.webm",
+      "durationMs": 7125,
+      "videoSize": 1667361
+    },
+    "employee--8-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--8-1/video.webm",
+      "durationMs": 6521,
+      "videoSize": 1625785
+    },
+    "employee--8-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--8-2/video.webm",
+      "durationMs": 13126,
+      "videoSize": 2189553
+    },
+    "employee--8-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--8-3/video.webm",
+      "durationMs": 6000,
+      "videoSize": 1561558
+    },
+    "employee--8-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--8-4/video.webm",
+      "durationMs": 18916,
+      "videoSize": 2536175
+    },
+    "employee--9-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--9-1/video.webm",
+      "durationMs": 8285,
+      "videoSize": 2021416
+    },
+    "employee--9-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--9-2/video.webm",
+      "durationMs": 207303,
+      "videoSize": 10315208
+    },
+    "employee--9-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--9-3/video.webm",
+      "durationMs": 6368,
+      "videoSize": 1809113
+    },
+    "employee--9-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--9-4/video.webm",
+      "durationMs": 11509,
+      "videoSize": 2085909
+    },
+    "employee--10-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--10-1/video.webm",
+      "durationMs": 10060,
+      "videoSize": 2233755
+    },
+    "employee--10-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--10-2/video.webm",
+      "durationMs": 261634,
+      "videoSize": 13235048
+    },
+    "employee--11-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--11-1/video.webm",
+      "durationMs": 8101,
+      "videoSize": 1719663
+    },
+    "employee--11-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--11-2/video.webm",
+      "durationMs": 8601,
+      "videoSize": 1825183
+    },
+    "employee--12-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--12-1/video.webm",
+      "durationMs": 5345,
+      "videoSize": 1521164
+    },
+    "employee--12-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/employee--12-2/video.webm",
+      "durationMs": 5299,
+      "videoSize": 1591036
+    },
+    "partner-admin--1-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--1-1/video.webm",
+      "durationMs": 6281,
+      "videoSize": 456947
+    },
+    "partner-admin--1-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--1-2/video.webm",
+      "durationMs": 1682,
+      "videoSize": 901041
+    },
+    "partner-admin--1-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--1-3/video.webm",
+      "durationMs": 4499,
+      "videoSize": 1007440
+    },
+    "partner-admin--1-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--1-4/video.webm",
+      "durationMs": 6864,
+      "videoSize": 1059165
+    },
+    "partner-admin--2-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--2-1/video.webm",
+      "durationMs": 3115,
+      "videoSize": 914590
+    },
+    "partner-admin--2-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--2-2/video.webm",
+      "durationMs": 222062,
+      "videoSize": 9981753
+    },
+    "partner-admin--2-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--2-3/video.webm",
+      "durationMs": 9784,
+      "videoSize": 1173304
+    },
+    "partner-admin--2-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--2-4/video.webm",
+      "durationMs": 6253,
+      "videoSize": 1039711
+    },
+    "partner-admin--2-5": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--2-5/video.webm",
+      "durationMs": 7445,
+      "videoSize": 1031795
+    },
+    "partner-admin--2-6": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--2-6/video.webm",
+      "durationMs": 2481,
+      "videoSize": 916497
+    },
+    "partner-admin--3-1": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--3-1/video.webm",
+      "durationMs": 4282,
+      "videoSize": 1024934
+    },
+    "partner-admin--3-2": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--3-2/video.webm",
+      "durationMs": 257192,
+      "videoSize": 8441506
+    },
+    "partner-admin--3-3": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--3-3/video.webm",
+      "durationMs": 3890,
+      "videoSize": 1211678
+    },
+    "partner-admin--3-4": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--3-4/video.webm",
+      "durationMs": 3497,
+      "videoSize": 1017472
+    },
+    "partner-admin--3-5": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--3-5/video.webm",
+      "durationMs": 2682,
+      "videoSize": 936311
+    },
+    "partner-admin--3-6": {
+      "videoUrl": "https://afjeinqdhowrqurdpntg.supabase.co/storage/v1/object/public/recordings/hr-docs/partner-admin--3-6/video.webm",
+      "durationMs": 1657,
+      "videoSize": 912532
+    }
+  }
+}

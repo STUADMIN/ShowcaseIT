@@ -151,7 +151,59 @@ export async function GET(request: NextRequest) {
     }
     await mergeGuideCoverImageUrl(nestedKits);
 
-    return NextResponse.json(guides);
+    const ownGuideIds = new Set(guides.map((g) => g.id));
+
+    let pubWhere: Prisma.GuidePublicationWhereInput = {};
+    if (projectId) {
+      pubWhere = { projectId };
+    } else if (workspaceId) {
+      const bid = brandKitIdParam?.trim();
+      pubWhere = bid
+        ? { project: { workspaceId }, OR: [{ brandKitId: bid }, { project: { brandKitId: bid } }] }
+        : { project: { workspaceId } };
+    }
+
+    let publishedGuides: typeof guides = [];
+    if (Object.keys(pubWhere).length > 0) {
+      const pubs = await prisma.guidePublication.findMany({
+        where: pubWhere,
+        include: {
+          guide: {
+            include: {
+              steps: { orderBy: { order: 'asc' }, take: 1, select: { screenshotUrl: true, styledScreenshotUrl: true } },
+              brandKit: { select: brandSelect },
+              project: { select: { brandKit: { select: brandSelect } } },
+              _count: { select: { steps: true } },
+            },
+          },
+          brandKit: { select: brandSelect },
+          project: { select: { brandKit: { select: brandSelect } } },
+        },
+      });
+
+      for (const pub of pubs) {
+        if (ownGuideIds.has(pub.guideId)) continue;
+        ownGuideIds.add(pub.guideId);
+        const g = pub.guide as typeof guides[number] & { _publication?: { id: string; projectId: string; brandKitId: string | null } };
+        (g as Record<string, unknown>)._publication = {
+          id: pub.id,
+          projectId: pub.projectId,
+          brandKitId: pub.brandKitId,
+        };
+        const pubKit = pub.brandKit ?? pub.project?.brandKit;
+        if (pubKit) {
+          (g as Record<string, unknown>).brandKit = pubKit;
+        }
+        publishedGuides.push(g);
+        if (g.brandKit) nestedKits.push(g.brandKit);
+        if (g.project?.brandKit) nestedKits.push(g.project.brandKit);
+      }
+      if (publishedGuides.length > 0) {
+        await mergeGuideCoverImageUrl(nestedKits);
+      }
+    }
+
+    return NextResponse.json([...guides, ...publishedGuides]);
   } catch (error) {
     console.error('[GET /api/guides]', error);
     const hint =

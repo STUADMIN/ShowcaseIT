@@ -9,6 +9,8 @@ import { LiquidGlassMain } from '@/components/ui/liquid-glass-main';
 import { StepPanel } from './step-panel';
 import { StepPreview } from './step-preview';
 import { EditorToolbar, type Tool } from './editor-toolbar';
+import { CaptureSessionModal } from './capture-session-bar';
+import { PublishModal } from './publish-modal';
 import { useApi, apiPatch, apiPost, apiDelete } from '@/hooks/use-api';
 import { useAuth } from '@/lib/auth/auth-context';
 import { FRAME_EXTRACTION_ERROR_HINT, isFrameExtractionPlaceholder } from '@/lib/frame-extraction-placeholder';
@@ -67,8 +69,10 @@ interface GuideData {
   steps: GuideStep[];
   projectId: string;
   brandKitId: string | null;
+  noBranding?: boolean;
   project?: GuideProjectSummary | null;
   brandKit?: { id: string; name: string } | null;
+  recording?: { id: string; videoUrl: string | null } | null;
 }
 
 interface WorkspaceProjectRow {
@@ -91,6 +95,7 @@ export function GuideEditor({ guideId }: { guideId: string }) {
   const { data: workspaceProjects } = useApi<WorkspaceProjectRow[]>({ url: projectsUrl });
   const { data: workspaceBrandKits } = useApi<{ id: string; name: string }[]>({ url: brandKitsUrl });
   const [assignBusy, setAssignBusy] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
   const [steps, setSteps] = useState<GuideStep[]>([]);
   const [selectedStepId, setSelectedStepId] = useState<string>('');
   const [guideName, setGuideName] = useState('');
@@ -99,6 +104,50 @@ export function GuideEditor({ guideId }: { guideId: string }) {
   const editorShellRef = useRef<HTMLDivElement>(null);
   /** Last title successfully saved to the API (avoids losing edits on blur/tab close). */
   const savedTitleRef = useRef('');
+
+  /* ── Capture session (persistent screen-share → multi-step capture) ── */
+  const [captureStream, setCaptureStream] = useState<MediaStream | null>(null);
+  const [captureUploading, setCaptureUploading] = useState(false);
+  const [capturedCount, setCapturedCount] = useState(0);
+  const captureStreamRef = useRef<MediaStream | null>(null);
+
+  const startCaptureSession = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: 30 },
+        audio: false,
+        preferCurrentTab: false,
+        selfBrowserSurface: 'exclude',
+      } as Parameters<MediaDevices['getDisplayMedia']>[0]);
+
+      stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+        captureStreamRef.current = null;
+        setCaptureStream(null);
+      });
+
+      captureStreamRef.current = stream;
+      setCaptureStream(stream);
+      setCapturedCount(0);
+
+      window.setTimeout(() => {
+        try { window.focus(); } catch { /* ignore */ }
+      }, 100);
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === 'NotAllowedError')) {
+        console.error('[CaptureSession] getDisplayMedia failed:', err);
+      }
+    }
+  }, []);
+
+  const endCaptureSession = useCallback(() => {
+    const stream = captureStreamRef.current;
+    if (stream) {
+      stream.getTracks().forEach((t) => { try { t.stop(); } catch { /* ignore */ } });
+    }
+    captureStreamRef.current = null;
+    setCaptureStream(null);
+    setCapturedCount(0);
+  }, []);
   const editorBootGuideId = useRef<string | null>(null);
 
   const toggleBrowserFullscreen = useCallback(async () => {
@@ -235,6 +284,78 @@ export function GuideEditor({ guideId }: { guideId: string }) {
     } catch {}
   };
 
+  /** Refs so the capture callback always sees current values (avoids stale closures). */
+  const selectedStepIdRef = useRef(selectedStepId);
+  const stepsRef = useRef(steps);
+  selectedStepIdRef.current = selectedStepId;
+  stepsRef.current = steps;
+
+  /** Capture session: grab frame → upload to current step → create next empty step → select it. */
+  const handleSessionCapture = useCallback(
+    async (blob: Blob) => {
+      const stepId = selectedStepIdRef.current;
+      console.log('[CaptureSession] handleSessionCapture called, stepId:', stepId, 'blob size:', blob.size);
+      if (!stepId) {
+        console.error('[CaptureSession] no selectedStepId');
+        return;
+      }
+      setCaptureUploading(true);
+      try {
+        const fd = new FormData();
+        fd.append('file', new File([blob], 'capture.png', { type: 'image/png' }));
+        console.log('[CaptureSession] uploading to /api/guide-steps/' + stepId + '/screenshot');
+        const res = await fetch(`/api/guide-steps/${stepId}/screenshot`, { method: 'POST', body: fd });
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => '');
+          console.error('[CaptureSession] upload failed:', res.status, errBody);
+          throw new Error('Upload failed: ' + res.status);
+        }
+        const raw = (await res.json()) as Record<string, unknown>;
+        const url =
+          typeof raw.screenshotUrl === 'string'
+            ? raw.screenshotUrl
+            : typeof raw.screenshot_url === 'string'
+              ? raw.screenshot_url
+              : null;
+        console.log('[CaptureSession] upload response url:', url);
+
+        if (url) {
+          setSteps((prev) =>
+            prev.map((s) =>
+              s.id === stepId ? { ...s, screenshotUrl: url, screenshotOriginalUrl: null } : s
+            )
+          );
+          setCapturedCount((c) => c + 1);
+
+          const nextOrder = stepsRef.current.length + 1;
+          const newRes = await apiPost<GuideStep>(`/api/guides/${guideId}/steps`, {
+            title: `Step ${nextOrder}`,
+            description: 'Describe this step...',
+          });
+          const newStep = newRes as GuideStep & { includeInExport?: boolean };
+          console.log('[CaptureSession] new step created:', newStep.id);
+          setSteps((prev) => [
+            ...prev,
+            {
+              ...newStep,
+              screenshotUrl: newStep.screenshotUrl || '',
+              screenshotOriginalUrl: newStep.screenshotOriginalUrl ?? null,
+              annotations: [],
+              blurRegions: [],
+              includeInExport: newStep.includeInExport !== false,
+            },
+          ]);
+          setSelectedStepId(newStep.id);
+        }
+      } catch (err) {
+        console.error('[CaptureSession] upload/step-create failed:', err);
+      } finally {
+        setCaptureUploading(false);
+      }
+    },
+    [guideId]
+  );
+
   const handleDeleteStep = async (stepId: string) => {
     try {
       const prevById = new Map(steps.map((s) => [s.id, s]));
@@ -362,16 +483,19 @@ export function GuideEditor({ guideId }: { guideId: string }) {
                   </label>
                   <select
                     id="si-guide-brand-override"
-                    value={guide.brandKitId ?? ''}
+                    value={guide.noBranding ? '__none__' : (guide.brandKitId ?? '')}
                     disabled={assignBusy}
                     onChange={async (e) => {
                       const v = e.target.value;
-                      const next = v === '' ? null : v;
-                      if ((next === null && guide.brandKitId === null) || next === guide.brandKitId) return;
                       if (!user.id) return;
                       setAssignBusy(true);
                       try {
-                        await apiPatch(`/api/guides/${guideId}`, { userId: user.id, brandKitId: next });
+                        if (v === '__none__') {
+                          await apiPatch(`/api/guides/${guideId}`, { userId: user.id, brandKitId: null, noBranding: true });
+                        } else {
+                          const next = v === '' ? null : v;
+                          await apiPatch(`/api/guides/${guideId}`, { userId: user.id, brandKitId: next, noBranding: false });
+                        }
                         await refetch();
                       } catch {
                         /* ignore */
@@ -382,6 +506,7 @@ export function GuideEditor({ guideId }: { guideId: string }) {
                     className="w-full rounded-md border border-gray-700 bg-gray-900 px-2 py-1.5 text-xs text-gray-200 outline-none focus:border-brand-600 disabled:opacity-50"
                   >
                     <option value="">Use project brand</option>
+                    <option value="__none__">No branding</option>
                     {workspaceBrandKits.map((k) => (
                       <option key={k.id} value={k.id}>
                         {k.name}
@@ -390,6 +515,12 @@ export function GuideEditor({ guideId }: { guideId: string }) {
                   </select>
                 </div>
               ) : null}
+              <button
+                onClick={() => setPublishOpen(true)}
+                className="w-full mt-2 py-1.5 rounded-lg border border-blue-600/40 bg-blue-600/10 text-blue-400 text-xs font-medium hover:bg-blue-600/20 transition-colors"
+              >
+                Publish to...
+              </button>
             </div>
           ) : null}
         </div>
@@ -482,6 +613,9 @@ export function GuideEditor({ guideId }: { guideId: string }) {
               onUpdate={(updates) => handleStepUpdate(selectedStep.id, updates as Partial<GuideStep>)}
               activeTool={activeTool}
               expandedCanvas={focusMode}
+              recordingVideoUrl={guide?.recording?.videoUrl ?? null}
+              onStartCaptureSession={() => void startCaptureSession()}
+              captureSessionActive={!!captureStream}
             />
           ) : (
             <div className="text-gray-500 text-center mt-32"><p className="text-lg">Select a step to preview</p></div>
@@ -621,6 +755,28 @@ export function GuideEditor({ guideId }: { guideId: string }) {
         </div>
       </div>
       </LiquidGlassMain>
+
+      {captureStream && (
+        <CaptureSessionModal
+          stream={captureStream}
+          stepNumber={selectedStep?.order ?? steps.length}
+          capturedCount={capturedCount}
+          uploading={captureUploading}
+          onCapture={(blob) => void handleSessionCapture(blob)}
+          onDone={endCaptureSession}
+        />
+      )}
+
+      {guide && (
+        <PublishModal
+          open={publishOpen}
+          guideId={guideId}
+          currentProjectId={guide.projectId}
+          onClose={() => setPublishOpen(false)}
+          projects={workspaceProjects ?? []}
+          brandKits={workspaceBrandKits ?? []}
+        />
+      )}
     </div>
   );
 }

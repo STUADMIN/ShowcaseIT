@@ -407,10 +407,18 @@ export async function runHRDocs(opts?: {
           }
         }
 
-        // Login directly in this recording context so the session stays alive
-        console.log(`  Logging in as ${HR_CREDENTIALS[role].email}...`);
-        await loginInPage(page, role);
-        console.log(`  Logged in, starting tour...`);
+        if (!entry.skipPreLogin) {
+          console.log(`  Logging in as ${HR_CREDENTIALS[role].email}...`);
+          await loginInPage(page, role);
+          console.log(`  Logged in, starting tour...`);
+        } else {
+          console.log(`  skipPreLogin — tour performs sign-in from ${entry.route}`);
+          await page.goto(`${HR_BASE_URL}${entry.route}`, {
+            waitUntil: 'domcontentloaded',
+            timeout: 30_000,
+          });
+          await waitForPageStable(page);
+        }
 
         const result = await executeTour(page, entry, HR_BASE_URL);
         steps = result.steps;

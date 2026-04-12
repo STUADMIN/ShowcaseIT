@@ -9,11 +9,15 @@
  * 3. Tags guides with [hr-doc:{id}] for idempotent re-runs.
  *
  * Usage:
- *   npm run hr:generate                        # all entries
+ *   npm run hr:scenarios                       # sync hr-scenarios.generated.ts from CSV (sibling hr_platform repo)
+ *   npm run hr:generate                        # all 125 CSV-aligned entries
  *   npm run hr:generate -- --role=org-admin     # one role only
- *   npm run hr:generate -- --only=org-admin-managing-users
+ *   npm run hr:generate -- --only=org-admin--3-2
  *   npm run hr:generate -- --skip-capture       # reuse .hr-report.json
  *   npm run hr:generate -- --skip-guide         # capture only
+ *
+ * Guide identity is `[hr-doc:{entryId}]` (e.g. `org-admin--3-2`). Older captures used
+ * chapter ids like `org-admin-managing-users`; re-run capture to replace those guides.
  */
 
 import * as path from 'path';
@@ -129,6 +133,10 @@ async function getOrgKey(projectId: string): Promise<string | null> {
  * E.g. 'org-admin-managing-users' → 'org-admin'
  */
 function roleFromEntryId(entryId: string): HRRole {
+  if (entryId.startsWith('org-admin--')) return 'org-admin';
+  if (entryId.startsWith('manager--')) return 'manager';
+  if (entryId.startsWith('employee--')) return 'employee';
+  if (entryId.startsWith('partner-admin--')) return 'partner-admin';
   if (entryId.startsWith('org-admin-')) return 'org-admin';
   if (entryId.startsWith('manager-')) return 'manager';
   if (entryId.startsWith('employee-')) return 'employee';

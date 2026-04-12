@@ -22,6 +22,8 @@ export interface HtmlExportOptions {
    * Use export URL `?social=linkedin` (youtube | linkedin | x | facebook | instagram).
    */
   linkPreviewPlatform?: SocialPlatformId | null;
+  /** When true, exports use neutral system fonts, no cover/banner/footer, and a plain colour scheme. */
+  noBranding?: boolean;
 }
 
 export function generateHtmlExport(options: HtmlExportOptions): string {
@@ -32,15 +34,18 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
     includeAnimations,
     includeDocumentShell = true,
     linkPreviewPlatform = null,
+    noBranding = false,
   } = options;
 
-  const colors = brandKit?.colors ?? {
-    primary: '#2563EB',
-    secondary: '#7C3AED',
-    accent: '#F59E0B',
-    background: '#FFFFFF',
-    foreground: '#0F172A',
-  };
+  const colors = noBranding
+    ? { primary: '#374151', secondary: '#6B7280', accent: '#9CA3AF', background: '#FFFFFF', foreground: '#111827' }
+    : (brandKit?.colors ?? {
+        primary: '#2563EB',
+        secondary: '#7C3AED',
+        accent: '#F59E0B',
+        background: '#FFFFFF',
+        foreground: '#0F172A',
+      });
 
   const solid = {
     primary: solidBrandHex(colors.primary, '#2563EB'),
@@ -56,7 +61,9 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
     background: brandPaintCss(colors.background, solid.background),
   };
 
-  const fonts = brandKit?.fonts ?? { heading: 'Inter', body: 'Inter' };
+  const fonts = noBranding
+    ? { heading: 'system-ui', body: 'system-ui' }
+    : (brandKit?.fonts ?? { heading: 'Inter', body: 'Inter' });
 
   const stepsHtml = guide.steps
     .map(
@@ -121,23 +128,25 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
     }`
     : '';
 
-  const coverUrl = brandKit?.guideCoverImageUrl?.trim();
+  const coverUrl = noBranding ? '' : (brandKit?.guideCoverImageUrl?.trim() ?? '');
   const coverHtml =
     coverUrl && coverUrl.length > 0
       ? `<section class="si-export-cover" aria-label="Guide cover"><img src="${escapeHtml(coverUrl)}" alt="" /></section>`
       : '';
 
-  const docBannerUrl = brandKit?.exportBannerDocumentUrl?.trim();
+  const docBannerUrl = noBranding ? '' : (brandKit?.exportBannerDocumentUrl?.trim() ?? '');
   const bannerHtml =
     docBannerUrl && docBannerUrl.length > 0
       ? `<section class="si-export-banner" aria-label="Brand banner"><img src="${escapeHtml(docBannerUrl)}" alt="" role="presentation" /></section>`
       : '';
-  const ogImageUrl = resolveLinkPreviewImageUrl(
-    brandKit?.socialPlatformAssets,
-    linkPreviewPlatform,
-    brandKit?.exportBannerSocialUrl,
-    brandKit?.exportBannerDocumentUrl
-  ).trim();
+  const ogImageUrl = noBranding
+    ? ''
+    : resolveLinkPreviewImageUrl(
+        brandKit?.socialPlatformAssets,
+        linkPreviewPlatform,
+        brandKit?.exportBannerSocialUrl,
+        brandKit?.exportBannerDocumentUrl
+      ).trim();
   const ogImageMeta =
     includeDocumentShell && ogImageUrl.length > 0
       ? `  <meta property="og:image" content="${escapeHtml(ogImageUrl)}" />
@@ -151,7 +160,7 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
-  <link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(fonts.heading)}:wght@400;600;700&family=${encodeURIComponent(fonts.body)}:wght@400;500&display=swap" rel="stylesheet" />
+  ${noBranding ? '' : `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(fonts.heading)}:wght@400;600;700&family=${encodeURIComponent(fonts.body)}:wght@400;500&display=swap" rel="stylesheet" />`}
   <style>
     :root {
       --color-primary: ${solid.primary};
@@ -339,10 +348,11 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
     }
     .si-export-banner img {
       width: 100%;
-      max-height: 160px;
+      max-height: 120px;
       object-fit: cover;
       object-position: center;
       display: block;
+      image-rendering: -webkit-optimize-contrast;
     }
     ${embedMode === 'standalone' ? `
     .si-export-banner {
@@ -355,17 +365,22 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--paint-bg);
+      background: transparent;
       margin-bottom: 40px;
-      border-radius: 12px;
+      padding: 48px 32px;
+      border-radius: 0;
       overflow: hidden;
-      border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+      border: none;
     }
     .si-export-cover img {
-      width: 100%;
-      max-height: min(85vh, 520px);
+      max-width: 280px;
+      max-height: 120px;
+      width: auto;
+      height: auto;
       object-fit: contain;
       display: block;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
     }
     ${embedMode === 'standalone' ? `
     .si-export-cover {
@@ -383,9 +398,11 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
         border: none;
         margin: 0;
         width: 100%;
+        padding: 80px 32px;
       }
       .si-export-cover img {
-        max-height: 100vh;
+        max-width: 320px;
+        max-height: 140px;
         object-fit: contain;
       }
     }
@@ -401,9 +418,7 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
 
   ${stepsHtml}
 
-  <div class="footer">
-    Created with ShowcaseIt
-  </div>
+  
 </body>
 </html>`;
 
@@ -411,7 +426,9 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
     const styleInner = html.match(/<style>[\s\S]*?<\/style>/)?.[0] ?? '';
     const bodyMatch = html.match(/<body>([\s\S]*)<\/body>/);
     const bodyInner = bodyMatch?.[1]?.trim() ?? '';
-    const fontLinkSnippet = `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(fonts.heading)}:wght@400;600;700&family=${encodeURIComponent(fonts.body)}:wght@400;500&display=swap" rel="stylesheet" />`;
+    const fontLinkSnippet = noBranding
+      ? ''
+      : `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(fonts.heading)}:wght@400;600;700&family=${encodeURIComponent(fonts.body)}:wght@400;500&display=swap" rel="stylesheet" />`;
     return `${fontLinkSnippet}
 ${styleInner}
 <div class="si-export-root">
