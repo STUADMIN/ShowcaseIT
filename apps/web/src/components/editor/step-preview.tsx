@@ -23,11 +23,9 @@ import {
 } from '@/lib/editor/drag-move';
 import {
   type CalloutTailEdge,
-  clampTailOffset,
-  cycleCalloutTailEdge,
   defaultCalloutTail,
   parseCalloutTail,
-  tailOffsetDeltaFromPointer,
+  tailFromPointerAngle,
 } from '@/lib/editor/callout-tail';
 import { CalloutTailVisual } from '@/components/editor/callout-tail-visual';
 import {
@@ -112,6 +110,33 @@ type MoveSession =
   | { kind: 'annotation'; id: string; pointerStart: { x: number; y: number }; initial: Annotation }
   | { kind: 'blur'; id: string; pointerStart: { x: number; y: number }; initial: BlurRegion };
 
+type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w';
+type ResizeSession = {
+  target: { kind: 'annotation'; id: string; initial: Annotation } | { kind: 'blur'; id: string; initial: BlurRegion };
+  handle: ResizeHandle;
+  pointerStart: { x: number; y: number };
+};
+
+const HANDLE_CURSORS: Record<ResizeHandle, string> = {
+  nw: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', se: 'nwse-resize',
+  n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize',
+};
+
+function applyResize<T extends { x: number; y: number; width?: number | null; height?: number | null }>(
+  initial: T, handle: ResizeHandle, dx: number, dy: number
+): T {
+  let { x, y } = initial;
+  let w = initial.width ?? 0;
+  let h = initial.height ?? 0;
+  if (handle.includes('w')) { x += dx; w -= dx; }
+  if (handle.includes('e')) { w += dx; }
+  if (handle.includes('n')) { y += dy; h -= dy; }
+  if (handle.includes('s')) { h += dy; }
+  if (w < 1) { w = 1; }
+  if (h < 1) { h = 1; }
+  return { ...initial, x, y, width: w, height: h };
+}
+
 type TextDialogState =
   | null
   | { kind: 'callout'; rect: { x: number; y: number; width: number; height: number } }
@@ -126,6 +151,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
   const containerRef = useRef<HTMLDivElement>(null);
   const stepRef = useRef(step);
   const onUpdateRef = useRef(onUpdate);
+  const finalizeDrawRef = useRef<() => void>(() => {});
   stepRef.current = step;
   onUpdateRef.current = onUpdate;
 
@@ -192,6 +218,10 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
 
   const moveSessionRef = useRef<MoveSession | null>(null);
   const [movePointer, setMovePointer] = useState<{ x: number; y: number } | null>(null);
+  const didDragRef = useRef(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const resizeRef = useRef<ResizeSession | null>(null);
+  const [resizePointer, setResizePointer] = useState<{ x: number; y: number } | null>(null);
 
   const tailDragRef = useRef<null | {
     annId: string;
@@ -200,6 +230,8 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
     edge: CalloutTailEdge;
     rectW: number;
     rectH: number;
+    boxCenterX: number;
+    boxCenterY: number;
   }>(null);
   const [tailAdjustLive, setTailAdjustLive] = useState<null | {
     annId: string;
@@ -211,12 +243,16 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
   /** Mirrors ref so dashed preview re-renders (refs alone don’t trigger paint). */
   const [drawKind, setDrawKind] = useState<'blur' | 'rect' | 'arrow' | 'crop' | null>(null);
   const drawGestureRef = useRef<'blur' | 'rect' | 'arrow' | 'crop' | null>(null);
+  const drawingRef = useRef(false);
   const rectAnnTypeRef = useRef<RectAnnTool | null>(null);
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
+  const drawStartRef = useRef({ x: 0, y: 0 });
   const [drawCurrent, setDrawCurrent] = useState({ x: 0, y: 0 });
+  const drawCurrentRef = useRef({ x: 0, y: 0 });
 
   const [textDialog, setTextDialog] = useState<TextDialogState>(null);
   const [textDraft, setTextDraft] = useState('');
+  const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(null);
   const [cropConfirm, setCropConfirm] = useState<{
     x: number;
     y: number;
@@ -298,53 +334,109 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
   }, [pendingCalloutRect]);
 
   useEffect(() => {
+    if (!selectedId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        const s = stepRef.current;
+        if (s.blurRegions.some((r) => r.id === selectedId)) {
+          onUpdateRef.current({ blurRegions: s.blurRegions.filter((r) => r.id !== selectedId) });
+        } else if (s.annotations.some((a) => a.id === selectedId)) {
+          onUpdateRef.current({ annotations: s.annotations.filter((a) => a.id !== selectedId) });
+        }
+        setSelectedId(null);
+      } else if (e.key === 'Escape') {
+        setSelectedId(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedId]);
+
+  useEffect(() => {
     setPendingCalloutRect(null);
+    setSelectedId(null);
   }, [step.id]);
 
   useEffect(() => {
     if (activeTool !== 'callout') setPendingCalloutRect(null);
+    if (activeTool !== 'select' && activeTool !== 'move') setSelectedId(null);
   }, [activeTool]);
 
   useEffect(() => {
+    const getPosPct = (e: MouseEvent) => {
+      if (!containerRef.current) return { x: 0, y: 0 };
+      const rect = containerRef.current.getBoundingClientRect();
+      return { x: ((e.clientX - rect.left) / rect.width) * 100, y: ((e.clientY - rect.top) / rect.height) * 100 };
+    };
+
     const onMove = (e: MouseEvent) => {
+      if (drawingRef.current) {
+        const pos = getPosPct(e);
+        drawCurrentRef.current = pos;
+        setDrawCurrent(pos);
+        return;
+      }
       const td = tailDragRef.current;
       if (td) {
-        const delta = tailOffsetDeltaFromPointer(
-          td.edge,
-          td.pointerStart,
-          { x: e.clientX, y: e.clientY },
-          td.rectW,
-          td.rectH
-        );
-        const nextOff = clampTailOffset(td.initialOffset + delta);
-        setTailAdjustLive({ annId: td.annId, offset: nextOff, edge: td.edge });
+        const halfW = td.rectW / 2;
+        const halfH = td.rectH / 2;
+        const relX = (e.clientX - td.boxCenterX) / Math.max(halfW, 1);
+        const relY = (e.clientY - td.boxCenterY) / Math.max(halfH, 1);
+        const { edge, offset } = tailFromPointerAngle(relX, relY);
+        setTailAdjustLive({ annId: td.annId, offset, edge });
+        return;
+      }
+      const rs = resizeRef.current;
+      if (rs) {
+        setResizePointer(getPosPct(e));
         return;
       }
       if (!moveSessionRef.current || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      setMovePointer({ x, y });
+      setMovePointer(getPosPct(e));
     };
     const onUp = (e: MouseEvent) => {
+      if (drawingRef.current) {
+        const pos = getPosPct(e);
+        drawCurrentRef.current = pos;
+        setDrawCurrent(pos);
+        finalizeDrawRef.current();
+        return;
+      }
       const td = tailDragRef.current;
       if (td) {
-        const delta = tailOffsetDeltaFromPointer(
-          td.edge,
-          td.pointerStart,
-          { x: e.clientX, y: e.clientY },
-          td.rectW,
-          td.rectH
-        );
-        const nextOff = clampTailOffset(td.initialOffset + delta);
+        const halfW = td.rectW / 2;
+        const halfH = td.rectH / 2;
+        const relX = (e.clientX - td.boxCenterX) / Math.max(halfW, 1);
+        const relY = (e.clientY - td.boxCenterY) / Math.max(halfH, 1);
+        const { edge, offset } = tailFromPointerAngle(relX, relY);
         tailDragRef.current = null;
         setTailAdjustLive(null);
         const s = stepRef.current;
         onUpdateRef.current({
           annotations: s.annotations.map((a) =>
-            a.id === td.annId ? { ...a, calloutTailOffset: nextOff } : a
+            a.id === td.annId ? { ...a, calloutTailEdge: edge, calloutTailOffset: offset } : a
           ),
         });
+        return;
+      }
+
+      const rs = resizeRef.current;
+      if (rs) {
+        const pos = getPosPct(e);
+        const dx = pos.x - rs.pointerStart.x;
+        const dy = pos.y - rs.pointerStart.y;
+        resizeRef.current = null;
+        setResizePointer(null);
+        if (Math.abs(dx) + Math.abs(dy) < 0.12) return;
+        const s = stepRef.current;
+        if (rs.target.kind === 'blur') {
+          const next = applyResize(rs.target.initial, rs.handle, dx, dy);
+          onUpdateRef.current({ blurRegions: s.blurRegions.map((r) => (r.id === rs.target.id ? { ...r, ...next } : r)) });
+        } else {
+          const next = applyResize(rs.target.initial, rs.handle, dx, dy);
+          onUpdateRef.current({ annotations: s.annotations.map((a) => (a.id === rs.target.id ? { ...a, ...next } : a)) });
+        }
         return;
       }
 
@@ -355,14 +447,16 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
         setMovePointer(null);
         return;
       }
-      const rect = el.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      const dx = x - session.pointerStart.x;
-      const dy = y - session.pointerStart.y;
+      const pos = getPosPct(e);
+      const dx = pos.x - session.pointerStart.x;
+      const dy = pos.y - session.pointerStart.y;
       moveSessionRef.current = null;
       setMovePointer(null);
-      if (Math.abs(dx) + Math.abs(dy) < 0.12) return;
+      if (Math.abs(dx) + Math.abs(dy) < 0.12) {
+        didDragRef.current = false;
+        return;
+      }
+      didDragRef.current = true;
       const s = stepRef.current;
       if (session.kind === 'blur') {
         const next = blurRegionWithDelta(session.initial as LooseBlurRegion, dx, dy);
@@ -393,86 +487,11 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
     };
   }, []);
 
-  const finalizeRectOrBlur = useCallback(() => {
-    const gesture = drawGestureRef.current;
-    const annType = rectAnnTypeRef.current;
-    drawGestureRef.current = null;
-    rectAnnTypeRef.current = null;
-    setDrawKind(null);
-
-    const x = Math.min(drawStart.x, drawCurrent.x);
-    const y = Math.min(drawStart.y, drawCurrent.y);
-    const width = Math.abs(drawCurrent.x - drawStart.x);
-    const height = Math.abs(drawCurrent.y - drawStart.y);
-
-    if (width < 0.8 || height < 0.8) return;
-
-    if (gesture === 'blur') {
-      const newRegion: BlurRegion = {
-        id: `blur-${Date.now()}`,
-        x,
-        y,
-        width,
-        height,
-        intensity: BLUR_INTENSITY_DEFAULT,
-      };
-      onUpdate({ blurRegions: [...step.blurRegions, newRegion] });
-      return;
-    }
-
-    if (gesture === 'rect' && annType) {
-      if (annType === 'callout') {
-        setPendingCalloutRect({ x, y, width, height });
-        return;
-      }
-
-      const ann: Annotation = {
-        id: `ann-${Date.now()}`,
-        type: annType,
-        x,
-        y,
-        width,
-        height,
-        ...(annType === 'circle' ? { color: circleStrokeHex } : {}),
-        ...(annType === 'box' ? { color: boxStrokeHex } : {}),
-        ...(annType === 'highlight' ? { color: highlightStrokeHex } : {}),
-      };
-      onUpdate({ annotations: [...step.annotations, ann] });
-    }
-  }, [
-    drawStart,
-    drawCurrent,
-    onUpdate,
-    step.annotations,
-    step.blurRegions,
-    circleStrokeHex,
-    boxStrokeHex,
-    highlightStrokeHex,
-  ]);
-
-  const finalizeArrow = useCallback(() => {
-    drawGestureRef.current = null;
-    setDrawKind(null);
-    const x1 = drawStart.x;
-    const y1 = drawStart.y;
-    const x2 = drawCurrent.x;
-    const y2 = drawCurrent.y;
-    const len = Math.hypot(x2 - x1, y2 - y1);
-    if (len < 1.2) return;
-    const ann: Annotation = {
-      id: `ann-${Date.now()}`,
-      type: 'arrow',
-      x: x1,
-      y: y1,
-      x2,
-      y2,
-    };
-    onUpdate({ annotations: [...step.annotations, ann] });
-  }, [drawStart, drawCurrent, onUpdate, step.annotations]);
+  const canDrag = activeTool === 'move' || activeTool === 'select';
 
   const beginMoveAnnotation = useCallback(
     (e: React.MouseEvent, ann: Annotation) => {
-      if (activeTool !== 'move') return;
+      if (!canDrag) return;
       e.preventDefault();
       e.stopPropagation();
       const pos = getRelativePosition(e);
@@ -484,12 +503,12 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
       };
       setMovePointer(pos);
     },
-    [activeTool, getRelativePosition]
+    [canDrag, getRelativePosition]
   );
 
   const beginMoveBlur = useCallback(
     (e: React.MouseEvent, region: BlurRegion) => {
-      if (activeTool !== 'move') return;
+      if (!canDrag) return;
       e.preventDefault();
       e.stopPropagation();
       const pos = getRelativePosition(e);
@@ -501,12 +520,34 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
       };
       setMovePointer(pos);
     },
-    [activeTool, getRelativePosition]
+    [canDrag, getRelativePosition]
+  );
+
+  const beginResizeAnnotation = useCallback(
+    (e: React.MouseEvent, ann: Annotation, handle: ResizeHandle) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const pos = getRelativePosition(e);
+      resizeRef.current = { target: { kind: 'annotation', id: ann.id, initial: { ...ann } }, handle, pointerStart: pos };
+      setResizePointer(pos);
+    },
+    [getRelativePosition]
+  );
+
+  const beginResizeBlur = useCallback(
+    (e: React.MouseEvent, region: BlurRegion, handle: ResizeHandle) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const pos = getRelativePosition(e);
+      resizeRef.current = { target: { kind: 'blur', id: region.id, initial: { ...region } }, handle, pointerStart: pos };
+      setResizePointer(pos);
+    },
+    [getRelativePosition]
   );
 
   const startTailAdjust = useCallback(
     (e: React.MouseEvent, ann: Annotation) => {
-      if (activeTool !== 'callout') return;
+      if (activeTool !== 'callout' && activeTool !== 'select') return;
       e.preventDefault();
       e.stopPropagation();
       const el = e.currentTarget as HTMLElement;
@@ -519,69 +560,47 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
         edge,
         rectW: rect.width,
         rectH: rect.height,
+        boxCenterX: rect.left + rect.width / 2,
+        boxCenterY: rect.top + rect.height / 2,
       };
       setTailAdjustLive({ annId: ann.id, offset, edge });
     },
     [activeTool]
   );
 
-  const cycleTailEdgeForAnn = useCallback(
-    (ann: Annotation) => {
-      if (activeTool !== 'callout') return;
-      const { edge } = parseCalloutTail(ann);
-      const next = cycleCalloutTailEdge(edge);
-      onUpdate({
-        annotations: step.annotations.map((a) =>
-          a.id === ann.id ? { ...a, calloutTailEdge: next } : a
-        ),
-      });
-    },
-    [activeTool, onUpdate, step.annotations]
-  );
-
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (e.button !== 0) return;
-      if (activeTool === 'select' || activeTool === 'move') return;
+      if (activeTool === 'select' || activeTool === 'move') {
+        setSelectedId(null);
+        return;
+      }
 
       const pos = getRelativePosition(e);
 
-      if (activeTool === 'blur') {
-        drawGestureRef.current = 'blur';
-        setDrawKind('blur');
+      const beginDraw = (kind: 'blur' | 'rect' | 'arrow' | 'crop') => {
+        drawGestureRef.current = kind;
+        drawingRef.current = true;
+        drawStartRef.current = pos;
+        drawCurrentRef.current = pos;
+        setDrawKind(kind);
         setDrawStart(pos);
         setDrawCurrent(pos);
         setDrawing(true);
-        return;
-      }
+      };
 
-      if (activeTool === 'arrow') {
-        drawGestureRef.current = 'arrow';
-        setDrawKind('arrow');
-        setDrawStart(pos);
-        setDrawCurrent(pos);
-        setDrawing(true);
-        return;
-      }
-
+      if (activeTool === 'blur') { beginDraw('blur'); return; }
+      if (activeTool === 'arrow') { beginDraw('arrow'); return; }
       if (activeTool === 'crop') {
         if (!step.screenshotUrl) return;
-        drawGestureRef.current = 'crop';
-        setDrawKind('crop');
-        setDrawStart(pos);
-        setDrawCurrent(pos);
-        setDrawing(true);
+        beginDraw('crop');
         return;
       }
 
       if (activeTool && isRectAnnotationTool(activeTool)) {
         setPendingCalloutRect(null);
-        drawGestureRef.current = 'rect';
         rectAnnTypeRef.current = activeTool;
-        setDrawKind('rect');
-        setDrawStart(pos);
-        setDrawCurrent(pos);
-        setDrawing(true);
+        beginDraw('rect');
       }
     },
     [activeTool, getRelativePosition, step.screenshotUrl]
@@ -590,7 +609,9 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (!drawing) return;
-      setDrawCurrent(getRelativePosition(e));
+      const pos = getRelativePosition(e);
+      drawCurrentRef.current = pos;
+      setDrawCurrent(pos);
     },
     [drawing, getRelativePosition]
   );
@@ -650,28 +671,53 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
     setRestoreOriginalOpen(false);
   }, [step.screenshotOriginalUrl, onUpdate]);
 
-  const handleMouseUp = useCallback(() => {
-    if (!drawing) return;
+  const finalizeDraw = useCallback(() => {
+    if (!drawingRef.current && !drawing) return;
+    drawingRef.current = false;
     setDrawing(false);
     const g = drawGestureRef.current;
+    const start = drawStartRef.current;
+    const end = drawCurrentRef.current;
+    drawGestureRef.current = null;
+    setDrawKind(null);
+
+    const x = Math.min(start.x, end.x);
+    const y = Math.min(start.y, end.y);
+    const width = Math.abs(end.x - start.x);
+    const height = Math.abs(end.y - start.y);
+
     if (g === 'arrow') {
-      finalizeArrow();
+      const len = Math.hypot(end.x - start.x, end.y - start.y);
+      if (len < 1.2) return;
+      const ann: Annotation = { id: `ann-${Date.now()}`, type: 'arrow', x: start.x, y: start.y, x2: end.x, y2: end.y };
+      onUpdateRef.current({ annotations: [...stepRef.current.annotations, ann] });
       return;
     }
     if (g === 'crop') {
-      drawGestureRef.current = null;
-      setDrawKind(null);
-      const x = Math.min(drawStart.x, drawCurrent.x);
-      const y = Math.min(drawStart.y, drawCurrent.y);
-      const width = Math.abs(drawCurrent.x - drawStart.x);
-      const height = Math.abs(drawCurrent.y - drawStart.y);
-      if (width >= 1 && height >= 1) {
-        setCropConfirm({ x, y, width, height });
-      }
+      if (width >= 1 && height >= 1) setCropConfirm({ x, y, width, height });
       return;
     }
-    finalizeRectOrBlur();
-  }, [drawing, finalizeArrow, finalizeRectOrBlur, drawStart, drawCurrent]);
+    if (width < 0.8 || height < 0.8) return;
+    if (g === 'blur') {
+      const newRegion: BlurRegion = { id: `blur-${Date.now()}`, x, y, width, height, intensity: BLUR_INTENSITY_DEFAULT };
+      onUpdateRef.current({ blurRegions: [...stepRef.current.blurRegions, newRegion] });
+      return;
+    }
+    if (g === 'rect') {
+      const annType = rectAnnTypeRef.current;
+      rectAnnTypeRef.current = null;
+      if (!annType) return;
+      if (annType === 'callout') { setPendingCalloutRect({ x, y, width, height }); return; }
+      const ann: Annotation = {
+        id: `ann-${Date.now()}`, type: annType, x, y, width, height,
+        ...(annType === 'circle' ? { color: circleStrokeHex } : {}),
+        ...(annType === 'box' ? { color: boxStrokeHex } : {}),
+        ...(annType === 'highlight' ? { color: highlightStrokeHex } : {}),
+      };
+      onUpdateRef.current({ annotations: [...stepRef.current.annotations, ann] });
+    }
+  }, [drawing, circleStrokeHex, boxStrokeHex, highlightStrokeHex]);
+  finalizeDrawRef.current = finalizeDraw;
 
   const removeBlurRegion = (regionId: string) => {
     onUpdate({ blurRegions: step.blurRegions.filter((r) => r.id !== regionId) });
@@ -705,7 +751,13 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
   const handleTextModalConfirm = useCallback(() => {
     if (!textDialog) return;
     const trimmed = textDraft.trim();
-    if (textDialog.kind === 'callout') {
+    if (editingAnnotationId) {
+      onUpdate({
+        annotations: step.annotations.map((a) =>
+          a.id === editingAnnotationId ? { ...a, text: trimmed || (a.type === 'callout' ? 'Callout' : 'Label') } : a
+        ),
+      });
+    } else if (textDialog.kind === 'callout') {
       const { rect } = textDialog;
       const ann: Annotation = {
         id: `ann-${Date.now()}`,
@@ -726,10 +778,12 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
       onUpdate({ annotations: [...step.annotations, ann] });
     }
     setTextDialog(null);
-  }, [textDialog, textDraft, onUpdate, step.annotations]);
+    setEditingAnnotationId(null);
+  }, [textDialog, textDraft, editingAnnotationId, onUpdate, step.annotations]);
 
   const handleTextModalCancel = useCallback(() => {
     setTextDialog(null);
+    setEditingAnnotationId(null);
   }, []);
 
   const drawRect = drawing
@@ -755,6 +809,12 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
   }, [arrowPreview]);
 
   const displayAnn = (ann: Annotation): Annotation => {
+    const rs = resizeRef.current;
+    if (rs && rs.target.kind === 'annotation' && rs.target.id === ann.id && resizePointer) {
+      const dx = resizePointer.x - rs.pointerStart.x;
+      const dy = resizePointer.y - rs.pointerStart.y;
+      return applyResize({ ...ann, ...rs.target.initial }, rs.handle, dx, dy);
+    }
     const session = moveSessionRef.current;
     if (!session || session.kind !== 'annotation' || session.id !== ann.id || movePointer == null) {
       return ann;
@@ -765,6 +825,12 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
   };
 
   const displayBlur = (r: BlurRegion): BlurRegion => {
+    const rs = resizeRef.current;
+    if (rs && rs.target.kind === 'blur' && rs.target.id === r.id && resizePointer) {
+      const dx = resizePointer.x - rs.pointerStart.x;
+      const dy = resizePointer.y - rs.pointerStart.y;
+      return applyResize({ ...r, ...rs.target.initial }, rs.handle, dx, dy);
+    }
     const session = moveSessionRef.current;
     if (!session || session.kind !== 'blur' || session.id !== r.id || movePointer == null) {
       return r;
@@ -776,19 +842,16 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
 
   const overlayInteractive = activeTool === 'select' || activeTool === 'move';
   /** Callouts also need hits for the Pointer tool (tail); other overlays stay inert so they don’t block. */
-  const calloutOverlayInteractive =
-    activeTool === 'select' || activeTool === 'move' || activeTool === 'callout';
+  const calloutOverlayInteractive = overlayInteractive || activeTool === 'callout';
 
   const cursorClass =
-    activeTool === 'move'
+    activeTool === 'move' || activeTool === 'select'
       ? movePointer != null
         ? 'cursor-grabbing'
-        : 'cursor-grab'
-      : activeTool === 'select'
-        ? ''
-        : crosshairTool(activeTool)
-          ? 'cursor-crosshair'
-          : '';
+        : 'cursor-default'
+      : crosshairTool(activeTool)
+        ? 'cursor-crosshair'
+        : '';
 
   return (
     <div className={expandedCanvas ? 'w-full max-w-none min-w-0' : 'w-full max-w-4xl'}>
@@ -806,7 +869,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
         <div className="mb-2 space-y-2">
           <p className="text-xs text-gray-500">
             {activeTool === 'select' && (
-              <span>Click an annotation or blur region to remove it.</span>
+              <span>Click to select &amp; drag to move. Resize with corner handles. Double-click callout/text to edit. Press <strong className="text-gray-400">Delete</strong> or use the <strong className="text-gray-400">×</strong> button to remove.</span>
             )}
             {activeTool === 'move' && (
               <span>Drag any annotation or blur region to reposition it on the screenshot.</span>
@@ -879,8 +942,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
         className={`relative bg-gray-900 border border-gray-800 rounded-2xl ${cursorClass}`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={() => drawing && handleMouseUp()}
+        onMouseUp={() => drawingRef.current && finalizeDraw()}
       >
         {step.screenshotUrl ? (
           <>
@@ -889,7 +951,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
             <img
               src={step.screenshotUrl}
               alt={step.title}
-              className="w-full block pointer-events-none"
+              className="block max-w-full max-h-[70vh] w-auto h-auto mx-auto pointer-events-none"
               draggable={false}
             />
           </div>
@@ -916,9 +978,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                 key={region.id}
                 className={`absolute group z-[2] ${
                   overlayInteractive
-                    ? activeTool === 'move'
-                      ? 'pointer-events-auto cursor-grab active:cursor-grabbing'
-                      : 'pointer-events-auto cursor-pointer'
+                    ? 'pointer-events-auto cursor-grab active:cursor-grabbing'
                     : 'pointer-events-none'
                 }`}
                 style={{
@@ -931,30 +991,19 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                   backgroundColor: `rgba(15, 23, 42, ${alpha})`,
                 }}
                 onMouseDown={(e) => {
-                  if (activeTool === 'move') beginMoveBlur(e, region);
-                }}
-                onClick={(e) => {
-                  if (activeTool === 'select') {
-                    e.stopPropagation();
-                    removeBlurRegion(region.id);
+                  if (canDrag) {
+                    didDragRef.current = false;
+                    beginMoveBlur(e, region);
                   }
                 }}
-                title={
-                  activeTool === 'select'
-                    ? 'Click to remove blur'
-                    : activeTool === 'move'
-                      ? 'Drag to move blur region'
-                      : undefined
-                }
-              >
-                <span
-                  className={`absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-xs items-center justify-center ${
-                    activeTool === 'select' ? 'flex' : 'hidden group-hover:flex'
-                  }`}
-                >
-                  ×
-                </span>
-              </div>
+                onClick={(e) => {
+                  if (overlayInteractive && !didDragRef.current) {
+                    e.stopPropagation();
+                    setSelectedId(selectedId === region.id ? null : region.id);
+                  }
+                }}
+                title={overlayInteractive ? 'Click to select, drag to move' : undefined}
+              />
             );
             })}
 
@@ -969,9 +1018,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                     key={ann.id}
                     className={`absolute z-[3] rounded-md ${
                       overlayInteractive
-                        ? activeTool === 'move'
-                          ? 'pointer-events-auto cursor-grab hover:ring-2 hover:ring-brand-500/30'
-                          : 'pointer-events-auto cursor-pointer hover:ring-2 hover:ring-red-500/40'
+                        ? 'pointer-events-auto cursor-grab hover:ring-2 hover:ring-brand-500/30'
                         : 'pointer-events-none'
                     }`}
                     style={{
@@ -986,15 +1033,15 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                       boxShadow: `0 0 14px ${hiStroke}66`,
                     }}
                     onMouseDown={(e) => {
-                      if (activeTool === 'move') beginMoveAnnotation(e, ann);
+                      if (canDrag) { didDragRef.current = false; beginMoveAnnotation(e, ann); }
                     }}
                     onClick={(e) => {
-                      if (activeTool === 'select') {
+                      if (overlayInteractive && !didDragRef.current) {
                         e.stopPropagation();
-                        removeAnnotation(ann.id);
+                        setSelectedId(selectedId === ann.id ? null : ann.id);
                       }
                     }}
-                    title={activeTool === 'select' ? 'Click to remove' : activeTool === 'move' ? 'Drag to move' : undefined}
+                    title={overlayInteractive ? 'Click to select, drag to move' : undefined}
                   />
                 );
               }
@@ -1006,9 +1053,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                     key={ann.id}
                     className={`absolute z-[3] border-2 rounded-full box-border ${
                       overlayInteractive
-                        ? activeTool === 'move'
-                          ? 'pointer-events-auto cursor-grab hover:ring-2 hover:ring-brand-500/30'
-                          : 'pointer-events-auto cursor-pointer hover:ring-2 hover:ring-red-500/40'
+                        ? 'pointer-events-auto cursor-grab hover:ring-2 hover:ring-brand-500/30'
                         : 'pointer-events-none'
                     }`}
                     style={{
@@ -1020,15 +1065,15 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                       backgroundColor: fill,
                     }}
                     onMouseDown={(e) => {
-                      if (activeTool === 'move') beginMoveAnnotation(e, ann);
+                      if (canDrag) { didDragRef.current = false; beginMoveAnnotation(e, ann); }
                     }}
                     onClick={(e) => {
-                      if (activeTool === 'select') {
+                      if (overlayInteractive && !didDragRef.current) {
                         e.stopPropagation();
-                        removeAnnotation(ann.id);
+                        setSelectedId(selectedId === ann.id ? null : ann.id);
                       }
                     }}
-                    title={activeTool === 'select' ? 'Click to remove' : activeTool === 'move' ? 'Drag to move' : undefined}
+                    title={overlayInteractive ? 'Click to select, drag to move' : undefined}
                   />
                 );
               }
@@ -1040,9 +1085,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                     key={ann.id}
                     className={`absolute z-[3] border-2 rounded-md box-border ${
                       overlayInteractive
-                        ? activeTool === 'move'
-                          ? 'pointer-events-auto cursor-grab hover:ring-2 hover:ring-brand-500/30'
-                          : 'pointer-events-auto cursor-pointer hover:ring-2 hover:ring-red-500/40'
+                        ? 'pointer-events-auto cursor-grab hover:ring-2 hover:ring-brand-500/30'
                         : 'pointer-events-none'
                     }`}
                     style={{
@@ -1054,15 +1097,15 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                       backgroundColor: fill,
                     }}
                     onMouseDown={(e) => {
-                      if (activeTool === 'move') beginMoveAnnotation(e, ann);
+                      if (canDrag) { didDragRef.current = false; beginMoveAnnotation(e, ann); }
                     }}
                     onClick={(e) => {
-                      if (activeTool === 'select') {
+                      if (overlayInteractive && !didDragRef.current) {
                         e.stopPropagation();
-                        removeAnnotation(ann.id);
+                        setSelectedId(selectedId === ann.id ? null : ann.id);
                       }
                     }}
-                    title={activeTool === 'select' ? 'Click to remove' : activeTool === 'move' ? 'Drag to move' : undefined}
+                    title={overlayInteractive ? 'Click to select, drag to move' : undefined}
                   />
                 );
               }
@@ -1084,11 +1127,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                     key={ann.id}
                     className={`absolute z-[4] ${
                       calloutOverlayInteractive
-                        ? activeTool === 'move'
-                          ? 'pointer-events-auto cursor-grab'
-                          : activeTool === 'callout'
-                            ? 'pointer-events-auto cursor-crosshair'
-                            : 'pointer-events-auto cursor-pointer'
+                        ? 'pointer-events-auto cursor-grab'
                         : 'pointer-events-none'
                     }`}
                     style={{
@@ -1097,45 +1136,41 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                       maxWidth: maxW,
                     }}
                     onMouseDown={(e) => {
-                      if (activeTool === 'move') beginMoveAnnotation(e, ann);
-                    }}
-                    onClick={(e) => {
-                      if (activeTool === 'select') {
+                      if (canDrag) {
+                        e.preventDefault();
                         e.stopPropagation();
-                        removeAnnotation(ann.id);
+                        didDragRef.current = false;
+                        beginMoveAnnotation(e, ann);
+                      } else if (activeTool === 'callout') {
+                        startTailAdjust(e, ann);
                       }
                     }}
-                    title={
-                      activeTool === 'select'
-                        ? 'Click to remove'
-                        : activeTool === 'move'
-                          ? 'Drag to move'
-                          : activeTool === 'callout'
-                            ? 'Drag text box: slide pointer. Double-click: next side. Drag empty area: new callout.'
-                            : undefined
-                    }
+                    onClick={(e) => {
+                      if (overlayInteractive && !didDragRef.current) {
+                        e.stopPropagation();
+                        setSelectedId(selectedId === ann.id ? null : ann.id);
+                      }
+                    }}
+                    onDoubleClick={(e) => {
+                      if (overlayInteractive) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setTextDraft(ann.text || '');
+                        setTextDialog({ kind: 'callout', rect: { x: d.x, y: d.y, width: d.width ?? 0, height: d.height ?? 0 } });
+                        setEditingAnnotationId(ann.id);
+                      }
+                    }}
+                    title={overlayInteractive ? 'Click to select, drag to move' : undefined}
                   >
                     <div
-                      className={`relative inline-block w-full max-w-full rounded-xl border-2 border-brand-400 bg-gray-950 px-3 py-2 text-sm font-medium leading-snug text-gray-50 shadow-xl ring-1 ring-black/50 ${
-                        activeTool === 'callout' ? 'cursor-grab active:cursor-grabbing' : ''
-                      }`}
-                      onMouseDown={(e) => {
-                        if (activeTool === 'callout') startTailAdjust(e, ann);
-                      }}
-                      onDoubleClick={(e) => {
-                        if (activeTool === 'callout') {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          cycleTailEdgeForAnn(ann);
-                        }
-                      }}
+                      className="relative inline-block w-full max-w-full rounded-xl border-2 border-brand-400 bg-gray-950 px-3 py-2 text-sm font-medium leading-snug text-gray-50 shadow-xl ring-1 ring-black/50 cursor-grab active:cursor-grabbing"
                     >
                       <CalloutTailVisual
                         edge={live.edge}
                         offsetPct={live.offset}
-                        showAdjustHandle={activeTool === 'callout'}
+                        showAdjustHandle={activeTool === 'callout' || activeTool === 'select'}
                       />
-                      <span className="relative z-[2]">{ann.text || 'Callout'}</span>
+                      <span className="relative z-[2] whitespace-pre-wrap">{ann.text || 'Callout'}</span>
                     </div>
                   </div>
                 );
@@ -1151,22 +1186,20 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                     key={ann.id}
                     className={`absolute z-[5] -translate-x-1/2 -translate-y-1/2 ${
                       overlayInteractive
-                        ? activeTool === 'move'
-                          ? 'pointer-events-auto cursor-grab'
-                          : 'pointer-events-auto cursor-pointer'
+                        ? 'pointer-events-auto cursor-grab'
                         : 'pointer-events-none'
                     }`}
                     style={{ left: `${d.x}%`, top: `${d.y}%` }}
                     onMouseDown={(e) => {
-                      if (activeTool === 'move') beginMoveAnnotation(e, ann);
+                      if (canDrag) { didDragRef.current = false; beginMoveAnnotation(e, ann); }
                     }}
                     onClick={(e) => {
-                      if (activeTool === 'select') {
+                      if (overlayInteractive && !didDragRef.current) {
                         e.stopPropagation();
-                        removeAnnotation(ann.id);
+                        setSelectedId(selectedId === ann.id ? null : ann.id);
                       }
                     }}
-                    title={activeTool === 'move' ? 'Drag to move' : undefined}
+                    title={overlayInteractive ? 'Click to select, drag to move' : undefined}
                   >
                     <span className="w-7 h-7 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold shadow-lg">
                       {ann.text || '!'}
@@ -1181,24 +1214,31 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                     key={ann.id}
                     className={`absolute z-[5] max-w-[45%] ${
                       overlayInteractive
-                        ? activeTool === 'move'
-                          ? 'pointer-events-auto cursor-grab'
-                          : 'pointer-events-auto cursor-pointer'
+                        ? 'pointer-events-auto cursor-grab'
                         : 'pointer-events-none'
                     }`}
                     style={{ left: `${d.x}%`, top: `${d.y}%` }}
                     onMouseDown={(e) => {
-                      if (activeTool === 'move') beginMoveAnnotation(e, ann);
+                      if (canDrag) { didDragRef.current = false; beginMoveAnnotation(e, ann); }
                     }}
                     onClick={(e) => {
-                      if (activeTool === 'select') {
+                      if (overlayInteractive && !didDragRef.current) {
                         e.stopPropagation();
-                        removeAnnotation(ann.id);
+                        setSelectedId(selectedId === ann.id ? null : ann.id);
                       }
                     }}
-                    title={activeTool === 'move' ? 'Drag to move' : undefined}
+                    onDoubleClick={(e) => {
+                      if (overlayInteractive) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setTextDraft(ann.text || '');
+                        setTextDialog({ kind: 'text', pos: { x: d.x, y: d.y } });
+                        setEditingAnnotationId(ann.id);
+                      }
+                    }}
+                    title={overlayInteractive ? 'Click to select, drag to move, double-click to edit' : undefined}
                   >
-                    <div className="bg-black/80 text-white text-sm px-2.5 py-1 rounded-md border border-white/20 shadow-md">
+                    <div className="bg-black/80 text-white text-sm px-2.5 py-1 rounded-md border border-white/20 shadow-md whitespace-pre-wrap">
                       {ann.text || 'Text'}
                     </div>
                   </div>
@@ -1209,9 +1249,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
 
             {/* Arrows: shaft + computed triangle head (no SVG markers — consistent, pro look) */}
             <svg
-              className={`absolute inset-0 z-[6] w-full h-full ${
-                overlayInteractive ? 'pointer-events-auto' : 'pointer-events-none'
-              }`}
+              className="absolute inset-0 z-[6] w-full h-full pointer-events-none"
               viewBox="0 0 100 100"
               preserveAspectRatio="none"
               aria-hidden
@@ -1231,19 +1269,19 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                         x2={d.x2}
                         y2={d.y2}
                         stroke="transparent"
-                        strokeWidth={activeTool === 'move' ? '10' : '6'}
+                        strokeWidth="10"
                         strokeLinecap="round"
                         style={{
                           pointerEvents: 'stroke',
-                          cursor: activeTool === 'move' ? 'grab' : 'pointer',
+                          cursor: 'grab',
                         }}
                         onMouseDown={(e) => {
-                          if (activeTool === 'move') beginMoveAnnotation(e, ann);
+                          if (canDrag) { didDragRef.current = false; beginMoveAnnotation(e as unknown as React.MouseEvent, ann); }
                         }}
                         onClick={(e) => {
-                          if (activeTool === 'select') {
+                          if (overlayInteractive && !didDragRef.current) {
                             e.stopPropagation();
-                            removeAnnotation(ann.id);
+                            setSelectedId(selectedId === ann.id ? null : ann.id);
                           }
                         }}
                       />
@@ -1305,6 +1343,93 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                 </g>
               )}
             </svg>
+
+            {overlayInteractive && selectedId && (() => {
+              const selBlur = step.blurRegions.find((r) => r.id === selectedId);
+              const selAnn = step.annotations.find((a) => a.id === selectedId);
+              let box: { x: number; y: number; width: number; height: number } | null = null;
+              if (selBlur) {
+                const db = displayBlur(selBlur);
+                box = { x: db.x, y: db.y, width: db.width, height: db.height };
+              } else if (selAnn && selAnn.width != null && selAnn.height != null) {
+                const da = displayAnn(selAnn);
+                if (da.width != null && da.height != null) {
+                  box = { x: da.x, y: da.y, width: da.width, height: da.height };
+                }
+              }
+              if (!box) return null;
+              const handles: { h: ResizeHandle; style: React.CSSProperties }[] = [
+                { h: 'nw', style: { left: 0, top: 0, transform: 'translate(-50%, -50%)' } },
+                { h: 'ne', style: { right: 0, top: 0, transform: 'translate(50%, -50%)' } },
+                { h: 'sw', style: { left: 0, bottom: 0, transform: 'translate(-50%, 50%)' } },
+                { h: 'se', style: { right: 0, bottom: 0, transform: 'translate(50%, 50%)' } },
+                { h: 'n', style: { left: '50%', top: 0, transform: 'translate(-50%, -50%)' } },
+                { h: 's', style: { left: '50%', bottom: 0, transform: 'translate(-50%, 50%)' } },
+                { h: 'w', style: { left: 0, top: '50%', transform: 'translate(-50%, -50%)' } },
+                { h: 'e', style: { right: 0, top: '50%', transform: 'translate(50%, -50%)' } },
+              ];
+              return (
+                <div
+                  className="absolute z-[10] pointer-events-none"
+                  style={{ left: `${box.x}%`, top: `${box.y}%`, width: `${box.width}%`, height: `${box.height}%` }}
+                >
+                  <div className="absolute inset-0 border-2 border-brand-400 rounded pointer-events-none" />
+                  {handles.map(({ h, style }) => (
+                    <div
+                      key={h}
+                      className="absolute w-3 h-3 bg-white border-2 border-brand-500 rounded-sm pointer-events-auto"
+                      style={{ ...style, cursor: HANDLE_CURSORS[h] }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (selBlur) beginResizeBlur(e, selBlur, h);
+                        else if (selAnn) beginResizeAnnotation(e, selAnn, h);
+                      }}
+                    />
+                  ))}
+                  {(selBlur || selAnn) && (
+                    <button
+                      className="absolute -top-3 -right-3 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center pointer-events-auto hover:bg-red-600 shadow"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (selBlur) removeBlurRegion(selBlur.id);
+                        else if (selAnn) removeAnnotation(selAnn.id);
+                        setSelectedId(null);
+                      }}
+                      title="Delete"
+                    >
+                      ×
+                    </button>
+                  )}
+                  {selAnn && (selAnn.type === 'highlight' || selAnn.type === 'circle' || selAnn.type === 'box') && (
+                    <div
+                      className="absolute left-0 pointer-events-auto flex gap-1 p-1 bg-gray-900/90 rounded-lg border border-gray-700 shadow-lg"
+                      style={{ top: '100%', marginTop: 6 }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                    >
+                      {(selAnn.type === 'highlight' ? HIGHLIGHT_COLOR_PRESETS : CIRCLE_OUTLINE_PRESETS).map((p) => (
+                        <button
+                          key={p.key}
+                          title={p.label}
+                          className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                            (selAnn.color || '') === p.stroke ? 'ring-2 ring-white/80 scale-110' : 'border-gray-600'
+                          }`}
+                          style={{ backgroundColor: p.stroke }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdate({
+                              annotations: step.annotations.map((a) =>
+                                a.id === selAnn.id ? { ...a, color: p.stroke } : a
+                              ),
+                            });
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {drawRect && drawKind !== 'arrow' && (
               <div
@@ -1502,7 +1627,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
         onConfirm={handleTextModalConfirm}
         onCancel={handleTextModalCancel}
         confirmLabel={textDialog?.kind === 'callout' ? 'Add callout' : 'Add label'}
-        multiline={textDialog?.kind === 'callout'}
+        multiline
       />
 
       {restoreOriginalOpen && (

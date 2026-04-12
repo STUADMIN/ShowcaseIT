@@ -13,7 +13,7 @@ export interface TextAnnotationModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   confirmLabel?: string;
-  /** Callouts: taller field; Enter = new line, Ctrl+Enter = submit */
+  /** Always uses a textarea; kept for backwards compat. */
   multiline?: boolean;
 }
 
@@ -32,7 +32,6 @@ export function TextAnnotationModal({
   confirmLabel = 'Add',
   multiline = false,
 }: TextAnnotationModalProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -43,16 +42,11 @@ export function TextAnnotationModal({
   useEffect(() => {
     if (!open) return;
     const t = window.setTimeout(() => {
-      if (multiline) {
-        textareaRef.current?.focus();
-        textareaRef.current?.select();
-      } else {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      }
+      textareaRef.current?.focus();
+      textareaRef.current?.select();
     }, 0);
     return () => window.clearTimeout(t);
-  }, [open, multiline]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -100,46 +94,26 @@ export function TextAnnotationModal({
           <label className="sr-only" htmlFor="text-annotation-modal-input">
             {placeholder || title}
           </label>
-          {multiline ? (
-            <textarea
-              id="text-annotation-modal-input"
-              ref={textareaRef}
-              rows={4}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={placeholder}
-              className="w-full resize-y min-h-[120px] rounded-xl border border-gray-700 bg-gray-950/80 px-4 py-3 text-sm text-gray-100 placeholder:text-gray-600 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25 transition-shadow"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                  e.preventDefault();
-                  onConfirm();
-                }
-              }}
-            />
-          ) : (
-            <input
-              id="text-annotation-modal-input"
-              ref={inputRef}
-              type="text"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={placeholder}
-              className="w-full rounded-xl border border-gray-700 bg-gray-950/80 px-4 py-3 text-sm text-gray-100 placeholder:text-gray-600 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25 transition-shadow"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  onConfirm();
-                }
-              }}
-            />
-          )}
-          {multiline ? (
-            <p className="text-xs text-gray-600 mt-2">
-              Press{' '}
-              <kbd className="px-1 py-0.5 rounded bg-gray-800 text-gray-400">Ctrl</kbd>+
-              <kbd className="px-1 py-0.5 rounded bg-gray-800 text-gray-400">Enter</kbd> to add the callout.
-            </p>
-          ) : null}
+          <textarea
+            id="text-annotation-modal-input"
+            ref={textareaRef}
+            rows={5}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="w-full resize-y min-h-[100px] max-h-[50vh] rounded-xl border border-gray-700 bg-gray-950/80 px-4 py-3 text-sm text-gray-100 placeholder:text-gray-600 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25 transition-shadow"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                onConfirm();
+              }
+            }}
+          />
+          <p className="text-xs text-gray-600 mt-2">
+            Press <kbd className="px-1 py-0.5 rounded bg-gray-800 text-gray-400">Enter</kbd> for a new line.{' '}
+            <kbd className="px-1 py-0.5 rounded bg-gray-800 text-gray-400">Ctrl</kbd>+
+            <kbd className="px-1 py-0.5 rounded bg-gray-800 text-gray-400">Enter</kbd> to save.
+          </p>
         </div>
         <div className="flex items-center justify-end gap-2 border-t border-gray-800 px-6 py-4 bg-gray-950/40 rounded-b-2xl">
           <button

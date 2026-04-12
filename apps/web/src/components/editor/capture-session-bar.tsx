@@ -20,31 +20,28 @@ interface CaptureSessionModalProps {
   onDone: () => void;
 }
 
-const TARGET_W = 1440;
-const TARGET_H = 900;
+const MAX_LONG_EDGE = 1920;
 
 function bitmapToBlob(bitmap: ImageBitmap): Promise<Blob | null> {
   return new Promise((resolve) => {
     const srcW = bitmap.width;
     const srcH = bitmap.height;
-    const srcAspect = srcW / srcH;
-    const targetAspect = TARGET_W / TARGET_H;
 
-    let sx = 0, sy = 0, sw = srcW, sh = srcH;
-    if (srcAspect > targetAspect) {
-      sw = Math.round(srcH * targetAspect);
-      sx = Math.round((srcW - sw) / 2);
-    } else if (srcAspect < targetAspect) {
-      sh = Math.round(srcW / targetAspect);
-      sy = Math.round((srcH - sh) / 2);
+    let outW = srcW;
+    let outH = srcH;
+    const longest = Math.max(srcW, srcH);
+    if (longest > MAX_LONG_EDGE) {
+      const scale = MAX_LONG_EDGE / longest;
+      outW = Math.round(srcW * scale);
+      outH = Math.round(srcH * scale);
     }
 
     const canvas = document.createElement('canvas');
-    canvas.width = TARGET_W;
-    canvas.height = TARGET_H;
+    canvas.width = outW;
+    canvas.height = outH;
     const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) { resolve(null); return; }
-    ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
+    ctx.drawImage(bitmap, 0, 0, srcW, srcH, 0, 0, outW, outH);
     bitmap.close();
     canvas.toBlob((b) => resolve(b), 'image/png');
   });

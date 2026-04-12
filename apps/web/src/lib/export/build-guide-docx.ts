@@ -124,16 +124,39 @@ export async function buildGuideDocxBuffer(input: GuideDocxInput): Promise<Buffe
   if (input.description?.trim()) {
     children.push(
       new Paragraph({
-        spacing: { after: 300 },
+        spacing: { after: 200 },
+        children: parseRichTextRuns(input.description.trim(), mutedTextColor, 22),
+      })
+    );
+  }
+
+  if (input.steps.length > 1) {
+    children.push(
+      new Paragraph({
+        spacing: { before: 100, after: 120 },
         children: [
           new TextRun({
-            text: input.description.trim(),
+            text: 'CONTENTS',
+            bold: true,
             color: mutedTextColor,
-            size: 22,
+            size: 18,
+            font: 'Arial',
           }),
         ],
       })
     );
+    input.steps.forEach((s, i) => {
+      children.push(
+        new Paragraph({
+          spacing: { after: 40 },
+          children: [
+            new TextRun({ text: `${i + 1}. `, bold: true, color: primary, size: 20, font: 'Arial' }),
+            new TextRun({ text: s.title?.trim() || `Step ${i + 1}`, color: textColor, size: 20, font: 'Arial' }),
+          ],
+        })
+      );
+    });
+    children.push(new Paragraph({ spacing: { after: 300 }, children: [] }));
   }
 
   let stepNum = 0;
@@ -211,7 +234,7 @@ export async function buildGuideDocxBuffer(input: GuideDocxInput): Promise<Buffe
         contentParagraphs.push(
           new Paragraph({
             spacing: { after: 60 },
-            children: [new TextRun({ text: line, color: mutedTextColor, size: 20 })],
+            children: parseRichTextRuns(line, mutedTextColor, 20),
           })
         );
       }
@@ -285,4 +308,31 @@ export async function buildGuideDocxBuffer(input: GuideDocxInput): Promise<Buffe
   });
 
   return Buffer.from(await Packer.toBuffer(doc));
+}
+
+function parseRichTextRuns(text: string, color: string, size: number): TextRun[] {
+  const runs: TextRun[] = [];
+  const pattern = /\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > last) {
+      runs.push(new TextRun({ text: text.slice(last, match.index), color, size }));
+    }
+    if (match[1] != null) {
+      runs.push(new TextRun({ text: match[1], bold: true, color, size }));
+    } else if (match[2] != null) {
+      runs.push(new TextRun({ text: match[2], italics: true, color, size }));
+    } else if (match[3] != null) {
+      runs.push(new TextRun({ text: match[3], color, size, font: 'Consolas' }));
+    }
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) {
+    runs.push(new TextRun({ text: text.slice(last), color, size }));
+  }
+  if (runs.length === 0) {
+    runs.push(new TextRun({ text, color, size }));
+  }
+  return runs;
 }

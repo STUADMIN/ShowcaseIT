@@ -55,6 +55,15 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
   return lines;
 }
 
+function truncateToFit(text: string, f: PDFFont, size: number, maxW: number): string {
+  if (f.widthOfTextAtSize(text, size) <= maxW) return text;
+  let truncated = text;
+  while (truncated.length > 0 && f.widthOfTextAtSize(truncated + '…', size) > maxW) {
+    truncated = truncated.slice(0, -1);
+  }
+  return truncated + '…';
+}
+
 export async function buildGuidePdfBuffer(input: GuidePdfInput): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -143,6 +152,33 @@ export async function buildGuidePdfBuffer(input: GuidePdfInput): Promise<Uint8Ar
     const descLines = input.description.trim().split('\n').flatMap((p) => wrapText(p, font, 11, CONTENT_W));
     drawLines(descLines, 11, font, 3, bodyRgb);
     y -= 8;
+  }
+
+  if (input.steps.length > 1) {
+    y -= 16;
+    needSpace(22);
+    page.drawText('CONTENTS', {
+      x: MARGIN,
+      y: y - 10,
+      size: 9,
+      font: fontBold,
+      color: rgb(0.45, 0.5, 0.56),
+    });
+    y -= 22;
+
+    const tocLineH = 18;
+    for (let i = 0; i < input.steps.length; i++) {
+      const tocTitle = input.steps[i].title?.trim() || `Step ${i + 1}`;
+      needSpace(tocLineH);
+      const numStr = `${i + 1}.`;
+      page.drawText(numStr, { x: MARGIN + 4, y: y - 10, size: 10, font: fontBold, color: primaryRgb });
+      const numW = fontBold.widthOfTextAtSize(numStr, 10);
+      const maxTocW = CONTENT_W - numW - 16;
+      const truncTitle = truncateToFit(tocTitle, font, 10, maxTocW);
+      page.drawText(truncTitle, { x: MARGIN + 4 + numW + 8, y: y - 10, size: 10, font, color: bodyRgb });
+      y -= tocLineH;
+    }
+    y -= 10;
   }
 
   const cardPad = 16;
@@ -236,11 +272,13 @@ export async function buildGuidePdfBuffer(input: GuidePdfInput): Promise<Uint8Ar
     if (descLines.length > 0) {
       cy -= 2;
       for (const ln of descLines) {
-        page.drawText(ln, {
+        const stripped = ln.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1').replace(/`(.+?)`/g, '$1');
+        const isBold = /\*\*/.test(ln);
+        page.drawText(stripped, {
           x: titleX,
           y: cy - 10,
           size: 10,
-          font,
+          font: isBold ? fontBold : font,
           color: descMutedRgb,
         });
         cy -= 13;

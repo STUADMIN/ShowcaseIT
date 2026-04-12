@@ -56,6 +56,47 @@ export function tailOffsetDeltaFromPointer(
   }
 }
 
+/**
+ * Given a drag position relative to the callout box center, determine which
+ * edge the tail should be on and the offset % along that edge.
+ * `relX` / `relY` are the pointer position relative to the box center, in
+ * units of half-width / half-height (so the box corners are at ±1, ±1).
+ */
+export function tailFromPointerAngle(
+  relX: number,
+  relY: number
+): { edge: CalloutTailEdge; offset: number } {
+  const ax = Math.abs(relX);
+  const ay = Math.abs(relY);
+
+  if (ax < 0.05 && ay < 0.05) {
+    return { edge: 'bottom', offset: 50 };
+  }
+
+  let edge: CalloutTailEdge;
+  let offset: number;
+
+  if (ay >= ax) {
+    if (relY > 0) {
+      edge = 'bottom';
+      offset = 50 + (relX / Math.max(ay, 0.01)) * 50;
+    } else {
+      edge = 'top';
+      offset = 50 + (relX / Math.max(ay, 0.01)) * 50;
+    }
+  } else {
+    if (relX > 0) {
+      edge = 'right';
+      offset = 50 + (relY / Math.max(ax, 0.01)) * 50;
+    } else {
+      edge = 'left';
+      offset = 50 + (relY / Math.max(ax, 0.01)) * 50;
+    }
+  }
+
+  return { edge, offset: clampTailOffset(offset) };
+}
+
 /** Two absolutely positioned triangles for static HTML export (primary = CSS var). */
 export function exportCalloutTailMarkup(edge: CalloutTailEdge, offsetPct: number): string {
   const o = offsetPct;

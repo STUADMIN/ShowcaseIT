@@ -412,6 +412,45 @@ export function GuideEditor({ guideId }: { guideId: string }) {
     } catch {}
   };
 
+  const handleDuplicateStep = async (stepId: string) => {
+    const source = steps.find((s) => s.id === stepId);
+    if (!source) return;
+    try {
+      const newStep = await apiPost<GuideStep>(`/api/guides/${guideId}/steps`, {
+        title: `${source.title} (copy)`,
+        description: source.description,
+        screenshotUrl: source.screenshotUrl || undefined,
+        annotations: source.annotations,
+        blurRegions: source.blurRegions,
+        includeInExport: source.includeInExport,
+      });
+      const step = newStep as GuideStep & { includeInExport?: boolean };
+      setSteps((prev) => {
+        const srcIdx = prev.findIndex((s) => s.id === stepId);
+        const inserted = [
+          ...prev.slice(0, srcIdx + 1),
+          {
+            ...step,
+            screenshotUrl: step.screenshotUrl || '',
+            screenshotOriginalUrl: (step as GuideStep).screenshotOriginalUrl ?? null,
+            annotations: source.annotations,
+            blurRegions: source.blurRegions,
+            includeInExport: step.includeInExport !== false,
+          },
+          ...prev.slice(srcIdx + 1),
+        ];
+        const renumbered = inserted.map((s, i) => ({ ...s, order: i + 1 }));
+        fetch(`/api/guides/${guideId}/steps`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ steps: renumbered.map((s) => ({ id: s.id, order: s.order })) }),
+        }).catch(() => {});
+        return renumbered;
+      });
+      setSelectedStepId(step.id);
+    } catch {}
+  };
+
   if (loading) {
     return <div className="flex h-screen bg-gray-950 items-center justify-center"><p className="text-gray-500">Loading guide...</p></div>;
   }
@@ -563,7 +602,7 @@ export function GuideEditor({ guideId }: { guideId: string }) {
           ) : null}
         </div>
         <div className="flex-1 overflow-auto">
-          <StepPanel steps={steps} selectedStepId={selectedStepId} onSelect={setSelectedStepId} onReorder={handleReorder} onDelete={handleDeleteStep} />
+          <StepPanel steps={steps} selectedStepId={selectedStepId} onSelect={setSelectedStepId} onReorder={handleReorder} onDelete={handleDeleteStep} onDuplicate={handleDuplicateStep} />
         </div>
         <div className="p-3 border-t border-gray-800">
           <button onClick={handleAddStep} className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium transition-colors">+ Add Step</button>

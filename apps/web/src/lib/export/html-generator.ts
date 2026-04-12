@@ -18,7 +18,7 @@ export interface HtmlExportOptions {
    */
   includeDocumentShell?: boolean;
   /**
-   * When set, `og:image` prefers that platform’s banner from the brand kit, then default social banner, then document banner.
+   * When set, `og:image` prefers that platform's banner from the brand kit, then default social banner, then document banner.
    * Use export URL `?social=linkedin` (youtube | linkedin | x | facebook | instagram).
    */
   linkPreviewPlatform?: SocialPlatformId | null;
@@ -71,15 +71,15 @@ export function generateHtmlExport(options: HtmlExportOptions): string {
     <div class="step" id="step-${i + 1}">
       <div class="step-header">
         <span class="step-number">${i + 1}</span>
-        <div>
+        <div class="step-header-text">
           <h3 class="step-title">${escapeHtml(step.title)}</h3>
-          <p class="step-desc">${descriptionToExportHtml(step.description)}</p>
+          ${step.description?.trim() ? `<div class="step-desc">${descriptionToExportHtml(step.description)}</div>` : ''}
         </div>
       </div>
       ${
         step.screenshotUrl
           ? `<div class="step-image-wrapper">
-              <img src="${escapeHtml(step.screenshotUrl)}" alt="${escapeHtml(step.title)}" class="step-image" />
+              <img src="${escapeHtml(step.screenshotUrl)}" alt="${escapeHtml(step.title)}" class="step-image" loading="lazy" />
               ${renderAnnotationsHtml(step.annotations)}
               ${renderBlurRegionsHtml(step.blurRegions)}
               ${includeAnimations && step.mousePosition ? renderMouseCursorHtml(step.mousePosition) : ''}
@@ -176,46 +176,69 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
       --font-heading: '${fonts.heading}', system-ui, sans-serif;
       --font-body: '${fonts.body}', system-ui, sans-serif;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body, .si-export-root {
       font-family: var(--font-body);
       background: var(--paint-bg);
       color: var(--color-fg);
-      line-height: 1.6;
-      ${embedMode === 'iframe' ? 'padding: 24px;' : 'padding: 48px 24px; max-width: 900px; margin: 0 auto;'}
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      ${embedMode === 'iframe' ? 'padding: 24px;' : 'padding: 56px 24px 80px; max-width: 880px; margin: 0 auto;'}
     }
+
+    /* ── Guide header ─────────────────────────────── */
     .guide-header {
-      margin-bottom: 48px;
+      margin-bottom: 40px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
       ${embedMode === 'standalone' ? 'text-align: center;' : ''}
     }
     .guide-title {
       font-family: var(--font-heading);
-      font-size: 2.5rem;
+      font-size: 2.25rem;
       font-weight: 700;
       color: var(--color-fg);
       margin-bottom: 8px;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
     }
     .guide-description {
-      font-size: 1.1rem;
-      color: color-mix(in srgb, var(--color-fg) 60%, transparent);
+      font-size: 1.05rem;
+      color: color-mix(in srgb, var(--color-fg) 55%, transparent);
+      max-width: 640px;
+      ${embedMode === 'standalone' ? 'margin: 0 auto;' : ''}
     }
+    /* ── Step cards ────────────────────────────────── */
     .step {
-      margin-bottom: 48px;
-      padding: 32px;
-      border-radius: 16px;
-      border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
-      background: color-mix(in srgb, var(--color-primary) 3%, var(--color-bg-solid));
+      margin-bottom: 40px;
+      padding: 28px 32px 32px;
+      border-radius: 14px;
+      border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+      background: color-mix(in srgb, var(--color-primary) 2%, var(--color-bg-solid));
+      transition: box-shadow 0.2s;
+    }
+    .step:hover {
+      box-shadow: 0 4px 32px color-mix(in srgb, var(--color-primary) 6%, transparent);
+    }
+    .step:target {
+      box-shadow: 0 0 0 2px var(--color-primary), 0 4px 32px color-mix(in srgb, var(--color-primary) 12%, transparent);
     }
     .step-header {
       display: flex;
       align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 24px;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .step-header-text {
+      flex: 1;
+      min-width: 0;
     }
     .step-number {
       flex-shrink: 0;
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       background: var(--paint-primary);
       color: white;
@@ -223,74 +246,81 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      margin-top: 2px;
     }
     .step-title {
       font-family: var(--font-heading);
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       font-weight: 600;
+      line-height: 1.35;
       margin-bottom: 4px;
     }
     .step-desc {
-      color: color-mix(in srgb, var(--color-fg) 60%, transparent);
-      font-size: 0.95rem;
+      color: color-mix(in srgb, var(--color-fg) 55%, transparent);
+      font-size: 0.9rem;
+      line-height: 1.65;
     }
+    .step-desc strong {
+      color: var(--color-fg);
+      font-weight: 600;
+    }
+
+    /* ── Screenshot container ─────────────────────── */
     .step-image-wrapper {
       position: relative;
-      border-radius: 12px;
-      overflow: hidden;
+      border-radius: 10px;
+      overflow: visible;
       border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+    }
+    .step-image-wrapper > img {
+      border-radius: 10px;
     }
     .step-image {
       width: 100%;
       display: block;
     }
+
+    /* ── Annotations ──────────────────────────────── */
     .blur-region {
       position: absolute;
+      z-index: 2;
+      border-radius: 4px;
     }
     .annotation-badge {
       position: absolute;
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
       background: var(--paint-accent);
       color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 700;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    .annotation-callout {
-      position: absolute;
-      background: var(--color-fg);
-      color: var(--color-bg-solid);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      max-width: 200px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      transform: translate(-50%, -50%);
+      z-index: 5;
     }
     .annotation-highlight {
       position: absolute;
       border-radius: 6px;
       pointer-events: none;
+      z-index: 3;
     }
     .annotation-circle {
       position: absolute;
-      border: 2px solid var(--color-secondary);
       border-radius: 50%;
-      background: color-mix(in srgb, var(--color-secondary) 8%, transparent);
       pointer-events: none;
+      z-index: 3;
     }
     .annotation-box {
       position: absolute;
-      border: 2px solid var(--color-primary);
       border-radius: 6px;
-      background: transparent;
       pointer-events: none;
+      z-index: 3;
     }
     .annotation-arrow-svg {
       position: absolute;
@@ -298,47 +328,80 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
       width: 100%;
       height: 100%;
       pointer-events: none;
-      z-index: 4;
+      z-index: 6;
     }
     .annotation-text {
       position: absolute;
-      color: var(--color-bg-solid);
-      background: color-mix(in srgb, var(--color-fg) 85%, transparent);
-      padding: 4px 10px;
+      color: #fff;
+      background: rgba(0,0,0,0.82);
+      padding: 5px 11px;
       border-radius: 6px;
       font-size: 0.8rem;
       max-width: 42%;
-      line-height: 1.35;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+      line-height: 1.4;
+      white-space: pre-wrap;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.12);
       pointer-events: none;
+      z-index: 5;
     }
     .annotation-callout-box {
       position: absolute;
       display: inline-block;
       pointer-events: none;
-      z-index: 3;
+      z-index: 4;
     }
     .annotation-callout-inner {
       position: relative;
       z-index: 2;
       display: inline-block;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 0.8rem;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 0.82rem;
       font-weight: 500;
-      line-height: 1.4;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+      line-height: 1.45;
+      max-width: 280px;
+      white-space: pre-wrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,0,0,0.5);
       background: #0a0a0a;
       color: #fafafa;
       border: 2px solid var(--color-primary);
     }
+
     ${mouseAnimationCss}
-    .footer {
-      text-align: center;
-      padding: 32px 0;
-      color: color-mix(in srgb, var(--color-fg) 30%, transparent);
-      font-size: 0.8rem;
+
+    /* ── Back to top ──────────────────────────────── */
+    .back-to-top {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--paint-primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 100;
+      font-size: 1.1rem;
+      line-height: 1;
     }
+    .back-to-top.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .back-to-top:hover {
+      box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+    }
+
+    /* ── Branding sections ────────────────────────── */
     .si-export-banner {
       margin-bottom: 32px;
       border-radius: 12px;
@@ -390,7 +453,16 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
       margin-top: -24px;
       border-radius: 0 0 12px 12px;
     }` : ''}
+
+    /* ── Print stylesheet ─────────────────────────── */
     @media print {
+      html { scroll-behavior: auto; }
+      body, .si-export-root {
+        padding: 0;
+        max-width: none;
+        font-size: 11pt;
+        line-height: 1.5;
+      }
       .si-export-cover {
         page-break-after: always;
         break-after: page;
@@ -405,6 +477,18 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
         max-height: 140px;
         object-fit: contain;
       }
+      .step {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        box-shadow: none !important;
+        border-color: #ddd;
+      }
+      .step-image-wrapper {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      .back-to-top { display: none !important; }
+      a { color: inherit; text-decoration: none; }
     }
   </style>
 </head>
@@ -413,12 +497,28 @@ ${ogImageMeta}  <title>${escapeHtml(guide.title)}</title>
   ${bannerHtml}
   <div class="guide-header">
     <h1 class="guide-title">${escapeHtml(guide.title)}</h1>
-    ${guide.description ? `<p class="guide-description">${escapeHtml(guide.description)}</p>` : ''}
+    ${guide.description ? `<p class="guide-description">${descriptionToExportHtml(guide.description)}</p>` : ''}
   </div>
 
   ${stepsHtml}
 
-  
+  <button class="back-to-top" onclick="window.scrollTo({top:0})" aria-label="Back to top" title="Back to top">&#8593;</button>
+  <script>
+    (function(){
+      var btn = document.querySelector('.back-to-top');
+      if (!btn) return;
+      var ticking = false;
+      window.addEventListener('scroll', function() {
+        if (!ticking) {
+          window.requestAnimationFrame(function() {
+            btn.classList.toggle('visible', window.scrollY > 400);
+            ticking = false;
+          });
+          ticking = true;
+        }
+      });
+    })();
+  </script>
 </body>
 </html>`;
 
@@ -483,7 +583,7 @@ function renderAnnotationsHtml(annotations: Guide['steps'][0]['annotations']): s
       const stroke = resolveCircleStroke(ann.color);
       const fill = circleFillRgba(stroke, 0.14);
       pieces.push(
-        `<div class="annotation-circle" style="left:${ann.x}%;top:${ann.y}%;width:${ann.width}%;height:${ann.height}%;border-color:${stroke};background:${fill}"></div>`
+        `<div class="annotation-circle" style="left:${ann.x}%;top:${ann.y}%;width:${ann.width}%;height:${ann.height}%;border:2px solid ${stroke};border-color:${stroke};background:${fill}"></div>`
       );
       continue;
     }
@@ -491,7 +591,7 @@ function renderAnnotationsHtml(annotations: Guide['steps'][0]['annotations']): s
       const stroke = resolveCircleStroke(ann.color);
       const fill = circleFillRgba(stroke, 0.12);
       pieces.push(
-        `<div class="annotation-box" style="left:${ann.x}%;top:${ann.y}%;width:${ann.width}%;height:${ann.height}%;border-color:${stroke};background:${fill}"></div>`
+        `<div class="annotation-box" style="left:${ann.x}%;top:${ann.y}%;width:${ann.width}%;height:${ann.height}%;border:2px solid ${stroke};border-color:${stroke};background:${fill}"></div>`
       );
       continue;
     }
@@ -545,11 +645,13 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;');
 }
 
-/** Same lightweight rules as legacy html-template: escape first, then **bold** and newlines. */
+/** Lightweight rich-text: escape, then **bold**, *italic*, `code`, and newlines. */
 function descriptionToExportHtml(description: string): string {
   let html = escapeHtml(description);
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\n\n/g, '<br><br>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/`(.+?)`/g, '<code style="background:color-mix(in srgb, var(--color-fg) 8%, transparent);padding:1px 5px;border-radius:4px;font-size:0.88em">$1</code>');
+  html = html.replace(/\n\n/g, '</p><p style="margin-top:8px">');
   html = html.replace(/\n/g, '<br>');
-  return html;
+  return `<p>${html}</p>`;
 }

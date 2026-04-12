@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronUp, ChevronDown, GripVertical, Trash2 } from 'lucide-react';
+import { ChevronUp, ChevronDown, GripVertical, Trash2, Copy } from 'lucide-react';
 
 interface Step {
   id: string;
@@ -18,9 +18,10 @@ interface StepPanelProps {
   onSelect: (id: string) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
 }
 
-export function StepPanel({ steps, selectedStepId, onSelect, onReorder, onDelete }: StepPanelProps) {
+export function StepPanel({ steps, selectedStepId, onSelect, onReorder, onDelete, onDuplicate }: StepPanelProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
 
@@ -138,6 +139,16 @@ export function StepPanel({ steps, selectedStepId, onSelect, onReorder, onDelete
               </button>
             </div>
 
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate(step.id);
+              }}
+              className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-600 hover:text-blue-400 transition-all p-1 rounded hover:bg-blue-400/10"
+              title="Duplicate step"
+            >
+              <Copy size={14} />
+            </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
