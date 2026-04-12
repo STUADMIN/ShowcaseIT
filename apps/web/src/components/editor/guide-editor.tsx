@@ -40,6 +40,7 @@ interface Annotation {
   height?: number;
   text?: string;
   color?: string;
+  fillOpacity?: number;
   calloutTailEdge?: 'bottom' | 'top' | 'left' | 'right';
   calloutTailOffset?: number;
 }

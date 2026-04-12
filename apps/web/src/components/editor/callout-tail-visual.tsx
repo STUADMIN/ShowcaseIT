@@ -7,12 +7,14 @@ interface CalloutTailVisualProps {
   offsetPct: number;
   /** When true, show a small handle users can grab (Tail tool). */
   showAdjustHandle?: boolean;
+  /** Fires when user presses on the tail handle to start adjusting. */
+  onHandleMouseDown?: (e: React.MouseEvent) => void;
 }
 
 /**
  * Two-layer CSS triangle (border + fill) on the chosen side of the callout bubble.
  */
-export function CalloutTailVisual({ edge, offsetPct, showAdjustHandle }: CalloutTailVisualProps) {
+export function CalloutTailVisual({ edge, offsetPct, showAdjustHandle, onHandleMouseDown }: CalloutTailVisualProps) {
   const o = offsetPct;
 
   const outerBase = 'absolute z-[1] block h-0 w-0';
@@ -78,7 +80,9 @@ export function CalloutTailVisual({ edge, offsetPct, showAdjustHandle }: Callout
       {inner}
       {showAdjustHandle ? (
         <span
-          className="absolute z-[3] h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-brand-300 bg-gray-900/90 shadow-md pointer-events-none"
+          className={`absolute z-[3] h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-brand-300 bg-gray-900/90 shadow-md ${
+            onHandleMouseDown ? 'pointer-events-auto cursor-grab hover:bg-brand-500/30 hover:scale-125 transition-transform' : 'pointer-events-none'
+          }`}
           style={
             edge === 'bottom'
               ? { left: `${o}%`, top: 'calc(100% + 10px)' }
@@ -88,8 +92,9 @@ export function CalloutTailVisual({ edge, offsetPct, showAdjustHandle }: Callout
                   ? { left: 'calc(100% + 10px)', top: `${o}%` }
                   : { right: 'calc(100% + 10px)', top: `${o}%` }
           }
-          title="Drag on bubble to slide; double-click bubble to rotate tail"
+          title="Drag to move the callout pointer"
           aria-hidden
+          onMouseDown={onHandleMouseDown}
         />
       ) : null}
     </>

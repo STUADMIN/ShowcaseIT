@@ -31,6 +31,8 @@ export interface Annotation {
   height?: number;
   text?: string;
   color?: string;
+  /** 0 = outline only, 1 = solid fill. Defaults to 0.12 for boxes. */
+  fillOpacity?: number;
   /** Callout pointer: which side of the bubble the triangle sits on */
   calloutTailEdge?: 'bottom' | 'top' | 'left' | 'right';
   /** 0–100: position along that edge (left→right for top/bottom, top→bottom for left/right) */

@@ -55,6 +55,8 @@ interface Annotation {
   height?: number;
   text?: string;
   color?: string;
+  /** 0 = outline only (see-through), 1 = solid fill. Defaults to 0.12 for boxes. */
+  fillOpacity?: number;
   calloutTailEdge?: string;
   calloutTailOffset?: number;
 }
@@ -271,6 +273,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
   const [pendingCalloutFading, setPendingCalloutFading] = useState(false);
   const [circleStrokeHex, setCircleStrokeHex] = useState<string>(CIRCLE_OUTLINE_PRESETS[0].stroke);
   const [boxStrokeHex, setBoxStrokeHex] = useState<string>(CIRCLE_OUTLINE_PRESETS[0].stroke);
+  const [boxSolid, setBoxSolid] = useState(false);
   const [highlightStrokeHex, setHighlightStrokeHex] = useState<string>(HIGHLIGHT_COLOR_PRESETS[0].stroke);
 
   useEffect(() => {
@@ -711,12 +714,12 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
       const ann: Annotation = {
         id: `ann-${Date.now()}`, type: annType, x, y, width, height,
         ...(annType === 'circle' ? { color: circleStrokeHex } : {}),
-        ...(annType === 'box' ? { color: boxStrokeHex } : {}),
+        ...(annType === 'box' ? { color: boxStrokeHex, fillOpacity: boxSolid ? 1 : 0.12 } : {}),
         ...(annType === 'highlight' ? { color: highlightStrokeHex } : {}),
       };
       onUpdateRef.current({ annotations: [...stepRef.current.annotations, ann] });
     }
-  }, [drawing, circleStrokeHex, boxStrokeHex, highlightStrokeHex]);
+  }, [drawing, circleStrokeHex, boxStrokeHex, boxSolid, highlightStrokeHex]);
   finalizeDrawRef.current = finalizeDraw;
 
   const removeBlurRegion = (regionId: string) => {
@@ -932,6 +935,34 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                   style={{ backgroundColor: p.stroke }}
                 />
               ))}
+              {activeTool === 'box' && (
+                <>
+                  <span className="text-xs text-gray-600 ml-2">|</span>
+                  <span className="text-xs text-gray-500 shrink-0">Fill:</span>
+                  <button
+                    type="button"
+                    onClick={() => setBoxSolid(false)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      !boxSolid
+                        ? 'bg-brand-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200'
+                    }`}
+                  >
+                    See-through
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBoxSolid(true)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      boxSolid
+                        ? 'bg-brand-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200'
+                    }`}
+                  >
+                    Solid
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -1079,7 +1110,8 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
               }
               if (ann.type === 'box' && d.width != null && d.height != null) {
                 const stroke = resolveCircleStroke(ann.color);
-                const fill = circleFillRgba(stroke, 0.12);
+                const opacity = ann.fillOpacity ?? 0.12;
+                const fill = circleFillRgba(stroke, opacity);
                 return (
                   <div
                     key={ann.id}
@@ -1169,6 +1201,11 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                         edge={live.edge}
                         offsetPct={live.offset}
                         showAdjustHandle={activeTool === 'callout' || activeTool === 'select'}
+                        onHandleMouseDown={(activeTool === 'callout' || activeTool === 'select') ? (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          startTailAdjust(e, ann);
+                        } : undefined}
                       />
                       <span className="relative z-[2] whitespace-pre-wrap">{ann.text || 'Callout'}</span>
                     </div>
@@ -1403,7 +1440,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                   )}
                   {selAnn && (selAnn.type === 'highlight' || selAnn.type === 'circle' || selAnn.type === 'box') && (
                     <div
-                      className="absolute left-0 pointer-events-auto flex gap-1 p-1 bg-gray-900/90 rounded-lg border border-gray-700 shadow-lg"
+                      className="absolute left-0 pointer-events-auto flex items-center gap-1 p-1 bg-gray-900/90 rounded-lg border border-gray-700 shadow-lg"
                       style={{ top: '100%', marginTop: 6 }}
                       onMouseDown={(e) => e.stopPropagation()}
                     >
@@ -1425,6 +1462,43 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                           }}
                         />
                       ))}
+                      {selAnn.type === 'box' && (
+                        <>
+                          <span className="text-gray-600 text-xs mx-0.5">|</span>
+                          <button
+                            title="See-through fill"
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                              (selAnn.fillOpacity ?? 0.12) < 0.5 ? 'bg-brand-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUpdate({
+                                annotations: step.annotations.map((a) =>
+                                  a.id === selAnn.id ? { ...a, fillOpacity: 0.12 } : a
+                                ),
+                              });
+                            }}
+                          >
+                            Clear
+                          </button>
+                          <button
+                            title="Solid fill"
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                              (selAnn.fillOpacity ?? 0.12) >= 0.5 ? 'bg-brand-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUpdate({
+                                annotations: step.annotations.map((a) =>
+                                  a.id === selAnn.id ? { ...a, fillOpacity: 1 } : a
+                                ),
+                              });
+                            }}
+                          >
+                            Solid
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1462,7 +1536,7 @@ export function StepPreview({ step, onUpdate, activeTool, expandedCanvas, record
                   ...(activeTool === 'box' && drawKind === 'rect'
                     ? {
                         borderColor: boxStrokeHex,
-                        backgroundColor: circleFillRgba(boxStrokeHex, 0.12),
+                        backgroundColor: circleFillRgba(boxStrokeHex, boxSolid ? 1 : 0.12),
                       }
                     : {}),
                   ...(activeTool === 'highlight' && drawKind === 'rect'

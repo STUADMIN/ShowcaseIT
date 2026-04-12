@@ -589,7 +589,8 @@ function renderAnnotationsHtml(annotations: Guide['steps'][0]['annotations']): s
     }
     if (ann.type === 'box' && ann.width != null && ann.height != null) {
       const stroke = resolveCircleStroke(ann.color);
-      const fill = circleFillRgba(stroke, 0.12);
+      const opacity = ann.fillOpacity ?? 0.12;
+      const fill = circleFillRgba(stroke, opacity);
       pieces.push(
         `<div class="annotation-box" style="left:${ann.x}%;top:${ann.y}%;width:${ann.width}%;height:${ann.height}%;border:2px solid ${stroke};border-color:${stroke};background:${fill}"></div>`
       );

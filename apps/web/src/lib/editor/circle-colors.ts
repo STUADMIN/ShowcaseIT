@@ -19,7 +19,7 @@ export const CIRCLE_OUTLINE_PRESETS = [
   { key: 'red', label: 'Red', stroke: '#ef4444' },
   { key: 'rose', label: 'Rose', stroke: '#fb7185' },
   { key: 'slate', label: 'Slate', stroke: '#94a3b8' },
-  { key: 'white', label: 'White', stroke: '#f1f5f9' },
+  { key: 'white', label: 'White', stroke: '#ffffff' },
 ] as const;
 
 export type CircleOutlinePresetKey = (typeof CIRCLE_OUTLINE_PRESETS)[number]['key'];
