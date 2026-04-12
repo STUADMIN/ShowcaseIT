@@ -99,11 +99,13 @@ export function GuideEditor({ guideId }: { guideId: string }) {
   const [steps, setSteps] = useState<GuideStep[]>([]);
   const [selectedStepId, setSelectedStepId] = useState<string>('');
   const [guideName, setGuideName] = useState('');
+  const [guideDesc, setGuideDesc] = useState('');
   const [activeTool, setActiveTool] = useState<Tool>('select');
   const [focusMode, setFocusMode] = useState(false);
   const editorShellRef = useRef<HTMLDivElement>(null);
   /** Last title successfully saved to the API (avoids losing edits on blur/tab close). */
   const savedTitleRef = useRef('');
+  const savedDescRef = useRef('');
 
   /* ── Capture session (persistent screen-share → multi-step capture) ── */
   const [captureStream, setCaptureStream] = useState<MediaStream | null>(null);
@@ -170,6 +172,8 @@ export function GuideEditor({ guideId }: { guideId: string }) {
       editorBootGuideId.current = guide.id;
       setGuideName(guide.title);
       savedTitleRef.current = guide.title;
+      setGuideDesc(guide.description ?? '');
+      savedDescRef.current = guide.description ?? '';
     }
     const mapped = guide.steps.map((s: any) => ({
       ...s,
@@ -199,6 +203,17 @@ export function GuideEditor({ guideId }: { guideId: string }) {
     }
   }, [guideId, guideName]);
 
+  const flushDescToServer = useCallback(async () => {
+    const d = guideDesc.trim();
+    if (d === savedDescRef.current) return;
+    try {
+      await apiPatch(`/api/guides/${guideId}`, { description: d || null });
+      savedDescRef.current = d;
+    } catch {
+      /* keep dirty so user can retry */
+    }
+  }, [guideId, guideDesc]);
+
   /** Debounced persist while typing the guide title */
   useEffect(() => {
     if (!guideId || !guide) return;
@@ -210,17 +225,32 @@ export function GuideEditor({ guideId }: { guideId: string }) {
     return () => window.clearTimeout(id);
   }, [guide, guideName, guideId, flushTitleToServer]);
 
+  /** Debounced persist while typing the guide description */
+  useEffect(() => {
+    if (!guideId || !guide) return;
+    if (guideDesc.trim() === savedDescRef.current) return;
+    const id = window.setTimeout(() => {
+      void flushDescToServer();
+    }, 900);
+    return () => window.clearTimeout(id);
+  }, [guide, guideDesc, guideId, flushDescToServer]);
+
   /** Flush when leaving the tab or closing the page */
   useEffect(() => {
     if (!guide) return;
     const onHidden = () => {
-      if (document.visibilityState === 'hidden') void flushTitleToServer();
+      if (document.visibilityState === 'hidden') {
+        void flushTitleToServer();
+        void flushDescToServer();
+      }
     };
     const onPageHide = () => {
       void flushTitleToServer();
+      void flushDescToServer();
     };
     const onBeforeUnload = () => {
       void flushTitleToServer();
+      void flushDescToServer();
     };
     document.addEventListener('visibilitychange', onHidden);
     window.addEventListener('pagehide', onPageHide);
@@ -230,7 +260,7 @@ export function GuideEditor({ guideId }: { guideId: string }) {
       window.removeEventListener('pagehide', onPageHide);
       window.removeEventListener('beforeunload', onBeforeUnload);
     };
-  }, [guide, flushTitleToServer]);
+  }, [guide, flushTitleToServer, flushDescToServer]);
 
   const autoStepTitle = /^step\s+\d+$/i;
 
@@ -438,7 +468,15 @@ export function GuideEditor({ guideId }: { guideId: string }) {
             className="w-full bg-transparent text-lg font-bold text-gray-100 outline-none placeholder:text-gray-600"
             placeholder="Guide title..."
           />
-          <p className="text-xs text-gray-500 mt-1">ID: {guideId}</p>
+          <input
+            type="text"
+            value={guideDesc}
+            onChange={(e) => setGuideDesc(e.target.value)}
+            onBlur={() => void flushDescToServer()}
+            className="w-full mt-1.5 bg-transparent text-xs text-gray-500 outline-none placeholder:text-gray-700"
+            placeholder="Guide description (shown in exports)..."
+          />
+          <p className="text-xs text-gray-600 mt-1">ID: {guideId}</p>
           {guide?.project && user?.id && workspaceProjects && workspaceProjects.length > 0 ? (
             <div className="mt-3 space-y-2 border-t border-gray-800 pt-3">
               <p className="text-[10px] font-medium uppercase tracking-wide text-gray-600">Brand &amp; project</p>
