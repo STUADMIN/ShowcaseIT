@@ -5,7 +5,9 @@
  */
 export function getSupabasePublicEnv(): { url: string; key: string } {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?.trim();
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (url && key) return { url, key };
 
   if (process.env.NEXT_PHASE === 'phase-production-build') {
@@ -16,7 +18,7 @@ export function getSupabasePublicEnv(): { url: string; key: string } {
   }
 
   throw new Error(
-    'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY must be set. ' +
+    'NEXT_PUBLIC_SUPABASE_URL and a public anon key must be set (NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY). ' +
       'Add them in Vercel → Project → Settings → Environment Variables.'
   );
 }
