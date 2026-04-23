@@ -22,7 +22,7 @@
     "hr:generate": "npm run hr:generate -w @showcaseit/web"
   },
   "devDependencies": {
-    "prisma": "^6.19.2",
+    "prisma": "^6.19.3",
     "turbo": "latest",
     "typescript": "^5.7.0"
   },
